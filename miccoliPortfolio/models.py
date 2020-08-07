@@ -9,7 +9,7 @@ class Project(models.Model):
 	technology = models.CharField(max_length=60)
 	role = models.CharField(max_length=60)
 	front_page = models.BooleanField(default=True)
-	slug = models.SlugField(editable=True, max_length=150, default='')
+	slug = models.SlugField(editable=False, max_length=150, default='')
 
 	#external link
 	#colaboration
