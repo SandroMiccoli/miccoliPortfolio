@@ -25,9 +25,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = ')oris5r%6&q4h4%0d$v*a+up4m5af%jv3x3o96e077h@n+6yzw'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1:8000','sandromiccoli.com','*','localhost']
 
 
 # Application definition
@@ -116,10 +116,20 @@ USE_L10N = True
 
 USE_TZ = True
 
+LANGUAGES = [
+    ('en','English'),
+    ('pt-br', 'Portuguese (Brazilian)')
+]
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = '/static/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_ROOT = 'media/'
+MEDIA_URL = 'media/'
 
 django_heroku.settings(locals())

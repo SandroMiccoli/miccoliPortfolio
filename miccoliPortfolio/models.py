@@ -2,10 +2,21 @@ from django.db import models
 
 from django.utils.text import slugify
 
+CATEGORIES = (
+    ('arte_computacional','Arte Computacional'),
+    ('instalacoes', 'Instalações'),
+    ('performances','Performances'),
+    ('educacao','Educação'),
+    ('dancatech','Dança e Tecnologia'),
+)
+
+
 class Project(models.Model):
 	title = models.CharField(max_length=100)
-	description = models.TextField()
+	short_description = models.TextField(default='')
+	description = models.TextField(default='')
 	date = models.DateField()
+	category = models.CharField(max_length=100, choices=CATEGORIES,default='arte_computacional')
 	technology = models.CharField(max_length=60)
 	role = models.CharField(max_length=60)
 	front_page = models.BooleanField(default=True)
@@ -32,14 +43,3 @@ class Image(models.Model):
 	class Meta:
 		verbose_name = 'Imagem'
 		verbose_name_plural = 'Imagens'
-
-class Category(models.Model):
-	project_id = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
-	category = models.CharField(max_length=60)
-	
-	def __str__(self):
-		return self.category
-
-	class Meta:
-		verbose_name = 'Category'
-		verbose_name_plural = 'Categories'

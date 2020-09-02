@@ -15,12 +15,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 
 from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'),
-    path('dev/', views.indexTemp, name='indexTemp'),
+    path('', views.temp_index, name='indexTemp'),
+    path('dev', views.switch_to_Portuguese_link, name='indexPT'),
+    path('dev/en/', views.switch_to_English_link, name='indexEN'),
     path("dev/project/<slug:title>", views.project_detail, name="project_detail"),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
