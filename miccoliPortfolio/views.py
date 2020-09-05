@@ -21,8 +21,10 @@ def index(request):
 def project_detail(request, title):
 	template = loader.get_template('miccoliPortfolio/project-page-webflow.html')
 	project = Project.objects.get(slug=title)
+	images = Image.objects.all().filter(project_id=project.id)
 	context = {
-		'project': project
+		'project': project,
+		'images': images,
 	}
 	return HttpResponse(template.render(context, request))
 
