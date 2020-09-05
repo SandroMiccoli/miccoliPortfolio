@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = ')oris5r%6&q4h4%0d$v*a+up4m5af%jv3x3o96e077h@n+6yzw'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1:8000','sandromiccoli.com','*','localhost']
 
@@ -137,11 +137,11 @@ MEDIA_URL = 'media/'
 django_heroku.settings(locals())
 
 # Storage on S3 settings are stored as os.environs to keep settings.py clean
-if not DEBUG:
-   AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
-   AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY']
-   AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
-   S3_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
-   STATIC_URL = S3_URL
-   MEDIA_URL = f'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com'
+# if not DEBUG:
+#    AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
+#    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY']
+#    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+#    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
+#    S3_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
+#    STATIC_URL = S3_URL
+#    MEDIA_URL = f'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com'
