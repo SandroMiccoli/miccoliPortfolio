@@ -23,7 +23,7 @@
     <div class="project-header"><a href="/dev" class="project-arrow-back-link w-inline-block"><img src="{% static 'imgs/back.svg' %}" loading="lazy" alt="" class="project-arrow-back"></a>
       <div class="project-title-header">
         <h1 class="prcnt">{{ project.title }}</h1>
-        <h2 class="prcnt-2">{{ project.category }}</h2>
+        <h2 class="prcnt-2">{{ project.get_category_display }}</h2>
       </div>
     </div>
     <div data-w-id="3b516671-97c8-3181-b8bd-e884e98cca5c" class="project-text-wrapper">
