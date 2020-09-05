@@ -82,6 +82,7 @@ a {
   -webkit-flex: 1;
   -ms-flex: 1;
   flex: 1;
+  width: 50vh; /* bug fix */
 }
 
 .home-info-wrapper {
@@ -121,11 +122,13 @@ a {
 
 .home-projectlist-wrapper {
   position: relative;
+  margin: auto;
 }
 
 .home-project-wrapper {
-  position: relative;
+  position: absolute;
   margin-bottom: 40px;
+
 }
 
 .home-project-img {
