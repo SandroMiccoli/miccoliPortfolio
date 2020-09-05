@@ -7,7 +7,7 @@ from .models import Project, Image
 def index(request):
 	template = loader.get_template('miccoliPortfolio/index-webflow.html')
 	
-	projects = Project.objects.filter(image__cover=True, front_page=True).values('title','short_description','category','image__image').order_by('-date')
+	projects = Project.objects.filter(image__cover=True, front_page=True).values('title','slug','short_description','category','image__image').order_by('-date')
 
 	# print(projects)
 
@@ -19,7 +19,7 @@ def index(request):
 	return HttpResponse(template.render(context, request))
 
 def project_detail(request, title):
-	template = loader.get_template('miccoliPortfolio/project-page.html')
+	template = loader.get_template('miccoliPortfolio/project-page-webflow.html')
 	project = Project.objects.get(slug=title)
 	context = {
 		'project': project
