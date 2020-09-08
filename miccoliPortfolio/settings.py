@@ -147,7 +147,7 @@ else:
    S3_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
    STATIC_URL = S3_URL
    STATIC_ROOT = S3_URL
-   MEDIA_URL = f'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com'
+   MEDIA_URL = f'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com/'
    MEDIA_ROOT = MEDIA_URL
 
 
