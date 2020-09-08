@@ -302,7 +302,6 @@ a {
   align-items: center;
   border-radius: 0px;
   background-color: #fffdf4;
-  background-image: url('../images/tumblr1.jpg');
   background-position: 50% 50%;
   background-size: contain;
   background-repeat: no-repeat;
@@ -311,7 +310,6 @@ a {
 }
 
 .gradient.b {
-  background-image: url('../images/tumblr2.jpg');
 }
 
 .a-block {
@@ -472,11 +470,9 @@ a {
   }
   .gradient {
     background-color: #fffdf4;
-    background-image: url('../images/tumblr1.jpg');
     background-size: contain;
   }
   .gradient.c {
-    background-image: url('../images/tumblr3.jpg');
   }
   .gradient.b {
     background-color: #fffdf4;
