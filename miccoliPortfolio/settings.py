@@ -128,16 +128,17 @@ LANGUAGES = [
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = '/static/'
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# MEDIA_ROOT = 'media/'
-MEDIA_URL = 'media/'
 
 
+if DEBUG:
+    STATIC_URL = '/static/'
+    STATIC_ROOT = '/static/'
+
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    # MEDIA_ROOT = 'media/'
+    MEDIA_URL = 'media/'
 # Storage on S3 settings are stored as os.environs to keep settings.py clean
-if not DEBUG:
+else:
    AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY']
    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
