@@ -135,14 +135,12 @@ a {
   position: relative;
   width: 860px;
   height: 360px;
-  background-image: url('../images/img1.png');
   background-position: 50% 50%;
   background-size: cover;
   background-repeat: no-repeat;
 }
 
 .home-project-img._2 {
-  background-image: url('../images/image3.png');
 }
 
 .home-project-text {
