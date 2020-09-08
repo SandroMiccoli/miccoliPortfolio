@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'miccoliPortfolio',
     'storages',
-    'boto3',
+    'boto',
 ]
 
 MIDDLEWARE = [
@@ -135,7 +135,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # MEDIA_ROOT = 'media/'
 MEDIA_URL = 'media/'
 
-django_heroku.settings(locals())
 
 # Storage on S3 settings are stored as os.environs to keep settings.py clean
 if not DEBUG:
@@ -147,3 +146,6 @@ if not DEBUG:
    S3_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
    STATIC_URL = S3_URL
    MEDIA_URL = f'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com'
+
+   
+django_heroku.settings(locals())
