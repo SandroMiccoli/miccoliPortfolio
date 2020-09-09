@@ -146,9 +146,6 @@ else:
    # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
    AWS_LOCATION = 'static'   
    S3_URL = 'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_LOCATION)
-   STATICFILES_DIRS = [
-       S3_URL,
-   ]
    STATIC_URL = S3_URL
    STATIC_ROOT = S3_URL
    # MEDIA_URL = 'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com/'
