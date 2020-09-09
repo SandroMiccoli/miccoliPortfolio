@@ -151,6 +151,8 @@ else:
    MEDIA_URL = 'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_MEDIA_LOCATION)
    MEDIA_ROOT = MEDIA_URL
    # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
-   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
+   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto33Storage'
+
 
 django_heroku.settings(locals(), staticfiles=False)
