@@ -139,20 +139,23 @@ if DEBUG:
     MEDIA_URL = 'media/'
 # Storage on S3 settings are stored as os.environs to keep settings.py clean
 else:
-   AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
-   AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY']
-   AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-   AWS_LOCATION = 'static'   
-   S3_URL = f'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_LOCATION)
-   STATIC_URL = S3_URL
-   # STATIC_ROOT = S3_URL
-   # MEDIA_URL = 'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com/'
-   AWS_MEDIA_LOCATION = 'media/'
-   MEDIA_URL = 'https://%s.s3.amazonaws.com/%s' % (AWS_STORAGE_BUCKET_NAME, AWS_MEDIA_LOCATION)
-   MEDIA_ROOT = MEDIA_URL
-   # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
-   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto33Storage'
+    AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
+    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY']
+    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+    AWS_LOCATION = 'static'   
+    S3_URL = f'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_LOCATION)
+    STATIC_URL = S3_URL
+    # STATIC_ROOT = S3_URL
+    # MEDIA_URL = 'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com/'
+    # AWS_MEDIA_LOCATION = 'media/'
+    # MEDIA_URL = 'https://%s.s3.amazonaws.com/%s' % (AWS_STORAGE_BUCKET_NAME, AWS_MEDIA_LOCATION)
+    # MEDIA_ROOT = MEDIA_URL
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    # MEDIA_ROOT = 'media/'
+    MEDIA_URL = 'media/'
+    # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto33Storage'
 
 
 django_heroku.settings(locals(), staticfiles=False)
