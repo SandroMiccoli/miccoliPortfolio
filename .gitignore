@@ -101,7 +101,7 @@ ENV/
 .mypy_cache/
 
 # pycache
-miccoliPortfolio/__pycache__/
+# miccoliPortfolio/__pycache__/
 
 .DS_Store
 *.sqlite3
