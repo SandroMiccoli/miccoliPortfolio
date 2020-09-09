@@ -155,7 +155,8 @@ else:
     # MEDIA_URL = 'media/'
     # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto33Storage'
+    DEFAULT_FILE_STORAGE = 'miccoliPortfolio.storage_backends.MediaStorage' 
+
 
 
 django_heroku.settings(locals(), staticfiles=False)
