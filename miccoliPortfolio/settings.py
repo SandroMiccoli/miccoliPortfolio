@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'miccoliPortfolio',
     'storages',
-    'boto',
+    'boto3',
 ]
 
 MIDDLEWARE = [
@@ -150,7 +150,7 @@ else:
    AWS_MEDIA_LOCATION = 'media/'
    MEDIA_URL = 'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_MEDIA_LOCATION)
    MEDIA_ROOT = MEDIA_URL
-   STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
-   # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
+   # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
+   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
 
 django_heroku.settings(locals(), staticfiles=False)
