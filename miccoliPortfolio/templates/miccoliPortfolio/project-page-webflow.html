@@ -34,7 +34,7 @@
   </div>
   <div class="project-section-media">
     {% for image in images %}
-     <img src="/media/{{ image.image }}" />
+     <img src="{{ MEDIA_URL }}{{ image.image }}" />
     {% endfor %}
   </div>
   <div class="project-section-credits">

@@ -27,6 +27,7 @@ def project_detail(request, title):
 	images = Image.objects.all().filter(project_id=project.id)
 	context = {
 		'project': project,
+		'MEDIA_URL': MEDIA_URL,
 		'images': images,
 	}
 	return HttpResponse(template.render(context, request))
