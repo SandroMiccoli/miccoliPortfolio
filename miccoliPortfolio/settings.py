@@ -147,7 +147,7 @@ else:
    AWS_LOCATION = 'static'   
    S3_URL = 'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_LOCATION)
    STATICFILES_DIRS = [
-       os.path.join(BASE_DIR, '/static'),
+       S3_URL,
    ]
    STATIC_URL = S3_URL
    STATIC_ROOT = S3_URL
