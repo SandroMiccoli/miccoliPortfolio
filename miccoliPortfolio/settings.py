@@ -153,4 +153,4 @@ else:
    # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
 
-django_heroku.settings(locals())
+django_heroku.settings(locals(), staticfiles=False)
