@@ -3,6 +3,8 @@ from django.template import loader
 
 from .models import Project, Image
 
+from .settings import MEDIA_URL
+
 
 def index(request):
 	template = loader.get_template('miccoliPortfolio/index-webflow.html')
@@ -13,6 +15,7 @@ def index(request):
 
 	context = {
 		'projects': projects,
+		'MEDIA_URL': MEDIA_URL,
 		'lang': request.session['lang']
 	}
 
