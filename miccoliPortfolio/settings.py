@@ -142,8 +142,8 @@ else:
    AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY']
    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
-   # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
+   # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3BotoStorage'
+   STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
    AWS_LOCATION = 'static'   
    S3_URL = 'https://%s.s3.amazonaws.com/%s/' % (AWS_STORAGE_BUCKET_NAME, AWS_LOCATION)
    STATIC_URL = S3_URL
