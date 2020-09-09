@@ -16,7 +16,7 @@ class Project(models.Model):
 	short_description = models.TextField(default='')
 	description = models.TextField(default='')
 	date = models.DateField()
-	category = models.CharField(max_length=100, choices=CATEGORIES,default='arte_computacional')
+	category = models.CharField(max_length=150, choices=CATEGORIES,default='arte_computacional')
 	technology = models.CharField(max_length=60)
 	role = models.CharField(max_length=60)
 	front_page = models.BooleanField(default=True)
