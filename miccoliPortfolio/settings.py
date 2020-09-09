@@ -147,12 +147,12 @@ else:
     STATIC_URL = S3_URL
     # STATIC_ROOT = S3_URL
     # MEDIA_URL = 'http://portfolio-sandromiccoli.s3-website-sa-east-1.amazonaws.com/'
-    # AWS_MEDIA_LOCATION = 'media/'
-    # MEDIA_URL = 'https://%s.s3.amazonaws.com/%s' % (AWS_STORAGE_BUCKET_NAME, AWS_MEDIA_LOCATION)
-    # MEDIA_ROOT = MEDIA_URL
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    AWS_MEDIA_LOCATION = 'media/'
+    MEDIA_URL = f'https://%s.s3.amazonaws.com/%s' % (AWS_STORAGE_BUCKET_NAME, AWS_MEDIA_LOCATION)
+    MEDIA_ROOT = MEDIA_URL
+    # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
     # MEDIA_ROOT = 'media/'
-    MEDIA_URL = 'media/'
+    # MEDIA_URL = 'media/'
     # STATICFILES_STORAGE = 'miccoliPortfolio.storage.AmazonS3'
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto33Storage'
