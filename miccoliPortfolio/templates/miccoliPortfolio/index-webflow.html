@@ -54,7 +54,7 @@
           {% for project in projects %}
             <div class="home-project-wrapper {{ project.category }}">
               <a href="dev/project/{{ project.slug }}" class="btn btn-primary">
-              <div class="home-project-img"  style="background-image: url('{{ MEDI_URL }}{{ project.image__image }}')" ></div>
+              <div class="home-project-img"  style="background-image: url('{{ MEDIA_URL }}{{ project.image__image }}')" ></div>
               <div class="home-project-text">
                 <div class="home-project-text-projecttitle">{{ project.title }}</div>
                 <div class="home-project-text-projectdescription">{{ project.short_description }}</div><img src="{% static 'imgs/arrow.svg' %}" loading="lazy" alt="" class="image"></div>
