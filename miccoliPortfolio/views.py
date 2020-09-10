@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.template import loader
 
-from .models import Project, Image
+from .models import Project, Image, Credit
 
 from .settings import MEDIA_URL
 
@@ -26,10 +26,18 @@ def project_detail(request, title):
 	template = loader.get_template('miccoliPortfolio/project-page-webflow.html')
 	project = Project.objects.get(slug=title)
 	images = Image.objects.all().filter(project_id=project.id)
+	credits_titles = Credit.objects.all().filter(project_id=project.id).values_list(
+		'title', flat=True).distinct()
+	credits = Credit.objects.all().filter(project_id=project.id)
+	year = project.date.year
+
 	context = {
 		'project': project,
 		'MEDIA_URL': MEDIA_URL,
 		'images': images,
+		'credits_titles': credits_titles,
+		'credits': credits,
+		'year': year
 	}
 	return HttpResponse(template.render(context, request))
 
