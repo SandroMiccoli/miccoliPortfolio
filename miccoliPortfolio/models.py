@@ -17,8 +17,6 @@ class Project(models.Model):
 	description = models.TextField(default='')
 	date = models.DateField()
 	category = models.CharField(max_length=150, choices=CATEGORIES,default='arte_computacional')
-	technology = models.CharField(max_length=60)
-	role = models.CharField(max_length=60)
 	front_page = models.BooleanField(default=True)
 	slug = models.SlugField(editable=False, max_length=150, default='')
 
@@ -43,3 +41,12 @@ class Image(models.Model):
 	class Meta:
 		verbose_name = 'Imagem'
 		verbose_name_plural = 'Imagens'
+
+
+class Credit(models.Model):
+	project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
+	title = models.CharField(max_length=100)
+	name = models.CharField(max_length=100)
+
+	def __str__(self):
+		return str(self.title)+' '+str(self.name)+' ('+str(self.project_id)+')'
