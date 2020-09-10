@@ -21,8 +21,8 @@
         <h1>SANDRO MICCOLI</h1>
           <h2>CREATIVE TECHONOLOGIST</h2>
 
-        {% if request.session.lang == "en" %}
-          <p class="paragraph">Creative technologist, educator and digital performer. Specialized in new technologies, he runs his studio Abstracto creating interactive installations and immersive experiences. Currently he works as an educational technology consultant in addition to being a Google certified educator. Has participated in projects, installations and exhibitions in Brazil, Mexico, Netherlands, Índia and Croatia. <a href="about">More about me.</a></p>
+        {% if lang == "en" %}
+          <p class="paragraph">Creative technologist, educator and digital performer. Specialized in new technologies, runs his studio <a href="http://abstracto.com.br" target="_blank">Abstracto</a> creating interactive installations and immersive experiences. Currently collaborates with artists and companies on using creative techonology in their projects. <a href="about">More about me.</a></p>
         {% else %}
           <p class="paragraph">Artista digital, especialista em novas mídias e educador. Trabalha no estúdio Abstracto criando instalações interativas e experiências imersivas. Também colabora com coletivos, artistas e empresas na área de tecnologia criativa. <a href="about">Mais sobre mim</a></p>
         {% endif %}
