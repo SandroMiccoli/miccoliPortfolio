@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = ')oris5r%6&q4h4%0d$v*a+up4m5af%jv3x3o96e077h@n+6yzw'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['sandromiccoli.com','site-portfolio-sandromiccoli.herokuapp.com']
 # ALLOWED_HOSTS = ['127.0.0.1:8000','localhost',]
