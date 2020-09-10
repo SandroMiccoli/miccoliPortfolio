@@ -16,7 +16,8 @@ def index(request):
 	context = {
 		'projects': projects,
 		'MEDIA_URL': MEDIA_URL,
-		'lang': request.session['lang']
+		# 'lang': request.session['lang'] # TODO: Add session lang
+		 'lang': 'en'
 	}
 
 	return HttpResponse(template.render(context, request))
