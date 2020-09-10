@@ -27,26 +27,47 @@
           <p class="paragraph">Artista digital, especialista em novas mídias e educador. Trabalha no estúdio Abstracto criando instalações interativas e experiências imersivas. Também colabora com coletivos, artistas e empresas na área de tecnologia criativa. <a href="about">Mais sobre mim</a></p>
         {% endif %}
         
- 
+         {% if lang == "en" %}
+          <div class="categorie-wrapper">
+            <a href="#" class="button heading-5 is-checked" data-filter="*">ALL WORKS</a>
+          </div>
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".arte_computacional">COMPUTATIONAL ART</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".instalacoes">INSTALLATIONS</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".performances">PERFORMANCES</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".educacao">EDUCATION</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".dancatech">DANCE</a>
+          </div>  
+        {% else %}
+          <div class="categorie-wrapper">
+            <a href="#" class="button heading-5 is-checked" data-filter="*">TODOS OS TRABALHOS</a>
+          </div>
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".arte_computacional">ARTE COMPUTACIONAL</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".instalacoes">INSTALAÇÕES</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".performances">PERFORMANCES</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".educacao">EDUCAÇÃO</a>
+          </div>  
+          <div class="categorie-wrapper">  
+            <a href="#" class="button heading-5" data-filter=".dancatech">DANÇA</a>
+          </div>  
+        {% endif %}
         
-        <div class="categorie-wrapper">
-          <a href="#" class="button heading-5 is-checked" data-filter="*">TODOS OS TRABALHOS</a>
-        </div>
-        <div class="categorie-wrapper">  
-          <a href="#" class="button heading-5" data-filter=".arte_computacional">ARTE COMPUTACIONAL</a>
-        </div>  
-        <div class="categorie-wrapper">  
-          <a href="#" class="button heading-5" data-filter=".instalacoes">INSTALAÇÕES</a>
-        </div>  
-        <div class="categorie-wrapper">  
-          <a href="#" class="button heading-5" data-filter=".performances">PERFORMANCES</a>
-        </div>  
-        <div class="categorie-wrapper">  
-          <a href="#" class="button heading-5" data-filter=".educacao">EDUCAÇÃO</a>
-        </div>  
-        <div class="categorie-wrapper">  
-          <a href="#" class="button heading-5" data-filter=".dancatech">DANÇA</a>
-        </div>  
+
         
       </div>
 
