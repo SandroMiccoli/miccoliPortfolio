@@ -4,8 +4,19 @@
 <head>
   <meta charset="utf-8">
   <title>Sandro Miccoli</title>
+
+  <meta content="***META DESCRIPTION***" name="description">
+  <meta content="***TITLE TAG***" property="og:title">
+  <meta content="***META DESCRIPTION***" property="og:description">
+  <meta content="***URL DO OPEN GRAPH***" property="og:image">
+  <meta content="***TITLE TAG***" property="twitter:title">
+  <meta content="***META DESCRIPTION***" property="twitter:description">
+  <meta content="***URL DO OPEN GRAPH***" property="twitter:image">
+  <meta property="og:type" content="website">
+  <meta content="summary_large_image" name="twitter:card">
   <meta content="width=device-width, initial-scale=1" name="viewport">
   <meta content="Webflow" name="generator">
+
   <link rel="stylesheet" type="text/css" href="{% static 'css/normalize.css' %}">
   <link rel="stylesheet" type="text/css" href="{% static 'css/webflow.css' %}">
   <link rel="stylesheet" type="text/css" href="{% static 'css/sandro-miccoli.webflow.css' %}">
@@ -22,48 +33,48 @@
           <h2>CREATIVE TECHONOLOGIST</h2>
 
         {% if lang == "en" %}
-          <p class="paragraph">Creative technologist, educator and digital performer. Specialized in new technologies, runs his studio <a href="http://abstracto.com.br" target="_blank">Abstracto</a> creating interactive installations and immersive experiences. Currently collaborates with artists and companies on using creative techonology in their projects. <a href="about">More about me.</a></p>
+          <p class="paragraph">Creative technologist, educator and digital performer. Specialized in new technologies, runs his studio <a href="http://abstracto.com.br" target="_blank" class="link">Abstracto</a> creating interactive installations and immersive experiences. Currently collaborates with artists and companies on using creative techonology in their projects. <a href="about" class="link">More about me.</a></p>
         {% else %}
-          <p class="paragraph">Artista digital, especialista em novas mídias e educador. Trabalha no estúdio Abstracto criando instalações interativas e experiências imersivas. Também colabora com coletivos, artistas e empresas na área de tecnologia criativa. <a href="about">Mais sobre mim</a></p>
+          <p class="paragraph">Artista digital, especialista em novas mídias e educador. Trabalha no estúdio Abstracto criando instalações interativas e experiências imersivas. Também colabora com coletivos, artistas e empresas na área de tecnologia criativa. <a href="about" class="link">Mais sobre mim</a></p>
         {% endif %}
         
          {% if lang == "en" %}
           <div class="categorie-wrapper">
-            <a href="#" class="button heading-5 is-checked" data-filter="*">ALL WORKS</a>
+            <a href="#" class="home-categories-link" data-filter="*">ALL WORKS</a>
           </div>
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".arte_computacional">COMPUTATIONAL ART</a>
+            <a href="#" class="home-categories-link" data-filter=".arte_computacional">COMPUTATIONAL ART</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".instalacoes">INSTALLATIONS</a>
+            <a href="#" class="home-categories-link" data-filter=".instalacoes">INSTALLATIONS</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".performances">PERFORMANCES</a>
+            <a href="#" class="home-categories-link" data-filter=".performances">PERFORMANCES</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".educacao">EDUCATION</a>
+            <a href="#" class="home-categories-link" data-filter=".educacao">EDUCATION</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".dancatech">DANCE</a>
+            <a href="#" class="home-categories-link" data-filter=".dancatech">DANCE</a>
           </div>  
         {% else %}
           <div class="categorie-wrapper">
-            <a href="#" class="button heading-5 is-checked" data-filter="*">TODOS OS TRABALHOS</a>
+            <a href="#" class="home-categories-link" data-filter="*">TODOS OS TRABALHOS</a>
           </div>
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".arte_computacional">ARTE COMPUTACIONAL</a>
+            <a href="#" class="home-categories-link" data-filter=".arte_computacional">ARTE COMPUTACIONAL</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".instalacoes">INSTALAÇÕES</a>
+            <a href="#" class="home-categories-link" data-filter=".instalacoes">INSTALAÇÕES</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".performances">PERFORMANCES</a>
+            <a href="#" class="home-categories-link" data-filter=".performances">PERFORMANCES</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".educacao">EDUCAÇÃO</a>
+            <a href="#" class="home-categories-link" data-filter=".educacao">EDUCAÇÃO</a>
           </div>  
           <div class="categorie-wrapper">  
-            <a href="#" class="button heading-5" data-filter=".dancatech">DANÇA</a>
+            <a href="#" class="home-categories-link" data-filter=".dancatech">DANÇA</a>
           </div>  
         {% endif %}
         
@@ -78,7 +89,8 @@
               <div class="home-project-img"  style="background-image: url('{{ MEDIA_URL }}{{ project.image__image }}')" ></div>
               <div class="home-project-text">
                 <div class="home-project-text-projecttitle">{{ project.title }}</div>
-                <div class="home-project-text-projectdescription">{{ project.short_description }}</div><img src="{% static 'imgs/arrow.svg' %}" loading="lazy" alt="" class="image"></div>
+                <div class="home-project-text-projectdescription">{{ project.short_description }}</div>
+              </div>
                 </a>
             </div>
          {% endfor %}

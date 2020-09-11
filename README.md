@@ -2,6 +2,6 @@ README.md
 
 # Heroku commands
 ~~~
-heroku logs
-heroku run python manage.py migrate
+heroku logs --tail
+heroku run -a site-portfolio-sandromiccoli python manage.py migrate
 ~~~
