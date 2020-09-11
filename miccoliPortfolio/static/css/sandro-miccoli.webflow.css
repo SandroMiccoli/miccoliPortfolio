@@ -103,11 +103,12 @@ a {
 
 .home-projectlist-wrapper {
   position: relative;
-  width: 60vw;
+  /*width: 60vw;*/
+  margin: auto;
 }
 
 .home-project-wrapper {
-  position: relative;
+  position: absolute;
   margin-bottom: 40px;
   -webkit-transition: all 200ms ease;
   transition: all 200ms ease;
