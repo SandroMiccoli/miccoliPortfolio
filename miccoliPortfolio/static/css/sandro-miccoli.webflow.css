@@ -110,8 +110,8 @@ a {
 .home-project-wrapper {
   position: absolute;
   margin-bottom: 40px;
-  -webkit-transition: all 200ms ease;
-  transition: all 200ms ease;
+  -webkit-transition: filter 200ms ease;
+  transition: filter 200ms ease;
 }
 
 .home-project-wrapper:hover {
