@@ -3,11 +3,11 @@ from django.db import models
 from django.utils.text import slugify
 
 CATEGORIES = (
-    ('arte_computacional','Arte Computacional'),
-    ('instalacoes','Instalações'),
+    ('arte_computacional','Computational Art'),
+    ('instalacoes','Installations'),
     ('performances','Performances'),
-    ('educacao','Educação'),
-    ('dancatech','Dança'),
+    ('educacao','Education'),
+    ('dancatech','Dance'),
 )
 
 
