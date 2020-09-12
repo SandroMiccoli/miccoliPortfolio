@@ -260,7 +260,7 @@ a {
 .div-block-4 {
   position: -webkit-sticky;
   position: sticky;
-  width: 60vh;
+  width: 30%;
 }
 
 .div-block-5 {
@@ -269,7 +269,6 @@ a {
 
 .home-projectlist-wrapper {
   position: relative;
-  margin: auto;
 }
 
 .home-project-wrapper {
