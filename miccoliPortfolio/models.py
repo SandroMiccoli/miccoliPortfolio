@@ -4,8 +4,8 @@ from django.utils.text import slugify
 
 CATEGORIES = (
     ('arte_computacional','Computational Art'),
-    ('instalacoes','Installations'),
-    ('performances','Performances'),
+    ('instalacoes','Installation'),
+    ('performances','Performance'),
     ('educacao','Education'),
     ('dancatech','Dance'),
 )
