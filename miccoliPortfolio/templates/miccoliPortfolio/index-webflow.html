@@ -105,9 +105,15 @@
   <script type="text/javascript">
     var $grid = $('.home-projectlist-wrapper').isotope({
       itemSelector: '.home-project-wrapper',
-      // resizeable:false,
+      resizeable:false,
       layoutMode: 'vertical',
       // percentPosition: true,
+      hiddenStyle: {
+        opacity: 0
+      },
+      visibleStyle: {
+        opacity: 1
+      }
 
     });
 
