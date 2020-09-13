@@ -200,7 +200,7 @@ a {
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
-  display: flex;
+  display: grid;
   margin-top: 8vh;
   margin-right: 2vh;
   margin-left: 2vh;
