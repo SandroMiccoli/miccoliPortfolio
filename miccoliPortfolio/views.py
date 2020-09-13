@@ -27,8 +27,8 @@ def project_detail(request, title):
 	project = Project.objects.get(slug=title)
 	images = Image.objects.all().filter(project_id=project.id)
 	credits_titles = Credit.objects.all().filter(project_id=project.id).values_list(
-		'title', flat=True).distinct()
-	credits = Credit.objects.all().filter(project_id=project.id)
+		'title', flat=True).distinct().order_by('title')
+	credits = Credit.objects.all().filter(project_id=project.id).order_by('title')
 	year = project.date.year
 	cover = Image.objects.get(project_id=project.id, cover=True)
 

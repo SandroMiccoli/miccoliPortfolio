@@ -409,6 +409,7 @@ a {
   font-size: 1em;
   line-height: 2.2em;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .project-section-footer-next:hover {
@@ -548,6 +549,7 @@ a {
   }
   .project-section-footer-next {
     margin-right: 0px;
+    text-decoration: none;
   }
   .grid-about-itens {
     -ms-grid-rows: auto;
@@ -642,6 +644,7 @@ a {
   }
   .project-section-footer-next {
     display: inline-block;
+    text-decoration: none;
   }
   .grid-cv {
     grid-auto-flow: row dense;
@@ -780,6 +783,7 @@ a {
   .project-section-footer-next {
     display: inline-block;
     font-size: 1em;
+    text-decoration: none;
   }
 }
 
