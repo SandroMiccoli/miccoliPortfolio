@@ -51,12 +51,23 @@
   </div>
 
   <section class="project-section-media">
-    <div class="project-media-wrapper">
-      <div style="padding-top:56.17021276595745%" class="video w-video w-embed"><iframe class="embedly-embed" src="https://cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FyBdTVmSVq14%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DyBdTVmSVq14&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FyBdTVmSVq14%2Fhqdefault.jpg&key=96f1f04c5f4143bcb0f2e68c87d65feb&type=text%2Fhtml&schema=youtube" scrolling="no" title="YouTube embed" frameborder="0" allow="autoplay; fullscreen" allowfullscreen="true"></iframe></div>
-    </div>
-    <div class="project-media-wrapper">
-      <div style="padding-top:56.27659574468085%" class="w-video w-embed"><iframe class="embedly-embed" src="https://cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fplayer.vimeo.com%2Fvideo%2F259411563%3Fapp_id%3D122963&dntp=1&display_name=Vimeo&url=https%3A%2F%2Fvimeo.com%2F259411563&image=https%3A%2F%2Fi.vimeocdn.com%2Fvideo%2F687867313_1280.jpg&key=96f1f04c5f4143bcb0f2e68c87d65feb&type=text%2Fhtml&schema=vimeo" scrolling="no" title="Vimeo embed" frameborder="0" allow="autoplay; fullscreen" allowfullscreen="true"></iframe></div>
-    </div>
+
+    {% for video in videos %}
+
+      {% if video.host == 'youtube' %}
+        <div class="project-media-wrapper">
+          <div style="padding-top:56.17021276595745%" class="video w-video w-embed"><iframe class="embedly-embed" allowFullScreen="allowFullScreen" src="https://www.youtube.com/embed/{{  video.video }}?ecver=1&amp;iv_load_policy=1&amp;yt:stretch=16:9&amp;autohide=1" allowtransparency="true" frameborder="0"></iframe></div>
+        </div>
+      {% endif %}
+
+      {% if video.host == 'vimeo' %}
+        <div class="project-media-wrapper">
+          <div style="padding-top:56.27659574468085%" class="w-video w-embed"><iframe class="embedly-embed" src="https://player.vimeo.com/video/{{ video.video }}" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
+        </div>
+      {% endif %}
+
+    {% endfor %}
+
     {% for image in images %}
 
       <div class="project-media-wrapper"><img src="{{ MEDIA_URL }}{{ image.image }}" loading="lazy" srcset="{{ MEDIA_URL }}{{ image.image }} 500w, {{ MEDIA_URL }}{{ image.image }} 800w, {{ MEDIA_URL }}{{ image.image }} 1080w, {{ MEDIA_URL }}{{ image.image }} 1280w" sizes="(max-width: 479px) 97vw, (max-width: 767px) 96vw, (max-width: 991px) 97vw, (max-width: 1306px) 98vw, 1280px" alt=""></div>
@@ -87,8 +98,8 @@
     <div class="project-section-footer-back">
 
       <a href="/" class="link-block w-inline-block">
-        <img src="{% static 'imgs/arb.svg' %}" loading="lazy" id="top" height="" alt="" class="project-arrow-back-footer"></a>
-        <a href="/" class="home-categories-link">BACK TO HOME</a>
+        <img src="{% static 'imgs/arb.svg' %}" loading="lazy" id="top" height="" alt="" class="project-arrow-back-footer"></a
+>        <a href="/" class="home-categories-link">BACK TO HOME</a>
     </div>
     
     <div class="project-section-footer-front">
