@@ -75,7 +75,7 @@
         <h4>{{ title }}</h4>
             {% for credit in credits %}
               {% if credit.title == title %}
-                  <p class="project-body center">{{ credit.name }}</p>
+                  <p class="project-body center">{{ credit.name|safe }}</p>
               {% endif %}
             {% endfor %}
       </div>
