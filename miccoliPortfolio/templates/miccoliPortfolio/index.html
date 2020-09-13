@@ -36,7 +36,7 @@
         <h1>SANDRO MICCOLI</h1>
 
         {% if lang == "en" %}
-        <p id="w-node-6bd93d02ad96-9fc4d84f">Creative technologist, educator and digital performer. Specialized in new technologies, runs his studio <a href="http://abstracto.com.br/" target="_blank">Abstracto</a> creating interactive installations and immersive experiences. Currently collaborates with artists and companies on using creative technology in their projects.<br></p><a href="dev/about" class="home-categories-link-big">MORE ABOUT ME</a>
+        <p id="w-node-6bd93d02ad96-9fc4d84f">Creative technologist, educator and digital performer. Specialized in new technologies, runs his studio <a href="http://abstracto.com.br/" target="_blank">Abstracto</a> creating interactive installations and immersive experiences. Currently collaborates with artists and companies on using creative technology in their projects.<br></p><a href="about" class="home-categories-link-big">MORE ABOUT ME</a>
         {% else %}
           <p class="paragraph">Artista digital, especialista em novas mídias e educador. Trabalha no estúdio Abstracto criando instalações interativas e experiências imersivas. Também colabora com coletivos, artistas e empresas na área de tecnologia criativa. <a href="about" class="link">Mais sobre mim</a></p>
         {% endif %}
@@ -65,7 +65,7 @@
       <div class="home-projectlist-wrapper">
           {% for project in projects %}
             <div class="home-project-wrapper {{ project.category }}">
-              <a href="dev/project/{{ project.slug }}" class="btn btn-primary">
+              <a href="project/{{ project.slug }}" class="btn btn-primary">
               <div class="home-project-img"><img src="{{ MEDIA_URL }}{{ project.image__image }}" loading="lazy" width="1280" srcset="{{ MEDIA_URL }}{{ project.image__image }} 500w, {{ MEDIA_URL }}{{ project.image__image }} 800w, {{ MEDIA_URL }}{{ project.image__image }} 1080w, {{ MEDIA_URL }}{{ project.image__image }} 1280w" sizes="(max-width: 479px) 83vw, (max-width: 767px) 90vw, (max-width: 991px) 92vw, 66vw" alt="" class="image-2"></div>
               <div class="home-project-text">
                 <div class="home-project-text-projecttitle">{{ project.title }}</div>
