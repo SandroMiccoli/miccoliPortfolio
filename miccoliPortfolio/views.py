@@ -7,7 +7,7 @@ from .settings import MEDIA_URL
 
 
 def index(request):
-	template = loader.get_template('miccoliPortfolio/index-webflow.html')
+	template = loader.get_template('miccoliPortfolio/index.html')
 	
 	projects = Project.objects.filter(image__cover=True, front_page=True).values('title','slug','short_description','category','image__image').order_by('-date')
 
@@ -23,7 +23,7 @@ def index(request):
 	return HttpResponse(template.render(context, request))
 
 def project_detail(request, title):
-	template = loader.get_template('miccoliPortfolio/project-page-webflow.html')
+	template = loader.get_template('miccoliPortfolio/project-page.html')
 	project = Project.objects.get(slug=title)
 	images = Image.objects.all().filter(project_id=project.id)
 	credits_titles = Credit.objects.all().filter(project_id=project.id).values_list(
@@ -38,13 +38,6 @@ def project_detail(request, title):
 		'credits_titles': credits_titles,
 		'credits': credits,
 		'year': year
-	}
-	return HttpResponse(template.render(context, request))
-
-def temp_index(request):
-	template = loader.get_template('miccoliPortfolio/index.html')
-	context = {
-	
 	}
 	return HttpResponse(template.render(context, request))
 

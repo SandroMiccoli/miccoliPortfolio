@@ -22,9 +22,8 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.temp_index, name='indexTemp'),
-    path('dev', views.index, name='index'),
+    path('', views.index, name='index'),
     # path('dev/en/', views.switch_to_English_link, name='indexEN'), # TODO: Bilingual
-    path("dev/project/<slug:title>", views.project_detail, name="project_detail"),
-    path('dev/about', views.about, name='about'),
+    path("project/<slug:title>", views.project_detail, name="project_detail"),
+    path('about', views.about, name='about'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
