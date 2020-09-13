@@ -85,8 +85,18 @@
   <script type="text/javascript">
 
     function goToTop() {
-      document.body.scrollTop = 0; // For Safari
-      document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+      currentYOffset = self.pageYOffset;
+      initYOffset = currentYOffset;
+
+      var intervalId = setInterval(function(){
+      currentYOffset -= initYOffset*0.05; 
+      document.body.scrollTop = currentYOffset ;
+      document.documentElement.scrollTop = currentYOffset;
+
+        if(self.pageYOffset == 0){
+          clearInterval(intervalId);
+        }
+      }, 20);
     }
     
     $(window).bind("load", function() {
