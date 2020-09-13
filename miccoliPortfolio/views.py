@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.template import loader
 
-from .models import Project, Image, Credit
+from .models import Project, Image, Credit, Video
 
 from .settings import MEDIA_URL
 
@@ -26,6 +26,7 @@ def project_detail(request, title):
 	template = loader.get_template('miccoliPortfolio/project-page.html')
 	project = Project.objects.get(slug=title)
 	images = Image.objects.all().filter(project_id=project.id)
+	videos = Video.objects.all().filter(project_id=project.id)
 	credits_titles = Credit.objects.all().filter(project_id=project.id).values_list(
 		'title', flat=True).distinct().order_by('title')
 	credits = Credit.objects.all().filter(project_id=project.id).order_by('title')
@@ -36,6 +37,7 @@ def project_detail(request, title):
 		'project': project,
 		'MEDIA_URL': MEDIA_URL,
 		'images': images,
+		'videos': videos,
 		'credits_titles': credits_titles,
 		'credits': credits,
 		'cover':cover,

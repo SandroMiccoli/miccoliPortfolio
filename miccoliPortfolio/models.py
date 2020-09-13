@@ -10,6 +10,11 @@ CATEGORIES = (
     ('dancatech','Dance'),
 )
 
+VIDEOHOST = (
+	('vimeo', 'Vimeo'),
+	('youtube', 'Youtube')
+)
+
 
 class Project(models.Model):
 	title = models.CharField(max_length=100)
@@ -42,6 +47,13 @@ class Image(models.Model):
 		verbose_name = 'Imagem'
 		verbose_name_plural = 'Imagens'
 
+class Video(models.Model):
+	project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
+	video = models.CharField(default='', max_length=150) # Youtube/Vimeo video ID
+	host = models.CharField(max_length=10, choices=VIDEOHOST,default='youtube')
+
+	def __str__(self):
+		return str(self.project_id) +' ('+str(self.video)+')'
 
 class Credit(models.Model):
 	project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
