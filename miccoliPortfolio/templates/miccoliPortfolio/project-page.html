@@ -7,13 +7,13 @@
   <meta charset="utf-8">
   <title>Sandro Miccoli - {{ project.title }}</title>
 
-  <meta content="***META DESCRIPTION***" name="description">
-  <meta content="***TITLE TAG***" property="og:title">
-  <meta content="***META DESCRIPTION***" property="og:description">
-  <meta content="***LINK OPEN GRAPH***" property="og:image">
-  <meta content="***TITLE TAG***" property="twitter:title">
-  <meta content="***META DESCRIPTION***" property="twitter:description">
-  <meta content="***LINK OPEN GRAPH***" property="twitter:image">
+  <meta content="{{ project.short_description }}" name="description">
+  <meta content="Sandro Miccoli - {{ project.title }}" property="og:title">
+  <meta content="{{ project.short_description }}" property="og:description">
+  <meta content="{{ MEDIA_URL }}{{ cover.image }}" property="og:image">
+  <meta content="Sandro Miccoli - {{ project.title }}" property="twitter:title">
+  <meta content="{{ project.short_description }}" property="twitter:description">
+  <meta content="{{ MEDIA_URL }}{{ cover.image }}" property="twitter:image">
   <meta property="og:type" content="website">
   <meta content="summary_large_image" name="twitter:card">
   <meta content="width=device-width, initial-scale=1" name="viewport">
