@@ -32,6 +32,9 @@ def project_detail(request, title):
 	credits = Credit.objects.all().filter(project_id=project.id).order_by('title')
 	year = project.date.year
 	cover = Image.objects.get(project_id=project.id, cover=True)
+	next_project =  Project.objects.get(id=get_next_id(project.id))
+
+	print(next_project.slug)
 
 	context = {
 		'project': project,
@@ -41,6 +44,7 @@ def project_detail(request, title):
 		'credits_titles': credits_titles,
 		'credits': credits,
 		'cover':cover,
+		'next_project':next_project,
 		'year': year
 	}
 	return HttpResponse(template.render(context, request))
@@ -61,3 +65,10 @@ def switch_to_English_link(request):
 def switch_to_Portuguese_link(request):
     request.session['lang'] = 'pt-br'
     return index(request)
+
+def get_next_id(curr_id):
+	try:
+	    ret = Project.objects.filter(id__gt=curr_id).order_by("id")[0:1].get().id
+	except Project.DoesNotExist:
+	    ret = Project.objects.aggregate(Min("id"))['id__min']
+	return ret
