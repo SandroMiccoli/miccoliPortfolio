@@ -30,6 +30,7 @@ def project_detail(request, title):
 		'title', flat=True).distinct()
 	credits = Credit.objects.all().filter(project_id=project.id)
 	year = project.date.year
+	cover = Image.objects.get(project_id=project.id, cover=True)
 
 	context = {
 		'project': project,
@@ -37,6 +38,7 @@ def project_detail(request, title):
 		'images': images,
 		'credits_titles': credits_titles,
 		'credits': credits,
+		'cover':cover,
 		'year': year
 	}
 	return HttpResponse(template.render(context, request))
