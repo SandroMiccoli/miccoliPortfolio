@@ -48,6 +48,13 @@ def temp_index(request):
 	}
 	return HttpResponse(template.render(context, request))
 
+def about(request):
+	template = loader.get_template('miccoliPortfolio/about.html')
+	context = {
+	
+	}
+	return HttpResponse(template.render(context, request))
+
 
 def switch_to_English_link(request):
     request.session['lang'] = 'en'
