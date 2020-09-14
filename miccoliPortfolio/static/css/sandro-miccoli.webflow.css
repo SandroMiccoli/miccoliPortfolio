@@ -248,9 +248,11 @@ a {
 
 .home-project-text-projecttitle {
   display: block;
-  font-family: 'Libre Franklin', sans-serif;
+  font-family: Libre Franklin;
   font-size: 1em;
   font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
 }
 
 .home-project-text-projectdescription {
@@ -307,6 +309,18 @@ a {
   top: 2vh;
   color: #031516;
   font-size: 4em;
+}
+
+.project-title:xl {
+  font-size: 5em;
+}
+
+.project-title:tiny {
+  font-size: 2.4em;
+}
+
+.project-title:small {
+  font-size: 3em;
 }
 
 .project-header-wrapper-sticky {
@@ -431,6 +445,8 @@ a {
 
 .black {
   color: #031516;
+  text-transform: uppercase;
+
 }
 
 .project-section-hero-wrapper {
@@ -512,6 +528,8 @@ a {
   }
   .about.black {
     color: #031516;
+    text-transform: uppercase;
+
   }
   .flex-home {
     -ms-grid-rows: auto auto auto auto auto auto auto auto auto auto;
@@ -753,13 +771,14 @@ a {
   }
   .home-project-text-projectdescription {
     display: block;
+    text-decoration: none!important;
   }
   .home-categories-link-big {
     display: inline-block;
     font-size: 1em;
   }
   .project-title {
-    font-size: 3em;
+    font-size: 2.4em;
   }
   .project-media-wrapper {
     padding: 8px;
