@@ -57,8 +57,8 @@ class Video(models.Model):
 
 class Credit(models.Model):
 	project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
-	title = models.CharField(max_length=100)
-	name = models.CharField(max_length=100)
+	title = models.CharField(max_length=250)
+	name = models.CharField(max_length=250)
 
 	def __str__(self):
 		return str(self.title)+' '+str(self.name)+' ('+str(self.project_id)+')'
