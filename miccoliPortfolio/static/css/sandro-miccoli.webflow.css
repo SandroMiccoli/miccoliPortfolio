@@ -771,7 +771,9 @@ a {
   }
   .home-project-text-projectdescription {
     display: block;
-    text-decoration: none!important;
+  }
+  .home-project-text-projectdescription a {
+    text-decoration: none;
   }
   .home-categories-link-big {
     display: inline-block;
