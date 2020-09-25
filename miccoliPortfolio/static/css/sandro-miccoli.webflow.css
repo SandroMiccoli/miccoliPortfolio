@@ -177,7 +177,7 @@ a {
 .about-sticky-title {
   position: -webkit-sticky;
   position: sticky;
-  top: 11vh;
+  top: 13vh;
   bottom: auto;
   font-size: 1.4em;
 }
@@ -191,6 +191,7 @@ a {
 .grid-about-contact {
   margin-top: 2px;
   margin-bottom: 20px;
+  position: fixed;
 }
 
 .about {
@@ -624,6 +625,7 @@ a {
     -webkit-align-self: flex-start;
     -ms-flex-item-align: start;
     align-self: flex-start;
+    position: static;
   }
   .flex-home {
     margin-top: 2vh;
