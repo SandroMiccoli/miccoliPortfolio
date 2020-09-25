@@ -89,12 +89,13 @@ a {
 }
 
 .project-arrow-back {
-  position: static;
+  position: fixed;
   left: auto;
   top: auto;
   right: auto;
   bottom: auto;
   margin-left: 2vh;
+  mix-blend-mode: difference;
 }
 
 .project-credit-wrapper {
@@ -580,6 +581,7 @@ a {
     width: 70vw;
   }
   .project-arrow-back {
+    position: static;
     left: auto;
     top: auto;
   }
