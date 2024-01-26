@@ -1,0 +1,49 @@
+---
+layout: default
+title: A stylish full-width masonry grid theme.
+description: Board is a stylish full-width masonry grid theme. Made for designers, artists, photographers and developers to show off their best work.
+featured_image: /images/social.jpg
+colors: ["rgb(0 160 176 / 90%)", "rgb(10 35 66 / 90%)", "rgb(204 51 63 / 90%)", "rgb(235 104 65 / 90%)", "rgb(237 201 81 / 90%)"]
+colorIndex: 0
+---
+
+<section class="listing">
+
+	<div class="content-wrap listing-wrap">
+
+		{% for project in site.projects reversed %}
+
+		<div class="listing-item">
+
+			<a class="listing-item__link" href="{{ project.url | relative_url }}">
+
+				<div class="listing-item__image">
+
+					<img src="{{ project.featured_image }}" alt="{{ project.title }}">
+				</div>
+
+				{% assign color = page.colors | sample:2 %}
+				{% assign colorIndex = forloop.index0 | modulo:5 %}
+
+				<div class="listing-item__content listing-item__content--{{ site.data.settings.grid_settings.content_alignment }}"
+				     style="background: {{ page.colors[colorIndex] }}">
+					<div class="listing-item__info">
+						{% if colorIndex==4 %}
+							<h2 class="listing-item__title" style="color:black">{{ project.title }} </h2>
+							<p class="listing-item__subtitle" style="color:black">{{ project.subtitle }}</p>
+						{% else %}
+							<h2 class="listing-item__title">{{ project.title }} </h2>
+							<p class="listing-item__subtitle">{{ project.subtitle }}</p>
+						{% endif%}
+					</div>
+				</div>
+
+			</a>
+
+		</div>
+
+		{% endfor %}
+
+	</div>
+
+</section>
