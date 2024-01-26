@@ -1,0 +1,217 @@
+##################################
+#
+# Nav Menu
+#
+##################################
+
+obrasPremiadas:
+  pt: "Obras Premiadas"
+  en: "Awarded Artworks"
+  es: "Obras premiadas"
+
+exposicao:
+  pt: "Exposição"
+  en: "Exhibition"
+  es: "Exposición"
+
+oficinas:
+  pt: "Oficinas"
+  en: "Workshops"
+  es: "Talleres"
+
+sobre:
+  pt: "Sobre"
+  en: "About"
+  es: "Sobre"
+
+##################################
+#
+# Header
+#
+##################################
+
+headerSubtitlte:
+  pt: "Periferia, inclusão digital e criptoarte"
+  en: "Suburbs, digital inclusion and cryptoart"
+  es: "Periferia, inclusión digital y criptoarte"
+
+##################################
+#
+# SEÇÃO: Exposição
+#
+##################################
+
+exposicaoDetalhes:
+  pt: "A exposição <strong>online</strong> irá acontecer no <a href=\"https://museu.xyz\" target=\"_blank\">museu.xyz</a> de 14 à 30 de Setembro de 2022. 
+      <br>
+      Visite a galeria no metaverso em <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a>.
+         <br><br>
+      A exposição <strong>presencial</strong> irá acontecer na sede do Seu Vizinho no Aglomerado da Serra, em Belo Horizonte, nos dias 17 e 18 de Setembro de 2022.</a><br><br>"
+  
+  en: "The <strong>online</strong> exhibition will take place at <a href=\"https://museu.xyz\" target=\"_blank\">museu.xyz</a> from September 14 to 30, 2022.
+      <br>
+      Visit the gallery in the metaverse at <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a>.
+         <br><br>
+      The <strong>in-person</strong> exhibition will take place at Seu Vizinho's headquarters in Aglomerado da Serra, in Belo Horizonte, on the 17th and 18th of September.</a><br><br>"
+  
+  es: "La exhibición <strong>en línea</strong> se llevará a cabo en <a href=\"https://museu.xyz\" target=\"_blank\">museu.xyz</a> del 14 al 30 de septiembre de 2022.
+      <br>
+      Visite la galería en el metaverso en <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a>.
+         <br><br>
+      La exposición <strong>presencial</strong> tendrá lugar en la sede de Seu Vizinho en Aglomerado da Serra, en Belo Horizonte, los días 17 y 18 de septiembre.</a><br><br>"
+
+##################################
+#
+# SEÇÃO: Oficinas
+#
+##################################
+
+oficinasDetalhes:
+  pt: "Duas oficinas foram realizadas online, tanto para as pessoas selecionadas quanto para o público em geral: 
+  <br><br>
+  <strong>O mundo Crypto e as Finanças Descentralizadas</strong>, ministrada por Pedro Parrachia
+  <br>
+  e
+  <br>
+  <strong>Indrodução aos NFTs e ao mercado de criptoarte Teia</strong>, ministrado por Kosha.
+  <br><br>
+    Essas oficinas foram gravadas e podem ser visualizadas abaixo: <br><br>"
+
+  en: "Two workshops were held online, both for selected artists and for the general public: 
+  <br><br>
+  <strong>The Crypto World and Decentralized Finance</strong>, taught by Pedro Parrachia
+  <br>
+  e
+  <br>
+  <strong>Introduction to NFTs and the Teia Crypto Art Market</strong>, taught by Kosha.
+  <br><br>
+    These workshops were recorded and can be viewed below: <br><br>"
+
+  es: "Se realizaron dos talleres online, tanto para personas seleccionadas como para el público en general:
+  <br><br>
+  <strong>El Mundo Cripto y las Finanzas Descentralizadas</strong>, impartido por Pedro Parrachia
+  <br>
+  e
+  <br>
+  <strong>Introducción a las NFTs y al criptomercado de Teia</strong>, impartido por Kosha.
+  <br><br>
+    Estos talleres fueron grabados y se pueden ver a continuación: <br><br>"
+
+##################################
+#
+# SEÇÃO: Sobre
+#
+##################################
+
+textoSobre:
+  pt: "Crypto/Serrão é uma iniciativa dos integrantes dos blocos de carnaval <a href=\"https://www.instagram.com/seuvizinho_/\" target=\"_blank\">Seu Vizinho</a> e <a href=\"https://www.instagram.com/opiorinstadomundo/\" target=\"_blank\">O Pior Bloco do Mundo</a> para premiar artistas de periferia e promover inclusão digital, e é realizado através da Lei Municipal de Incentivo à Cultura de Belo Horizonte."
+
+  en: "Crypto/Serrão is an initiative of the members of the carnival blocks <a href=\"https://www.instagram.com/seuvizinho_/\" target=\"_blank\">Seu Vizinho</a> and <a href=\"https://www.instagram.com/opiorinstadomundo/\" target=\"_blank\">O Pior Bloco do Mundo</a> to reward artists from the periphery and promote digital inclusion, and is carried out through the Municipal Law of Incentive to Culture of Belo Horizonte."
+
+  es: "Crypto/Serrão es una iniciativa de integrantes de los bloques de carnaval <a href=\"https://www.instagram.com/seuvizinho_/\" target=\"_blank\">Seu Vizinho</a> y <a href=\"https://www.instagram.com/opiorinstadomundo/\" target=\"_blank\">O Pior Bloco do Mundo</a> para premiar artistas de la periferia y promover la inclusión digital, y se realiza a través de la Ley Municipal de Incentivo a la Cultura de Belo Horizonte."
+
+
+sobreObrasExposicao:
+  pt: "As obras premiadas estarão em exposição no <a href=\"https://museu.xyz/\" target=\"_blank\" class=\"sec\">museu.xyz</a> de 14 de Setembro até 30 de Setembro de 2022. Você pode ir direto para o local da exposição pro meio deste link: <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a></p>
+    <p>Além disso, uma exposição presencial irá acontecer nos dias 17 e 18 de Setembro na sede do Seu Vizinho, no Aglomerado da Serra em Belo Horizonte."
+
+  en: "The award-winning works will be on display at <a href=\"https://museu.xyz/\" target=\"_blank\" class=\"sec\">museu.xyz</a> from September 14th to September 30th, 2022. You can go directly to the exhibition location through this link: <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a></p>
+    <p>In addition, an in-person exhibition will take place on the 17th and 18th of September at Seu Vizinho's headquarters, in Aglomerado da Serra in Belo Horizonte."
+
+  es: "Las obras premiadas estarán expuestas en <a href=\"https://museu.xyz/\" target=\"_blank\" class=\"sec\">museu.xyz</a> del 14 al 30 de septiembre de 2022. Puedes ir directamente al lugar de la exposición a través de este enlace: <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a></p>
+    <p>Además, tendrá lugar una exposición presencial los días 17 y 18 de septiembre en la sede de Seu Vizinho, en Aglomerado da Serra en Belo Horizonte."
+
+##################################
+#
+# SEÇÃO: Footer
+#
+##################################
+
+footer:
+  location:
+    pt: Aonde?
+    en: Where?
+    es: Dónde
+  social:
+    pt: Redes
+    en: Social
+    es: Redes
+  creditsTitle:
+    pt: Créditos
+    en: Credits
+    es: Creditos
+
+  address: 
+    pt:   "Metaverso <br>
+          Em exposição no Museu.xyz<br>
+          <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a>
+          "
+    en:   "Metaverse <br>
+          Exhibiting at Museu.xyz<br>
+          <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a>
+          "
+    es:   "Metaverso <br>
+          En exhibición en Museu.xyz<br>
+          <a href=\"https://visite.cryptoserrao.xyz\" target=\"_blank\">visite.cryptoserrao.xyz</a>
+          "
+
+  creditsText: 
+    pt: "Projeto realizado por integrantes dos blocos de carnaval <a href=\"https://www.instagram.com/seuvizinho_/\" target=\"_blank\">Seu Vizinho</a> e <a href=\"https://www.instagram.com/opiorinstadomundo/\" target=\"_blank\">O Pior Bloco do Mundo</a> para premiar artistas de periferia e promover inclusão digital, e é realizado através da Lei Municipal de Incentivo à Cultura de Belo Horizonte."
+
+    en: "Project carried out by members of the carnival blocks <a href=\"https://www.instagram.com/seuvizinho_/\" target=\"_blank\">Seu Vizinho</a> and <a href=\"https://www.instagram.com/opiorinstadomundo/\" target=\"_blank\">O Pior Bloco do Mundo</a> to reward artists from the periphery and promote digital inclusion, and is carried out through the Municipal Law of Incentive to Culture of Belo Horizonte."
+
+    es: "Proyecto realizado por miembros de los bloques de carnaval <a href=\"https://www.instagram.com/seuvizinho_/\" target=\"_blank\">Seu Vizinho</a> y <a href=\"https://www.instagram.com/opiorinstadomundo/\" target=\"_blank\">O Pior Bloco do Mundo</a> para premiar artistas de la periferia y promover la inclusión digital, y se realiza a través de la Ley Municipal de Incentivo a la Cultura de Belo Horizonte."
+
+palavraASerTraduzida:
+  pt: ""
+  en: ""
+  es: ""
+
+##################################
+#
+# MODAL
+#
+##################################
+
+modal:
+  obra:
+    pt: "Obra"
+    en: "Artwork"
+    es: "Obra de arte"
+  obraMusical:
+    pt: "Obra musical, clique abaixo para ouvir:"
+    en: "Musical work, click below to listen:"
+    es: "Obra musical, haz click abajo para escuchar:"
+  descricao:
+    pt: "Descrição"
+    en: "Description"
+    es: "Descripción"
+  categoria:
+    pt: "Categoria"
+    en: "Category"
+    es: "Categoría"
+  visualizarNFT:
+    pt: "Visualizar NFT"
+    en: "Go to NFT"
+    es: "Ver NFT"
+  artista:
+    pt: "Artista"
+    en: "Artist"
+    es: "Artista"
+  fechar:
+    pt: "Fechar"
+    en: "Close"
+    es: "Cerrar"
+
+
+
+##################################
+#
+# SEÇÃO: Exposição
+#
+##################################
+
+palavraASerTraduzida:
+  pt: ""
+  en: ""
+  es: ""
