@@ -1,6 +1,6 @@
 ---
 layout: construction
-title: About Sandro Miccoli
+title: Sandro Miccoli
 subtitle: Creative Technologist
 description: Brazilian Creative Technologist
 featured_image: /images/demo/landscape-05.jpg
@@ -18,8 +18,10 @@ In his recent digital works, released as code2pixels, he sought to represent the
 He has participated in various national and international festivals, showcasing digital works, installations, performances, and workshops. Recently, in Belo Horizonte, he participated in the Festa da Luz (2023) with the installation "Fluxo" in the Metro tunnel of Praça da Estação alongside artist Flávio Deslandes; in Arte no Escadão as a curator (2022) and artist (2021), and in TAU - Território Arte Urbana (2022) where he painted his first mural of generative art.
 
 <img src="{{ '/images/gifs/HeHeartland3460buttonsConstructani.gif' | relative_url }}">
+<!-- http://textfiles.com/underconstruction/ -->
 
 This website is under construction. Consider visiting the code2pixels website or my socials on the bottom of this page.
+
 
 
 <a href="https://code2pixels.xyz" target="_blank" class="button button--large">code2pixels.xyz</a>
