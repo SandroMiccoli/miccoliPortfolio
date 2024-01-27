@@ -9,7 +9,13 @@ featured_image: /images/demo/landscape-05.jpg
 ![Sandro Miccoli - Foto por Carol Abras](/images/about/c2p_about.jpg)
 
 
-**Sandro Miccoli** is a creative technologist and generative artist. His research focuses on the areas of **generative art, real-time visuals, interactive installations, and immersive experiences**. Under the pseudonym <a href="https://code2pixels.xyz" target="_blank">code2pixels.xyz</a>, he creates abstract, generative, and interactive digital art.
+**Sandro Miccoli** is a Brazilian creative technologist and generative artist.
+
+His research focuses on the areas of **generative art, real-time visuals, interactive installations, and immersive experiences**.
+
+Under the pseudonym <a href="https://code2pixels.xyz" target="_blank">code2pixels.xyz</a>, he creates abstract, generative, and interactive digital art.
+
+Founder of <a href="https://abstracto.com.br" target="_blank">Abstracto</a>, a creative studio that focuses on creating interactive installations and immersive experiences for brands, events and museums.
 
 His visual work aims to stimulate reflection on human relationships in various dimensions, establishing a dialogue between the audience and computational systems through the use of real-time technologies. Through code writing, he seeks to represent and promote more present and conscious human relationships, challenging the prevalence of algorithms in our society. His poetic research aims to take control of the code to create abstract representations of human life, whether reflecting on the self or the multiple relationships we experience throughout life.
 
@@ -20,8 +26,8 @@ He has participated in various national and international festivals, showcasing 
 <img src="{{ '/images/gifs/HeHeartland3460buttonsConstructani.gif' | relative_url }}">
 <!-- http://textfiles.com/underconstruction/ -->
 
-This website is under construction. Consider visiting the code2pixels website or my socials on the bottom of this page.
+This website is under construction. For works check out my portfolio:
 
 
 
-<a href="https://code2pixels.xyz" target="_blank" class="button button--large">code2pixels.xyz</a>
+<a href="https://docs.google.com/presentation/d/1f7w4XcBaIfiy98i-PTt63hHaSmKFsy8GgjD3AA1c4Pw/preview" target="_blank" class="button button--large">Portfolio</a>
