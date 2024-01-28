@@ -13,7 +13,7 @@ featured_image: /images/demo/landscape-05.jpg
 
 His research focuses on the areas of **generative art, real-time visuals, interactive installations, and immersive experiences**.
 
-Under the pseudonym <a href="https://code2pixels.xyz" target="_blank">code2pixels.xyz</a>, he creates abstract, generative, and interactive digital art.
+Under the pseudonym <a href="https://code2pixels.xyz" target="_blank">code2pixels</a>, he creates abstract, generative, and interactive digital art.
 
 Founder of <a href="https://abstracto.com.br" target="_blank">Abstracto</a>, a creative studio that focuses on creating interactive installations and immersive experiences for brands, events and museums.
 
