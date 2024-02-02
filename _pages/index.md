@@ -2,8 +2,8 @@
 layout: construction
 title: Sandro Miccoli
 subtitle: Creative Technologist
-description: Brazilian Creative Technologist
-featured_image: /images/demo/landscape-05.jpg
+description: Brazilian creative technologist and generative artist.
+featured_image: /images/about/c2p_about.jpg
 ---
 
 ![Sandro Miccoli - Foto por Carol Abras](/images/about/c2p_about.jpg)
