@@ -501,3 +501,22 @@ a.socials__item__link:hover{
 	-webkit-background-clip: text;
 	color: transparent;
 }
+
+
+/* MY SVG ICONS */
+
+.icon {
+    display: inline-flex;
+    align-self: center;
+}
+
+.icon svg, .icon img {
+    height: 0.85em;
+    width: 0.85em;
+    fill: currentColor;
+}
+
+.icon.baseline svg, .icon img {
+    top: .125em;
+    position: relative;
+}
