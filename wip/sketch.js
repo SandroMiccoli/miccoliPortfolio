@@ -103,7 +103,7 @@ const resize = () => {
 			resizeCanvas(windowWidth, windowHeight);
 	        boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
 		  	quadtree = new QuadTree(boundary, capacity);
-			background(255,0,0);
+			// background(255,0,0);
     }
 }
 
