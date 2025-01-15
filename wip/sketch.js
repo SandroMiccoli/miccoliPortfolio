@@ -96,3 +96,15 @@ function keyPressed() {
   if (DEBUG) print("DEBUG ON");
   else print("DEBUG OFF");
 }
+
+const resize = () => {
+	print("Resize canvas!")
+    if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {		
+			resizeCanvas(windowWidth, windowHeight);
+	        boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
+		  	quadtree = new QuadTree(boundary, capacity);
+			background(255,0,0);
+    }
+}
+
+window.addEventListener('resize', resize);
