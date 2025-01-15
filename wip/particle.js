@@ -1,7 +1,7 @@
 class Particle {
   constructor(x, y) {
     this.life = 100;
-    this.lifeInc = random(0.25,0.5);
+    this.lifeInc = random(0.5,1);
     this.x = x;
     this.y = y;
     this.r = 1;

@@ -105,7 +105,13 @@ function keyPressed() {
 	if (DEBUG) print("DEBUG ON");
 	else print("DEBUG OFF");
 
-	if (key == '1') mode=1
+	if (key == '1'){
+		mode=1;
+		particles = [];
+		for (let i = 0; i < numParticles; i++) {
+			particles[i] = new Particle(random(width), random(height));
+		}
+	}
 	if (key == '2') mode=2
 	print("Mode: "+mode);
   
