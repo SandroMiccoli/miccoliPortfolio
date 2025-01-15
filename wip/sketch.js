@@ -9,7 +9,7 @@ let particles = [];
 let numParticles = 50;
 
 function setup() {
-  createCanvas(800, 600);
+  createCanvas(windowWidth, windowHeight);
   noCursor();
   initCursor();
 
@@ -41,44 +41,53 @@ function draw() {
   }
 
   // Check for proximity
-  //   if (frameCount % 2 == 0) {
-  for (let i = 0; i < particles.length; i++) {
-    let range = new Circle(
-      particles[i].x,
-      particles[i].y,
-      particles[i].range * 2
-    );
-    let foundPoints = [];
-    quadtree.query(range, foundPoints);
-    for (let j = 0; j < foundPoints.length; j++) {
-      let p = foundPoints[j].userData;
-      if (particles[i] != p && particles[i].insideRange(p)) {
-        particles[i].collided = true;
+  if (frameCount % int(random(2, 4)) == 0) {
+	  for (let i = 0; i < particles.length; i++) {
+	    let range = new Circle(
+	      particles[i].x,
+	      particles[i].y,
+	      particles[i].range * 2
+	    );
+	    let foundPoints = [];
+	    quadtree.query(range, foundPoints);
+	    for (let j = 0; j < foundPoints.length; j++) {
+	      let p = foundPoints[j].userData;
+	      if (particles[i] != p && particles[i].insideRange(p)) {
+	        particles[i].collided = true;
 
-        // draw connection
-        push();
-        stroke(255, 75);
-        strokeWeight(0.1);
-        line(particles[i].x, particles[i].y, p.x, p.y);
-        pop();
+	        // draw connection
+	        push();
+	        stroke(255, 75);
+	        strokeWeight(0.1);
+	        line(particles[i].x, particles[i].y, p.x, p.y);
+	        pop();
 
-        // draw synapsis
-        if (frameCount % int(random(1, 5)) == 0) {
-          stroke(255, 255, 240);
-          let v0 = createVector(particles[i].x, particles[i].y);
-          let v1 = createVector(p.x, p.y);
-          v0.lerp(v1, particles[i].sinapse);
-          rect(v0.x, v0.y, 1, 1);
-        }
-      }
-    }
-  }
+	        // draw synapsis
+	        if (frameCount % int(random(5, 15)) == 0) {
+	          stroke(255, 255, 240);
+	          let v0 = createVector(particles[i].x, particles[i].y);
+	          let v1 = createVector(p.x, p.y);
+	          v0.lerp(v1, particles[i].sinapse);
+	          rect(v0.x, v0.y, 1, 1);
+	        }
+	      }
+	    }
+	  }
+  }  
 
   drawCursor();
 
   if (DEBUG) {
     quadtree.display();
-    print(frameRate());
+    // print(frameRate());
+    if(frameCount%2==0){
+        push();
+        textSize(90);
+        noStroke();
+        fill(255,125)
+        text(int(frameRate()),width-200,100);
+        pop();
+    }
   }
 }
 

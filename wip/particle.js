@@ -78,7 +78,7 @@ class Particle {
   }
 
   applyBoundaryForce(centerX, centerY, areaType, size) {
-    let forceStrength = 0.5; //0.0005; // Strength of the boundary force
+    let forceStrength = 0.00005; //0.0005; // Strength of the boundary force
     let dx = centerX - this.x;
     let dy = centerY - this.y;
 
@@ -113,7 +113,7 @@ class Particle {
   update() {
     this.updateSinapse();
     this.addTurbulence();
-    this.applyBoundaryForce(width / 2, height / 2, 'square', 500);
+    this.applyBoundaryForce(width*0.65, height / 2, 'square', 500);
     this.applyConnectionGrowth();
     // this.checkEdges();
     this.x += this.vx;
