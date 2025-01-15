@@ -1,10 +1,11 @@
 class Particle {
   constructor(x, y) {
     this.life = 100;
+    this.lifeInc = random(0.25,0.5);
     this.x = x;
     this.y = y;
-    this.r = 2;
-    this.range = 30;
+    this.r = 1;
+    this.range = 20;
     this.vx = random(-1, 1);
     this.vy = random(-1, 1);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
@@ -105,15 +106,19 @@ class Particle {
   
   applyConnectionGrowth(){
     if(this.collided){
-      this.r = noise(frameCount*0.01+this.noiseOffsetX)*5;
+      this.r = noise(frameCount*0.01+this.noiseOffsetX)*2;
     }
   }
 
+  updateLife(){
+    this.life -= this.lifeInc;
+  }
 
   update() {
+    if (mode==2) this.updateLife();
     this.updateSinapse();
     this.addTurbulence();
-    this.applyBoundaryForce(width*0.65, height / 2, 'square', 500);
+    if (mode==1) this.applyBoundaryForce(width*0.65, height / 2, 'square', 500);
     this.applyConnectionGrowth();
     // this.checkEdges();
     this.x += this.vx;

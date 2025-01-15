@@ -6,7 +6,9 @@ let boundary;
 let capacity = 1;
 
 let particles = [];
-let numParticles = 50;
+let numParticles = 150;
+
+let mode = 1; 
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -19,8 +21,6 @@ function setup() {
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
   quadtree = new QuadTree(boundary, capacity);
-  
-  
 }
 
 function draw() {
@@ -30,9 +30,18 @@ function draw() {
   rectMode(CORNER);
   rect(0, 0, width, height);
   quadtree.clearQuadtree();
+	  	
+  if (mode==2){
+  	particles = particles.filter(particle => particle.life >= 0);
+  	if (frameCount % int(random(2, 15)) == 0) {
+	  	if(particles.length<numParticles)
+	  		particles.push(new Particle(mouseX, mouseY))
+	  }
+  }
 
   // Adds particles to quadtree
   for (let i = 0; i < particles.length; i++) {
+
     let p = new Point(particles[i].x, particles[i].y, particles[i]);
     quadtree.insert(p);
     particles[i].run();
@@ -41,7 +50,7 @@ function draw() {
   }
 
   // Check for proximity
-  if (frameCount % int(random(2, 4)) == 0) {
+  // if (frameCount % int(random(2, 4)) == 0) {
 	  for (let i = 0; i < particles.length; i++) {
 	    let range = new Circle(
 	      particles[i].x,
@@ -63,7 +72,7 @@ function draw() {
 	        pop();
 
 	        // draw synapsis
-	        if (frameCount % int(random(5, 15)) == 0) {
+	        if (frameCount % int(random(10, 60)) == 0) {
 	          stroke(255, 255, 240);
 	          let v0 = createVector(particles[i].x, particles[i].y);
 	          let v1 = createVector(p.x, p.y);
@@ -73,7 +82,7 @@ function draw() {
 	      }
 	    }
 	  }
-  }  
+  // }  
 
   drawCursor();
 
@@ -92,9 +101,21 @@ function draw() {
 }
 
 function keyPressed() {
-  if (key == "d") DEBUG = !DEBUG;
-  if (DEBUG) print("DEBUG ON");
-  else print("DEBUG OFF");
+	if (key == "d") DEBUG = !DEBUG;
+	if (DEBUG) print("DEBUG ON");
+	else print("DEBUG OFF");
+
+	if (key == '1') mode=1
+	if (key == '2') mode=2
+	print("Mode: "+mode);
+  
+	push();
+	textSize(60);
+	noStroke();
+	fill(255,255)
+	text("MODE "+mode,width/2,100);
+	pop();
+
 }
 
 const resize = () => {
