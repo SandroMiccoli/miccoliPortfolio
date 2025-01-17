@@ -1,13 +1,15 @@
 class Particle {
   constructor(x, y) {
-    this.life = 100;
-    this.lifeInc = random(0.5,1);
-    this.x = x;
-    this.y = y;
+    this.life = random(25,100);
+    this.lifeInc = random(0.05,0.1);
+    this.x = x+random(-5,5);
+    this.y = y+random(-5,5);
+    this.targetX = x; // Target bright pixel position
+    this.targetY = y;
     this.r = 1;
     this.range = 30;
-    this.vx = random(-1, 1);
-    this.vy = random(-1, 1);
+    this.vx = random(-0.05, 0.05);
+    this.vy = random(-0.05, 0.05);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
     this.noiseOffsetY = random(1000);
 
@@ -23,9 +25,30 @@ class Particle {
     this.connectedColor = color(255,50);
   }
 
+
+
+  gravitateToTarget() {
+    let dx = this.targetX - this.x;
+    let dy = this.targetY - this.y;
+
+    // Use easing to move smoothly
+    let forceStrength = 0.001; // Control gravitation strength
+    this.vx += dx * forceStrength;
+    this.vy += dy * forceStrength;
+
+    // Limit velocity to prevent jitter
+    let maxSpeed = 0.1;
+    let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed > maxSpeed) {
+      this.vx = (this.vx / speed) * maxSpeed;
+      this.vy = (this.vy / speed) * maxSpeed;
+    }
+  }
+
+
   addTurbulence() {
       // Adjust velocity using Perlin noise with balanced inputs
-      let turbulenceStrength = 0.0125; // Control intensity of turbulence
+      let turbulenceStrength = 0.0000125; // Control intensity of turbulence
       let noiseX = noise(this.noiseOffsetX, this.noiseOffsetY) - 0.5;
       let noiseY = noise(this.noiseOffsetY, this.noiseOffsetX) - 0.5;
 
@@ -38,7 +61,7 @@ class Particle {
       this.noiseOffsetY += 0.03; // Use a slightly different increment
 
       // Normalize velocity to prevent uncontrolled speed increase
-      let maxSpeed = 0.95; // Maximum allowed speed
+      let maxSpeed = 0.85; // Maximum allowed speed
       let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
       if (speed > maxSpeed) {
           this.vx = (this.vx / speed) * maxSpeed;
@@ -130,7 +153,7 @@ class Particle {
   
   applyConnectionGrowth(){
     if(this.connected){
-      this.r = noise(frameCount*0.01+this.noiseOffsetX)*2;
+      this.r = noise(frameCount*0.01+this.noiseOffsetX)*4;
     }
   }
 
@@ -139,10 +162,11 @@ class Particle {
   }
 
   update() {
-    // this.updateLife();
-    this.updateSinapse();
+    this.gravitateToTarget();
+    this.updateLife();
+    //this.updateSinapse();
     this.addTurbulence();
-    this.applyBoundaryForce(width*0.55, height / 2, 'square', 400);
+    // this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
     this.applyConnectionGrowth();
     // this.checkEdges();
     this.x += this.vx;
@@ -150,10 +174,12 @@ class Particle {
   }
   
   display() {
-    if (this.connected) fill(this.connectedColor);
-    else fill(this.defaultColor);
+    push();
+    if (this.connected) fill(255,255,150,this.life);
+    else fill(255,255,200,this.life);
     noStroke();
     ellipse(this.x, this.y, this.r * 2, this.r * 2);
+    pop();
 
     // display range
     // push();

@@ -1,7 +1,7 @@
 let cursorX, cursorY; // Smooth cursor position
 let outterX, outterY; // Smooth outer cursor position
 let mouseXPos, mouseYPos; // Mouse position
-let maxMouseCapture = 50; // Max amount of particles for mouse to capture
+let maxMouseCapture = 150; // Max amount of particles for mouse to capture
 
 function initCursor(){
   
@@ -49,13 +49,20 @@ function drawCursor() {
     if (foundPoints.length<maxMouseCapture){
         for (let i = 0; i < foundPoints.length; i++) {
           let p = foundPoints[i].userData;
+          p.life=100;
+          p.lifeInc=0.25;
+          p.connected=true;
+          p.vx=0;
+          p.vy=0;
+          p.x=p.targetX;
+          p.y=p.targetY;
           // print(foundPoints.length,foundPoints.length/30*255);
-          p.attract(cursorX,cursorY,2.5-foundPoints.length/maxMouseCapture*2);
-          push();
-          strokeWeight(0.1)
-          stroke(255,255,0,35);
-          line(cursorX,cursorY,p.x,p.y);
-          pop();
+          p.attract(cursorX,cursorY,10-foundPoints.length/maxMouseCapture*10);
+          // push();
+          // strokeWeight(0.1)
+          // stroke(255,255,0,35);
+          // line(cursorX,cursorY,p.x,p.y);
+          // pop();
           
         }
       }
