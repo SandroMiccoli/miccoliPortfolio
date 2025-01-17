@@ -14,7 +14,7 @@ let brightestPixels;
 let randomBrightPixel;
 
 function preload() {
-  img = loadImage('v3/img003.jpeg'); // Replace with your image path
+  img = loadImage('/wip/v3/img003.jpeg'); // Replace with your image path
 }
 
 function gaussianRandom(mean, sd) {
