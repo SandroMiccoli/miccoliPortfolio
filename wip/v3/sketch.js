@@ -14,7 +14,9 @@ let brightestPixels;
 let randomBrightPixel;
 
 function preload() {
-  img = loadImage('/wip/v3/img006.jpeg'); // Replace with your image path
+  let params = new URLSearchParams(window.location.search);
+  params = params.get('img') || '1'; // Default to 'version1' if no parameter is present
+  img = loadImage('/wip/v3/img00'+params+'.jpeg'); // Replace with your image path
 }
 
 function gaussianRandom(mean, sd) {
