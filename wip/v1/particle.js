@@ -1,11 +1,11 @@
 class Particle {
   constructor(x, y) {
     this.life = 100;
-    this.lifeInc = random(0.5,1);
+    this.lifeInc = random(0.05,0.5);
     this.x = x;
     this.y = y;
     this.r = 1;
-    this.range = 50;
+    this.range = random(1,10);
     this.vx = random(-1, 1);
     this.vy = random(-1, 1);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
@@ -19,8 +19,8 @@ class Particle {
     this.synapse = 0;
     this.synapseInc = random(0.05);
 
-    this.defaultColor = color(255,250);
-    this.connectedColor = color(255,50);
+    this.defaultColor = color(255,255,250,125);
+    this.connectedColor = color(255,255,170,75);
   }
 
   addTurbulence() {
@@ -38,7 +38,7 @@ class Particle {
       this.noiseOffsetY += 0.03; // Use a slightly different increment
 
       // Normalize velocity to prevent uncontrolled speed increase
-      let maxSpeed = 0.95; // Maximum allowed speed
+      let maxSpeed = 0.35; // Maximum allowed speed
       let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
       if (speed > maxSpeed) {
           this.vx = (this.vx / speed) * maxSpeed;
@@ -129,7 +129,7 @@ class Particle {
   }
   
   applyConnectionGrowth(){
-    if(this.connected){
+    if(!this.connected){
       this.r = noise(frameCount*0.01+this.noiseOffsetX)*2;
     }
   }
@@ -139,7 +139,7 @@ class Particle {
   }
 
   update() {
-    // this.updateLife();
+    this.updateLife();
     this.updateSinapse();
     this.addTurbulence();
     this.applyBoundaryForce(width*0.55, height / 2, 'square', 600);
