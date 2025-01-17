@@ -15,7 +15,7 @@ function setup() {
   initCursor();
 
   for (let i = 0; i < numParticles; i++) {
-    particles[i] = new Particle(random(width*0.55,width*0.55), random(height*0.1,height*0.9));
+    particles[i] = new Particle(random(width*0.45,width*0.65), random(height*0.3,height*0.7));
   }
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);

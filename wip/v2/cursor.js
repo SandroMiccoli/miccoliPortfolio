@@ -53,7 +53,7 @@ function drawCursor() {
           p.lifeInc=0.25;
           p.connected=true;
           // print(foundPoints.length,foundPoints.length/30*255);
-          p.attract(cursorX,cursorY,10-foundPoints.length/maxMouseCapture*10);
+          p.attract(cursorX,cursorY,5-foundPoints.length/maxMouseCapture*4.5);
           // push();
           // strokeWeight(0.1)
           // stroke(255,255,0,35);

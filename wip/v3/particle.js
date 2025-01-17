@@ -4,13 +4,13 @@ class Particle {
     this.lifeInc = random(0.05,0.1);
     this.x = x+random(-5,5);
     this.y = y+random(-5,5);
-    if(random()>0.95){
+    if(random()>0.99){
       this.x = x+random(-250,250);
       this.y = y+random(-250,250); 
     }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
-    this.r = 1;
+    this.r = 2;
     this.range = 30;
     this.vx = random(-0.05, 0.05);
     this.vy = random(-0.05, 0.05);

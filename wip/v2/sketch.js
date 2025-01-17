@@ -33,7 +33,7 @@ function setup() {
 }
 
 function draw() {
-  background(0,255 / 3);
+  background(0,255 / 2);
   quadtree.clearQuadtree();
 	  	
   particles = particles.filter(particle => particle.life >= 0);

@@ -50,7 +50,7 @@ function drawCursor() {
         for (let i = 0; i < foundPoints.length; i++) {
           let p = foundPoints[i].userData;
           // print(foundPoints.length,foundPoints.length/30*255);
-          p.attract(cursorX,cursorY,2.5-foundPoints.length/maxMouseCapture*2);
+          p.attract(cursorX,cursorY,10-foundPoints.length/maxMouseCapture*9.5);
           push();
           strokeWeight(0.1)
           stroke(255,255,0,35);

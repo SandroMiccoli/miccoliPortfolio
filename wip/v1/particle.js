@@ -5,7 +5,7 @@ class Particle {
     this.x = x;
     this.y = y;
     this.r = 1;
-    this.range = 30;
+    this.range = 50;
     this.vx = random(-1, 1);
     this.vy = random(-1, 1);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
@@ -142,7 +142,7 @@ class Particle {
     // this.updateLife();
     this.updateSinapse();
     this.addTurbulence();
-    this.applyBoundaryForce(width*0.55, height / 2, 'square', 400);
+    this.applyBoundaryForce(width*0.55, height / 2, 'square', 600);
     this.applyConnectionGrowth();
     // this.checkEdges();
     this.x += this.vx;

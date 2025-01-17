@@ -4,7 +4,7 @@ class Particle {
     this.lifeInc = random(0.05,0.1);
     this.x = x;
     this.y = y;
-    this.r = 1;
+    this.r = 2;
     this.range = 30;
     this.vx = random(-0.05, 0.05);
     this.vy = random(-0.05, 0.05);

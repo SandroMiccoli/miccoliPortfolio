@@ -59,8 +59,8 @@ function drawCursor() {
           // print(foundPoints.length,foundPoints.length/30*255);
           p.attract(cursorX,cursorY,10-foundPoints.length/maxMouseCapture*10);
           // push();
-          // strokeWeight(0.1)
-          // stroke(255,255,0,35);
+          // strokeWeight(0.5)
+          // stroke(255,255,188,55);
           // line(cursorX,cursorY,p.x,p.y);
           // pop();
           
