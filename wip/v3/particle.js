@@ -4,6 +4,10 @@ class Particle {
     this.lifeInc = random(0.05,0.1);
     this.x = x+random(-5,5);
     this.y = y+random(-5,5);
+    if(random()>0.95){
+      this.x = x+random(-250,250);
+      this.y = y+random(-250,250); 
+    }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
     this.r = 1;
@@ -37,7 +41,7 @@ class Particle {
     this.vy += dy * forceStrength;
 
     // Limit velocity to prevent jitter
-    let maxSpeed = 0.1;
+    let maxSpeed = 0.125;
     let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
     if (speed > maxSpeed) {
       this.vx = (this.vx / speed) * maxSpeed;

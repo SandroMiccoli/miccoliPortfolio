@@ -6,7 +6,7 @@ let boundary;
 let capacity = 1;
 
 let particles = [];
-let numParticles = 1500;
+let numParticles = 1000;
 let maxParticlesConnections=30;
 
 let img;
