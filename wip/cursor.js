@@ -1,6 +1,7 @@
 let cursorX, cursorY; // Smooth cursor position
 let outterX, outterY; // Smooth outer cursor position
 let mouseXPos, mouseYPos; // Mouse position
+let maxMouseCapture = 50; // Max amount of particles for mouse to capture
 
 function initCursor(){
   
@@ -32,33 +33,32 @@ function drawCursor() {
 
     outterX += (mouseXPos - outterX) * 0.95;
     outterY += (mouseYPos - outterY) * 0.95;
-    
+    push();
     // Draw inner cursor
-    fill(255, 250);
+    fill(255,255,230,150+foundPoints.length/maxMouseCapture*255);
     noStroke();
     ellipse(cursorX, cursorY, 7);
 
     // Draw outer cursor
     noFill();
-    stroke(255,255,230,25+foundPoints.length/50*255);
+    stroke(255,255,230,150+foundPoints.length/maxMouseCapture*255);
     strokeWeight(1);
     circle(range.x, range.y, range.r * 2);
-    
-    // fill(255,255,200,10);
-    // let a = frameCount/60;
-    // circle(range.x+range.r*cos(a), range.y+range.r*sin(a), 2);
-    // circle(range.x+range.r*cos(-a), range.y+range.r*sin(-a), 2);
+    pop();
 
-    for (let i = 0; i < foundPoints.length; i++) {
-      let p = foundPoints[i].userData;
-      // print(foundPoints.length,foundPoints.length/30*255);
-      p.attract(cursorX,cursorY,1-foundPoints.length/25*0.9);
-      
-      strokeWeight(1)
-      stroke(255,255,0,35);
-      line(cursorX,cursorY,p.x,p.y);
-      
-    }
+    if (foundPoints.length<maxMouseCapture){
+        for (let i = 0; i < foundPoints.length; i++) {
+          let p = foundPoints[i].userData;
+          // print(foundPoints.length,foundPoints.length/30*255);
+          p.attract(cursorX,cursorY,2.5-foundPoints.length/maxMouseCapture*2);
+          push();
+          strokeWeight(0.1)
+          stroke(255,255,0,35);
+          line(cursorX,cursorY,p.x,p.y);
+          pop();
+          
+        }
+      }
   }
 }
 
