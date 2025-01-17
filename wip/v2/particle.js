@@ -1,13 +1,13 @@
 class Particle {
   constructor(x, y) {
-    this.life = 100;
-    this.lifeInc = random(0.5,1);
+    this.life = random(25,100);
+    this.lifeInc = random(0.05,0.1);
     this.x = x;
     this.y = y;
     this.r = 1;
     this.range = 30;
-    this.vx = random(-1, 1);
-    this.vy = random(-1, 1);
+    this.vx = random(-0.05, 0.05);
+    this.vy = random(-0.05, 0.05);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
     this.noiseOffsetY = random(1000);
 
@@ -25,7 +25,7 @@ class Particle {
 
   addTurbulence() {
       // Adjust velocity using Perlin noise with balanced inputs
-      let turbulenceStrength = 0.0125; // Control intensity of turbulence
+      let turbulenceStrength = 0.00125; // Control intensity of turbulence
       let noiseX = noise(this.noiseOffsetX, this.noiseOffsetY) - 0.5;
       let noiseY = noise(this.noiseOffsetY, this.noiseOffsetX) - 0.5;
 
@@ -38,7 +38,7 @@ class Particle {
       this.noiseOffsetY += 0.03; // Use a slightly different increment
 
       // Normalize velocity to prevent uncontrolled speed increase
-      let maxSpeed = 0.95; // Maximum allowed speed
+      let maxSpeed = 0.85; // Maximum allowed speed
       let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
       if (speed > maxSpeed) {
           this.vx = (this.vx / speed) * maxSpeed;
@@ -139,10 +139,10 @@ class Particle {
   }
 
   update() {
-    // this.updateLife();
-    this.updateSinapse();
+    this.updateLife();
+    //this.updateSinapse();
     this.addTurbulence();
-    this.applyBoundaryForce(width*0.55, height / 2, 'square', 400);
+    this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
     this.applyConnectionGrowth();
     // this.checkEdges();
     this.x += this.vx;
@@ -150,8 +150,8 @@ class Particle {
   }
   
   display() {
-    if (this.connected) fill(this.connectedColor);
-    else fill(this.defaultColor);
+    if (this.connected) fill(255,255,200,this.life);
+    else fill(255,255,240,this.life);
     noStroke();
     ellipse(this.x, this.y, this.r * 2, this.r * 2);
 
