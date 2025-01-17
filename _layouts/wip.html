@@ -11,9 +11,35 @@
     <main>
     </main>
     <img src="{{ 'wip/Hero.png' | relative_url }}" alt="Hero" class="hero-image">
-    <script src="{{ 'wip/sketch.js' | relative_url }}"></script>
-    <script src="{{ 'wip/quadtree.js' | relative_url }}"></script>
-    <script src="{{ 'wip/particle.js' | relative_url }}"></script>
-    <script src="{{ 'wip/cursor.js' | relative_url }}"></script>
+    
+    <script>
+      // Function to get the 'version' parameter from the URL
+      function getVersionFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('v') || 'v1'; // Default to 'version1' if no parameter is present
+      }
+
+      // Load the scripts dynamically based on the version
+      const version = getVersionFromUrl();
+      const basePath = `{{ '/wip/' | relative_url }}${version}/`;
+
+      const scripts = ['sketch.js', 'quadtree.js', 'particle.js', 'cursor.js'];
+      const styles = ['style.css'];
+
+      // Load CSS dynamically
+      styles.forEach(style => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = basePath + style;
+        document.head.appendChild(link);
+      });
+
+      // Load JS dynamically
+      scripts.forEach(script => {
+        const scriptElement = document.createElement('script');
+        scriptElement.src = basePath + script;
+        document.body.appendChild(scriptElement);
+      });
+    </script>
   </body>
 </html>
