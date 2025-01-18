@@ -202,18 +202,17 @@ gravitateToTarget() {
     noStroke();
     if (this.connected){
       fill(255,255,150,230);
-      rect(this.x, this.y, this.r * 4, this.r * 4);
     }
     else{
       fill(255,255,255,this.life/100*100);
-      rect(this.x, this.y, this.r * 2, this.r * 2);
     }
 
     if (this.finalState){
       fill(255,255,222,159);
-      rect(this.x, this.y, this.r * 2, this.r * 2);
     }
 
+    rect(this.x, this.y, this.r * 2, this.r * 2);
+    
     pop();
 
     // display range
