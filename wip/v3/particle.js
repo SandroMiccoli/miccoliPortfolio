@@ -2,8 +2,8 @@ class Particle {
   constructor(x, y) {
     this.life = random(25,100);
     this.lifeInc = random(0.05,0.1);
-    this.x = x+random(-5,5);
-    this.y = y+random(-5,5);
+    this.x = x+random(-50,50);
+    this.y = y+random(-50,50);
     if(random()>0.99){
       this.x = x+random(-250,250);
       this.y = y+random(-250,250); 
@@ -21,6 +21,8 @@ class Particle {
     this.connections = 0;
     this.maxConnections = 10;
 
+    this.finalState = false;
+
     this.synapseActive = false;
     this.synapse = 0;
     this.synapseInc = random(0.05);
@@ -31,28 +33,46 @@ class Particle {
 
 
 
-  gravitateToTarget() {
+gravitateToTarget() {
     let dx = this.targetX - this.x;
     let dy = this.targetY - this.y;
 
-    // Use easing to move smoothly
-    let forceStrength = 0.001; // Control gravitation strength
-    this.vx += dx * forceStrength;
-    this.vy += dy * forceStrength;
+    // Calculate distance to the target
+    let distance = sqrt(dx * dx + dy * dy);
 
-    // Limit velocity to prevent jitter
-    let maxSpeed = 0.125;
-    let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
-    if (speed > maxSpeed) {
-      this.vx = (this.vx / speed) * maxSpeed;
-      this.vy = (this.vy / speed) * maxSpeed;
+    // If the particle is at the target, stop it
+    if (distance < 0.5) { // Threshold for stopping
+        this.vx = 0;
+        this.vy = 0;
+        this.finalState = true;
+        return; // Exit the function
     }
+
+    // Adjust speed based on distance
+    let maxSpeed = 2; // Maximum speed when far from the target
+    let minSpeed = 0.5; // Minimum speed when close to the target
+    let speedFactor = map(distance, 0, 100, minSpeed, maxSpeed); // Map distance to speed range
+
+    // Calculate normalized direction to target
+    let angle = atan2(dy, dx);
+    this.vx = cos(angle) * speedFactor;
+    this.vy = sin(angle) * speedFactor;
+
+    // Apply velocity
+    this.x += this.vx;
+    this.y += this.vy;
+}
+
+
+  setTarget(x, y){
+    this.targetX = x;
+    this.targetY = y;
   }
 
 
   addTurbulence() {
       // Adjust velocity using Perlin noise with balanced inputs
-      let turbulenceStrength = 0.0000125; // Control intensity of turbulence
+      let turbulenceStrength = 0.0125; // Control intensity of turbulence
       let noiseX = noise(this.noiseOffsetX, this.noiseOffsetY) - 0.5;
       let noiseY = noise(this.noiseOffsetY, this.noiseOffsetX) - 0.5;
 
@@ -171,7 +191,7 @@ class Particle {
     //this.updateSinapse();
     this.addTurbulence();
     // this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
-    this.applyConnectionGrowth();
+    // this.applyConnectionGrowth();
     // this.checkEdges();
     this.x += this.vx;
     this.y += this.vy;
@@ -179,10 +199,21 @@ class Particle {
   
   display() {
     push();
-    if (this.connected) fill(255,255,150,this.life);
-    else fill(255,255,200,this.life);
     noStroke();
-    ellipse(this.x, this.y, this.r * 2, this.r * 2);
+    if (this.connected){
+      fill(255,255,150,230);
+      rect(this.x, this.y, this.r * 4, this.r * 4);
+    }
+    else{
+      fill(255,255,255,this.life/100*100);
+      rect(this.x, this.y, this.r * 2, this.r * 2);
+    }
+
+    if (this.finalState){
+      fill(255,255,222,159);
+      rect(this.x, this.y, this.r * 2, this.r * 2);
+    }
+
     pop();
 
     // display range

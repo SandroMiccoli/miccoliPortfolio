@@ -52,10 +52,6 @@ function drawCursor() {
           p.life=100;
           p.lifeInc=0.25;
           p.connected=true;
-          p.vx=0;
-          p.vy=0;
-          p.x=p.targetX;
-          p.y=p.targetY;
           // print(foundPoints.length,foundPoints.length/30*255);
           p.attract(cursorX,cursorY,10-foundPoints.length/maxMouseCapture*10);
           // push();

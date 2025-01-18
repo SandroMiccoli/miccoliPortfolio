@@ -9,14 +9,19 @@ let particles = [];
 let numParticles = 1000;
 let maxParticlesConnections=30;
 
+let imgs=[];
+let totalImages=7;
+let currentImg=0;
 let img;
 let brightestPixels;
 let randomBrightPixel;
 
 function preload() {
-  let params = new URLSearchParams(window.location.search);
-  params = params.get('img') || '1'; // Default to 'version1' if no parameter is present
-  img = loadImage('/wip/v3/img00'+params+'.jpeg'); // Replace with your image path
+  for(let i=1; i<=totalImages; i++){
+    img = loadImage('/wip/v3/img00'+i+'.jpeg'); // Replace with your image path  
+    imgs.push(img);
+  }
+  
 }
 
 function gaussianRandom(mean, sd) {
@@ -85,14 +90,16 @@ function setup() {
   noCursor();
   initCursor();
 
-  brightestPixels = findBrightestPixels(img);
+  brightestPixels = findBrightestPixels(imgs[currentImg]);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
   console.log('Random Bright Pixel:', randomBrightPixel);
 
   for (let i = 0; i < numParticles; i++) {
-    randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    particles[i] = new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height));
+    let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
+    let y = gaussianRandom(height / 2, height / 10);
+    particles[i] = new Particle(constrain(x, 0, width), constrain(y, 0, height));
   }
+
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
   quadtree = new QuadTree(boundary, capacity);
@@ -101,7 +108,7 @@ function setup() {
 }
 
 function draw() {
-  background(0, 255 / 3);
+  background(0);
   quadtree.clearQuadtree();
 
   particles = particles.filter(particle => particle.life >= 0);
@@ -114,6 +121,7 @@ function draw() {
     // Attract to bright spots
     particles[i].run();
     particles[i].connected = false;
+    particles[i].finalState=false;
     particles[i].connections = 0;
   }
 
@@ -143,6 +151,24 @@ function keyPressed() {
 	if (key == "d") DEBUG = !DEBUG;
 	if (DEBUG) print("DEBUG ON");
 	else print("DEBUG OFF");
+}
+
+function mouseClicked(){
+  print("CLICK MOUSE!")
+  brightestPixels = findBrightestPixels(imgs[currentImg]);
+  randomBrightPixel = getRandomBrightPixel(brightestPixels);
+  console.log('Random Bright Pixel:', randomBrightPixel);
+
+  for (let i = 0; i < particles.length; i++) {
+    randomBrightPixel = getRandomBrightPixel(brightestPixels);
+    particles[i].setTarget(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height));
+  }
+
+  if(currentImg<totalImages-1)
+    currentImg+=1
+  else
+    currentImg=0
+
 }
 
 const resize = () => {
