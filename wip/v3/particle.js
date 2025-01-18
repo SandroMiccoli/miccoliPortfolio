@@ -10,7 +10,7 @@ class Particle {
     }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
-    this.r = 2;
+    this.r = 1;
     this.range = 30;
     this.vx = random(-0.05, 0.05);
     this.vy = random(-0.05, 0.05);
@@ -189,7 +189,7 @@ gravitateToTarget() {
     this.gravitateToTarget();
     this.updateLife();
     //this.updateSinapse();
-    this.addTurbulence();
+    // this.addTurbulence();
     // this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
     // this.applyConnectionGrowth();
     // this.checkEdges();
@@ -200,19 +200,20 @@ gravitateToTarget() {
   display() {
     push();
     noStroke();
-    if (this.connected){
-      fill(255,255,150,230);
-    }
-    else{
-      fill(255,255,255,this.life/100*100);
-    }
-
-    if (this.finalState){
-      fill(255,255,222,159);
-    }
-
-    rect(this.x, this.y, this.r * 2, this.r * 2);
     
+    if (!this.connected && this.finalState){
+      fill(255,255,170,200);
+      rect(this.x, this.y, this.r * 3, this.r * 3);
+    }
+    else if (this.connected && this.finalState){
+      fill(255,255,150,240);
+      rect(this.x, this.y, this.r * 4, this.r * 4);
+    }
+    else {
+      fill(255,255,255,this.life/255*255);
+      rect(this.x, this.y, this.r * 2.5, this.r * 2.5);
+    }
+
     pop();
 
     // display range

@@ -95,8 +95,8 @@ function setup() {
   console.log('Random Bright Pixel:', randomBrightPixel);
 
   for (let i = 0; i < numParticles; i++) {
-    let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
-    let y = gaussianRandom(height / 2, height / 10);
+    let x = gaussianRandom(width / 2, width / 10); // Mean and standard deviation
+    let y = gaussianRandom(height / 2, height / 8);
     particles[i] = new Particle(constrain(x, 0, width), constrain(y, 0, height));
   }
 
@@ -108,7 +108,7 @@ function setup() {
 }
 
 function draw() {
-  background(0);
+  background(0,100);
   quadtree.clearQuadtree();
 
   particles = particles.filter(particle => particle.life >= 0);
