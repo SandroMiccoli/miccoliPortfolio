@@ -12,8 +12,8 @@ class Particle {
     this.targetY = y;
     this.r = 1;
     this.range = 30;
-    this.vx = random(-0.05, 0.05);
-    this.vy = random(-0.05, 0.05);
+    this.vx = random(-2, 2);
+    this.vy = random(-2, 2);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
     this.noiseOffsetY = random(1000);
 
@@ -27,7 +27,12 @@ class Particle {
 
     this.defaultColor = color(255,255,222,_inputState/2);
     this.connectedColor = color(255,50);
-    print(_inputState)
+    // print(_inputState)
+
+    this.history = [{x: this.x, y: this.y}];
+
+    this.angle=0;
+
   }
 
 
@@ -172,19 +177,49 @@ class Particle {
 
   updateLife(){
     this.life -= this.lifeInc;
-    // this.r = this.r * (this.life/100+0.025)
+  }
+
+
+  applyFlowfield(){
+    let x = floor(this.x / flowfield.cellSize);
+    let y = floor(this.y / flowfield.cellSize);
+    let index = y * flowfield.cols + x;
+    this.angle = flowfield.flowField[index];
+    this.vx = cos(this.angle);
+    this.vy = sin(this.angle);
+
   }
 
   update() {
-    this.gravitateToTarget();
-    // this.updateLife();
-    //this.updateSinapse();
-    //this.addTurbulence();
+    // this.gravitateToTarget();
+    // this.updateSinapse();
+    // this.addTurbulence();
     // this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
     // this.applyConnectionGrowth();
     // this.checkEdges();
+    // this.updateHistory();
+    this.updateLife();
+
+    this.applyFlowfield();
+
     this.x += this.vx;
     this.y += this.vy;
+  }
+
+  updateHistory(){
+    this.history.push({x: this.x, y: this.y});
+    if (this.history.length>15)
+      this.history.shift();
+  }
+
+  displayHistory(){
+    for (let i=0; i<this.history.length; i++){
+      push();
+      fill(this.defaultColor,75)
+      noStroke();
+      ellipse(this.history[i].x, this.history[i].y, this.r , this.r);
+      pop();
+    }
   }
   
   display() {
@@ -195,6 +230,8 @@ class Particle {
     noStroke();
     ellipse(this.x, this.y, this.r * 2, this.r * 2);
     pop();
+
+    // this.displayHistory();
 
     // display range
     // push();

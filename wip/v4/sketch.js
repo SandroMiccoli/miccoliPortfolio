@@ -6,12 +6,14 @@ let boundary;
 let capacity = 1;
 
 let particles = [];
-let numParticles = 1000;
+let numParticles = 100;
 let maxParticlesConnections=30;
 
 let img;
 let brightestPixels;
 let randomBrightPixel;
+
+let flowfield;
 
 function preload() {
   let params = new URLSearchParams(window.location.search);
@@ -85,6 +87,9 @@ function setup() {
   noCursor();
   initCursor();
 
+  // Create Flowfield
+  flowfield = new FlowField(width,height);
+
   brightestPixels = findBrightestPixels(img);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
   console.log('Random Bright Pixel:', randomBrightPixel);
@@ -101,8 +106,6 @@ function setup() {
 }
 
 function draw() {
-  background(0, 255/2);
-
   quadtree.clearQuadtree();
 
   // Remove dead particles
@@ -139,6 +142,13 @@ function draw() {
       pop();
     }
   }
+
+  push();
+  rectMode(CORNER);
+  noStroke();
+  fill(0,0,0,255/20)
+  rect(0,0,width,height);
+  pop();
 }
 
 
