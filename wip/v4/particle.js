@@ -12,8 +12,9 @@ class Particle {
     this.targetY = y;
     this.r = 1;
     this.range = 30;
-    this.vx = random(-2, 2);
-    this.vy = random(-2, 2);
+    this.vx = random(1, 2);
+    this.vy = random(1, 2);
+    this.velocityModifier = random(-0.5,0.5);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
     this.noiseOffsetY = random(1000);
 
@@ -179,16 +180,23 @@ class Particle {
     this.life -= this.lifeInc;
   }
 
+  applyFlowfield() {
+      let x = floor(this.x / flowfield.cellSize);
+      let y = floor(this.y / flowfield.cellSize);
 
-  applyFlowfield(){
-    let x = floor(this.x / flowfield.cellSize);
-    let y = floor(this.y / flowfield.cellSize);
-    let index = y * flowfield.cols + x;
-    this.angle = flowfield.flowField[index];
-    this.vx = cos(this.angle);
-    this.vy = sin(this.angle);
+      // Ensure x and y are within bounds
+      if (x >= 0 && x < flowfield.cols && y >= 0 && y < flowfield.rows) {
+          let index = y * flowfield.cols + x;
 
+          // Ensure index is valid
+          if (index >= 0 && index < flowfield.flowField.length) {
+              this.angle = flowfield.flowField[index].colorAngle;
+              this.vx = cos(this.angle);
+              this.vy = sin(this.angle);
+          }
+      }
   }
+
 
   update() {
     // this.gravitateToTarget();
@@ -199,11 +207,10 @@ class Particle {
     // this.checkEdges();
     // this.updateHistory();
     this.updateLife();
-
     this.applyFlowfield();
 
-    this.x += this.vx;
-    this.y += this.vy;
+    this.x += this.vx * this.velocityModifier;
+    this.y += this.vy * this.velocityModifier;
   }
 
   updateHistory(){
@@ -226,7 +233,7 @@ class Particle {
     push();
     // if (this.connected) fill(255,255,150,this.life);
     // else fill(255,255,200,this.life);
-    fill(this.defaultColor)
+    fill(this.defaultColor,255)
     noStroke();
     ellipse(this.x, this.y, this.r * 2, this.r * 2);
     pop();

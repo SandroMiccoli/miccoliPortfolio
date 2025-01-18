@@ -6,7 +6,7 @@ let boundary;
 let capacity = 1;
 
 let particles = [];
-let numParticles = 100;
+let numParticles = 1000;
 let maxParticlesConnections=30;
 
 let img;
@@ -84,11 +84,12 @@ function getRandomBrightPixel(brightestPixels) {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  // blendMode(REMOVE);
   noCursor();
   initCursor();
-
   // Create Flowfield
   flowfield = new FlowField(width,height);
+  print(flowfield)
 
   brightestPixels = findBrightestPixels(img);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
@@ -106,6 +107,7 @@ function setup() {
 }
 
 function draw() {
+  // image(img,0,0);
   quadtree.clearQuadtree();
 
   // Remove dead particles
@@ -129,7 +131,11 @@ function draw() {
     particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
   }
 
+
   drawCursor();
+
+  // if(frameCount%10==0)
+  //   image(img,0,0);
 
   if (DEBUG) {
     quadtree.display();
@@ -141,14 +147,16 @@ function draw() {
       text(int(frameRate()), width - 200, 100);
       pop();
     }
+    flowfield.display();
   }
 
   push();
   rectMode(CORNER);
   noStroke();
-  fill(0,0,0,255/20)
+  fill(0,0,0,20)
   rect(0,0,width,height);
   pop();
+
 }
 
 
