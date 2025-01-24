@@ -1,12 +1,16 @@
 class Particle {
-  constructor(x, y, _inputState) {
+  constructor(x, y, _inputState, mouse=false) {
     this.life = random(1,50);
     this.lifeInc = random(0.05,0.1);
-    this.x = x+random(-50,50);
-    this.y = y+random(-50,50);
-    if(random()>0.99){
-      this.x = x+random(-250,250);
-      this.y = y+random(-250,250); 
+    this.x = x+random(-20,20);
+    this.y = y+random(-20,20);
+    if(random()>0.98 || mouse){
+      this.x = x+random(-350,350);
+      this.y = y+random(-350,350); 
+    }
+    if(random()>0.98){
+      this.x = mouseX+random(-5,5);
+      this.y = mouseY+random(-5,5); 
     }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
@@ -44,17 +48,18 @@ gravitateToTarget() {
     let distance = sqrt(dx * dx + dy * dy);
 
     // If the particle is at the target, stop it
-    if (distance < 0.5) { // Threshold for stopping
+    if (distance < 5.5) { // Threshold for stopping
         this.vx = 0;
         this.vy = 0;
         this.finalState = true;
         this.life=0;
+        this.display();
         return; // Exit the function
     }
 
     // Adjust speed based on distance
-    let maxSpeed = 5.25; // Maximum speed when far from the target
-    let minSpeed = 0.5; // Minimum speed when close to the target
+    let maxSpeed = 1.25; // Maximum speed when far from the target
+    let minSpeed = 0.25; // Minimum speed when close to the target
     let speedFactor = map(distance, 0, 100, minSpeed, maxSpeed); // Map distance to speed range
 
     // Calculate normalized direction to target
@@ -208,8 +213,8 @@ gravitateToTarget() {
     if (!this.connected && this.finalState){
       finalImageCanvasPG.noStroke();
       finalImageCanvasPG.fill(this.defaultColor,50);
-      for(let i=0; i<5; i++)
-        finalImageCanvasPG.ellipse(this.x+random(-0.25,0.25), this.y+random(-0.25,0.25), this.r * 1, this.r * 1);
+      finalImageCanvasPG.ellipse(this.x+random(-.015,.015), this.y+random(-.015,.015), this.r * 2, this.r * 2);
+      amountOfDots+=1;
     }
     else if (this.connected){ // mouse over
       fill(255,255,222);

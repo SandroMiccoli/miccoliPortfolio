@@ -17,6 +17,51 @@ function initCursor(){
 }
 
 function drawCursor() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    let range = new Circle(mouseX, mouseY, 50);
+    let foundPoints = [];
+    quadtree.query(range, foundPoints);
+
+    // Smoothly interpolate cursor positions using easing
+    cursorX += (mouseXPos - cursorX) * 0.075;
+    cursorY += (mouseYPos - cursorY) * 0.075;
+
+    outterX += (mouseXPos - outterX) * 0.95;
+    outterY += (mouseYPos - outterY) * 0.95;
+
+    push();
+
+    // Draw inner cursor
+    fill(255, 255, 230, 150 + (foundPoints.length / maxMouseCapture) * 255);
+    noStroke();
+    ellipse(cursorX, cursorY, 7);
+
+    // Draw outer cursor
+    noFill();
+    stroke(255, 255, 230, 150 + (foundPoints.length / maxMouseCapture) * 255);
+    strokeWeight(1);
+    circle(range.x, range.y, range.r * 2);
+
+    pop();
+
+
+    for(let i=0; i<15; i++){
+        let closeToCursorX = int(cursorX + random(-25,25));
+        let closeToCursorY = int(cursorY + random(-25,25));
+        let pixelColor = finalImageCanvasPG.get(closeToCursorX, closeToCursorY);
+    
+        // Draw a circle with the same color on the finalImageCanvasPG graphics
+        finalImageCanvasPG.push();
+        finalImageCanvasPG.fill(pixelColor);
+        finalImageCanvasPG.noStroke();
+        finalImageCanvasPG.circle(closeToCursorX, closeToCursorY, random(1,5)); // Adjust the size of the circle as needed
+        finalImageCanvasPG.pop();
+      }
+  }
+}
+
+
+function drawCursorFindQuadrtree() {
   // Find points in mouse range
   //   let range = new Rect(mouseX,mouseY,50,50);
   //   fill(0,255,0,50);
@@ -49,11 +94,13 @@ function drawCursor() {
     if (foundPoints.length<maxMouseCapture){
         for (let i = 0; i < foundPoints.length; i++) {
           let p = foundPoints[i].userData;
+
+
           // p.life=100;
           // p.lifeInc=0.25;
-          p.connected=true;
+          // p.connected=true;
           // print(foundPoints.length,foundPoints.length/30*255);
-          p.attract(cursorX,cursorY,10);
+          // p.attract(cursorX,cursorY,2);
           // push();
           // strokeWeight(0.5)
           // stroke(255,255,188,55);

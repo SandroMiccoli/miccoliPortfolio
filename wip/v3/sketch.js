@@ -17,6 +17,9 @@ let brightestPixels;
 let randomBrightPixel;
 
 let finalImageCanvasPG;
+let amountOfDots=0;
+
+let effectImageCanvasPG;
 
 let lastSwitchTime = 0; // Keeps track of the last time the image was updated
 let interval = 9500; // Interval in milliseconds (3 seconds)
@@ -93,10 +96,28 @@ function getRandomBrightPixel(brightestPixels) {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
+  effectImageCanvasPG = createGraphics(windowWidth, windowHeight);
+
+  // Method 1: Using window.innerWidth
+  let isMobile = window.innerWidth <= 800;
+  
+  // Method 2: More comprehensive device detection
+  let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Method 3: Touch capabilities
+  let hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  console.log('Is Mobile (by width):', isMobile);
+  console.log('Is Mobile Device:', isMobileDevice);
+  console.log('Has Touchscreen:', hasTouchScreen);
+
+  if(isMobileDevice){
+    numParticles=100;
+  }
 
   noCursor();
   initCursor();
-
+  currentImg=int(random(totalImages))
   brightestPixels = findBrightestPixels(imgs[currentImg]);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
   console.log('Random Bright Pixel:', randomBrightPixel);
@@ -141,7 +162,13 @@ function draw() {
 
 
   image(finalImageCanvasPG,0,0);
+  // print("Amount of dots: "+amountOfDots);
 
+  numParticles = constrain(map(amountOfDots,0,20000,1000,5),5,1000);
+  // print("Num Particles: "+str(int(numParticles)));
+  if(numParticles==5){
+    updateImage();
+  }
   drawCursor();
 
   // Check if 3 seconds have passed since the last switch
@@ -155,6 +182,13 @@ function draw() {
   if(mouseX!=pmouseX || mouseY!=pmouseY){
     lastSwitchTime = millis(); // Update the last switch time
   }
+
+  // effectImageCanvasPG
+  // effectImageCanvasPG.background(255);
+  // effectImageCanvasPG.fill(0)
+  // effectImageCanvasPG.ellipse(mouseX,mouseY,50,50)
+  // effectImageCanvasPG.blend(finalImageCanvasPG,0,0,width,height,0,0,width,height,DIFFERENCE);
+  // image(effectImageCanvasPG,0,0);
 
   if (DEBUG) {
     quadtree.display();
@@ -190,7 +224,7 @@ function mouseMoved(){
 
 function updateImage() {
   finalImageCanvasPG.clear();
-
+  amountOfDots=0;
   brightestPixels = findBrightestPixels(imgs[currentImg]);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
   console.log('Random Bright Pixel:', randomBrightPixel);
@@ -205,6 +239,7 @@ function updateImage() {
   } else {
     currentImg = 0;
   }
+
 }
 const resize = () => {
 	print("Resize canvas!")
