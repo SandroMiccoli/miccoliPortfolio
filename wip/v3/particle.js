@@ -1,6 +1,6 @@
 class Particle {
-  constructor(x, y) {
-    this.life = random(25,100);
+  constructor(x, y, _inputState) {
+    this.life = random(1,50);
     this.lifeInc = random(0.05,0.1);
     this.x = x+random(-50,50);
     this.y = y+random(-50,50);
@@ -10,7 +10,7 @@ class Particle {
     }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
-    this.r = 1;
+    this.r = random(0.5,3);
     this.range = 30;
     this.vx = random(-0.05, 0.05);
     this.vy = random(-0.05, 0.05);
@@ -27,8 +27,11 @@ class Particle {
     this.synapse = 0;
     this.synapseInc = random(0.05);
 
-    this.defaultColor = color(255,250);
+    this.defaultColor = color(_inputState,_inputState);
+    this.defaultColor.setAlpha(_inputState);
     this.connectedColor = color(255,50);
+
+    this.inputState = _inputState;
   }
 
 
@@ -45,11 +48,12 @@ gravitateToTarget() {
         this.vx = 0;
         this.vy = 0;
         this.finalState = true;
+        this.life=0;
         return; // Exit the function
     }
 
     // Adjust speed based on distance
-    let maxSpeed = 2; // Maximum speed when far from the target
+    let maxSpeed = 5.25; // Maximum speed when far from the target
     let minSpeed = 0.5; // Minimum speed when close to the target
     let speedFactor = map(distance, 0, 100, minSpeed, maxSpeed); // Map distance to speed range
 
@@ -85,7 +89,7 @@ gravitateToTarget() {
       this.noiseOffsetY += 0.03; // Use a slightly different increment
 
       // Normalize velocity to prevent uncontrolled speed increase
-      let maxSpeed = 0.85; // Maximum allowed speed
+      let maxSpeed = 2.85; // Maximum allowed speed
       let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
       if (speed > maxSpeed) {
           this.vx = (this.vx / speed) * maxSpeed;
@@ -128,11 +132,11 @@ gravitateToTarget() {
   }
 
   attract(mx, my, mult=1) {
-    let forceStrength = 0.05*mult; // Strength of attraction
+    let forceStrength = 0.5*mult; // Strength of attraction
     let dx = mx - this.x;
     let dy = my - this.y;
     let distance = dist(mx, my, this.x, this.y);
-    distance = constrain(distance, 10, 200); // Avoid overly strong or weak forces
+    distance = constrain(distance, 1, 500); // Avoid overly strong or weak forces
 
     // Calculate attraction force inversely proportional to distance
     let force = forceStrength / distance;
@@ -189,7 +193,7 @@ gravitateToTarget() {
     this.gravitateToTarget();
     this.updateLife();
     //this.updateSinapse();
-    // this.addTurbulence();
+    this.addTurbulence();
     // this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
     // this.applyConnectionGrowth();
     // this.checkEdges();
@@ -202,16 +206,18 @@ gravitateToTarget() {
     noStroke();
     
     if (!this.connected && this.finalState){
-      fill(255,255,170,200);
-      rect(this.x, this.y, this.r * 3, this.r * 3);
+      finalImageCanvasPG.noStroke();
+      finalImageCanvasPG.fill(this.defaultColor,50);
+      for(let i=0; i<5; i++)
+        finalImageCanvasPG.ellipse(this.x+random(-0.25,0.25), this.y+random(-0.25,0.25), this.r * 1, this.r * 1);
     }
-    else if (this.connected && this.finalState){
-      fill(255,255,150,240);
-      rect(this.x, this.y, this.r * 4, this.r * 4);
+    else if (this.connected){ // mouse over
+      fill(255,255,222);
+      ellipse(this.x, this.y, this.r * 3, this.r * 3);
     }
     else {
-      fill(255,255,255,this.life/255*255);
-      rect(this.x, this.y, this.r * 2.5, this.r * 2.5);
+      fill(255,255,170,95); // moving
+      ellipse(this.x, this.y, this.r * 1.9, this.r * 1.9);
     }
 
     pop();

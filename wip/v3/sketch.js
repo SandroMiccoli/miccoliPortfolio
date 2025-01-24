@@ -10,11 +10,16 @@ let numParticles = 1000;
 let maxParticlesConnections=30;
 
 let imgs=[];
-let totalImages=7;
+let totalImages=5;
 let currentImg=0;
 let img;
 let brightestPixels;
 let randomBrightPixel;
+
+let finalImageCanvasPG;
+
+let lastSwitchTime = 0; // Keeps track of the last time the image was updated
+let interval = 9500; // Interval in milliseconds (3 seconds)
 
 function preload() {
   for(let i=1; i<=totalImages; i++){
@@ -34,7 +39,7 @@ function gaussianRandom(mean, sd) {
 
 // Function to find the brightest pixels in an image
 // Function to find the brightest pixels with a sensitivity threshold
-function findBrightestPixels(img, sensitivity = 0.75) {
+function findBrightestPixels(img, sensitivity = 0.25) {
   img.loadPixels();
   let brightestValue = 0;
   let brightestPixels = [];
@@ -70,7 +75,7 @@ function findBrightestPixels(img, sensitivity = 0.75) {
       let brightness = 0.299 * r + 0.587 * g + 0.114 * b;
 
       if (brightness >= threshold) {
-        brightestPixels.push([x+(width/2-img.width/2), y+(height/2-img.height/2)]);
+        brightestPixels.push([x+(width/2-img.width/2), y+(height/2-img.height/2), brightness]);
       }
     }
   }
@@ -87,6 +92,8 @@ function getRandomBrightPixel(brightestPixels) {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
+
   noCursor();
   initCursor();
 
@@ -95,20 +102,21 @@ function setup() {
   console.log('Random Bright Pixel:', randomBrightPixel);
 
   for (let i = 0; i < numParticles; i++) {
-    let x = gaussianRandom(width / 2, width / 10); // Mean and standard deviation
-    let y = gaussianRandom(height / 2, height / 8);
-    particles[i] = new Particle(constrain(x, 0, width), constrain(y, 0, height));
+    randomBrightPixel = getRandomBrightPixel(brightestPixels);
+    let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
+    let y = gaussianRandom(height / 2, height / 10);
+    particles.push(new Particle(constrain(x, 0, width), constrain(y, 0, height),randomBrightPixel[2]));
   }
-
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
   quadtree = new QuadTree(boundary, capacity);
 
-
+  updateImage();
 }
 
 function draw() {
-  background(0,100);
+  let alpha=75;
+  background(0,alpha);
   quadtree.clearQuadtree();
 
   particles = particles.filter(particle => particle.life >= 0);
@@ -126,12 +134,27 @@ function draw() {
   }
 
   // Spawn new particles if needed
-  if (particles.length < numParticles) {
+  while (particles.length < numParticles) {
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height)));
+    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
   }
 
+
+  image(finalImageCanvasPG,0,0);
+
   drawCursor();
+
+  // Check if 3 seconds have passed since the last switch
+  if (millis() - lastSwitchTime > interval) {
+    print("Timer switch! "+millis())
+    updateImage();
+    lastSwitchTime = millis(); // Update the last switch time
+  }
+
+  // reset timer when mouse moved
+  if(mouseX!=pmouseX || mouseY!=pmouseY){
+    lastSwitchTime = millis(); // Update the last switch time
+  }
 
   if (DEBUG) {
     quadtree.display();
@@ -155,6 +178,19 @@ function keyPressed() {
 
 function mouseClicked(){
   print("CLICK MOUSE!")
+  lastSwitchTime = millis(); // Update the last switch time
+  updateImage();
+
+}
+
+function mouseMoved(){
+  print("Mouse moved!! "+lastSwitchTime)
+  lastSwitchTime = millis(); // Update the last switch time
+}
+
+function updateImage() {
+  finalImageCanvasPG.clear();
+
   brightestPixels = findBrightestPixels(imgs[currentImg]);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
   console.log('Random Bright Pixel:', randomBrightPixel);
@@ -164,13 +200,12 @@ function mouseClicked(){
     particles[i].setTarget(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height));
   }
 
-  if(currentImg<totalImages-1)
-    currentImg+=1
-  else
-    currentImg=0
-
+  if (currentImg < totalImages - 1) {
+    currentImg += 1;
+  } else {
+    currentImg = 0;
+  }
 }
-
 const resize = () => {
 	print("Resize canvas!")
     if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {		

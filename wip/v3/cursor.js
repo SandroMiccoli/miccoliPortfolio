@@ -49,11 +49,11 @@ function drawCursor() {
     if (foundPoints.length<maxMouseCapture){
         for (let i = 0; i < foundPoints.length; i++) {
           let p = foundPoints[i].userData;
-          p.life=100;
-          p.lifeInc=0.25;
+          // p.life=100;
+          // p.lifeInc=0.25;
           p.connected=true;
           // print(foundPoints.length,foundPoints.length/30*255);
-          // p.attract(cursorX,cursorY,10-foundPoints.length/maxMouseCapture*10);
+          p.attract(cursorX,cursorY,10);
           // push();
           // strokeWeight(0.5)
           // stroke(255,255,188,55);
