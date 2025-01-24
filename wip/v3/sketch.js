@@ -169,7 +169,10 @@ function draw() {
   if(numParticles==5){
     updateImage();
   }
+// 
   drawCursor();
+
+
 
   // Check if 3 seconds have passed since the last switch
   if (millis() - lastSwitchTime > interval) {
@@ -183,12 +186,6 @@ function draw() {
     lastSwitchTime = millis(); // Update the last switch time
   }
 
-  // effectImageCanvasPG
-  // effectImageCanvasPG.background(255);
-  // effectImageCanvasPG.fill(0)
-  // effectImageCanvasPG.ellipse(mouseX,mouseY,50,50)
-  // effectImageCanvasPG.blend(finalImageCanvasPG,0,0,width,height,0,0,width,height,DIFFERENCE);
-  // image(effectImageCanvasPG,0,0);
 
   if (DEBUG) {
     quadtree.display();
@@ -234,11 +231,15 @@ function updateImage() {
     particles[i].setTarget(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height));
   }
 
+  effectImageCanvasPG.image(imgs[currentImg],width/2-imgs[currentImg].width/2,height/2-imgs[currentImg].height/2);
+  effectImageCanvasPG.loadPixels();
+  
   if (currentImg < totalImages - 1) {
     currentImg += 1;
   } else {
     currentImg = 0;
   }
+
 
 }
 const resize = () => {

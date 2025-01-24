@@ -41,14 +41,14 @@ function drawCursor() {
     stroke(255, 255, 230, 150 + (foundPoints.length / maxMouseCapture) * 255);
     strokeWeight(1);
     circle(range.x, range.y, range.r * 2);
-
     pop();
 
-
-    for(let i=0; i<15; i++){
-        let closeToCursorX = int(cursorX + random(-25,25));
-        let closeToCursorY = int(cursorY + random(-25,25));
-        let pixelColor = finalImageCanvasPG.get(closeToCursorX, closeToCursorY);
+    for(let i=0; i<10; i++){
+        let angle = random(TWO_PI); // Random angle between 0 and 2π
+        let radius = random(50);    // Random radius between 0 and 50
+        let closeToCursorX = int(cursorX + cos(angle) * radius);
+        let closeToCursorY = int(cursorY + sin(angle) * radius);
+        let pixelColor = effectImageCanvasPG.get(closeToCursorX, closeToCursorY);
     
         // Draw a circle with the same color on the finalImageCanvasPG graphics
         finalImageCanvasPG.push();
