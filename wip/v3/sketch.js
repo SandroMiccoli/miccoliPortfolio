@@ -10,7 +10,7 @@ let numParticles = 1000;
 let maxParticlesConnections=30;
 
 let imgs=[];
-let totalImages=5;
+let totalImages=9;
 let currentImg=0;
 let img;
 let brightestPixels;
