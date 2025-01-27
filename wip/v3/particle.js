@@ -2,19 +2,15 @@ class Particle {
   constructor(x, y, _inputState, mouse=false) {
     this.life = random(1,50);
     this.lifeInc = random(0.05,0.1);
-    this.x = x+random(-20,20);
-    this.y = y+random(-20,20);
-    if(random()>0.98 || mouse){
+    this.x = x;
+    this.y = y;
+    if(random()>0.98){
       this.x = x+random(-350,350);
       this.y = y+random(-350,350); 
     }
-    if(random()>0.98){
-      this.x = mouseX+random(-5,5);
-      this.y = mouseY+random(-5,5); 
-    }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
-    this.r = random(0.5,3);
+    this.r = random(1,2);
     this.range = 30;
     this.vx = random(-0.05, 0.05);
     this.vy = random(-0.05, 0.05);
@@ -58,7 +54,7 @@ gravitateToTarget() {
     }
 
     // Adjust speed based on distance
-    let maxSpeed = 1.25; // Maximum speed when far from the target
+    let maxSpeed = 0.75; // Maximum speed when far from the target
     let minSpeed = 0.25; // Minimum speed when close to the target
     let speedFactor = map(distance, 0, 100, minSpeed, maxSpeed); // Map distance to speed range
 
@@ -213,7 +209,7 @@ gravitateToTarget() {
     if (!this.connected && this.finalState){
       finalImageCanvasPG.noStroke();
       finalImageCanvasPG.fill(this.defaultColor,50);
-      finalImageCanvasPG.ellipse(this.x+random(-.015,.015), this.y+random(-.015,.015), this.r * 2, this.r * 2);
+      finalImageCanvasPG.ellipse(this.x, this.y, this.r+random(1), this.r+random(1));
       amountOfDots+=1;
     }
     else if (this.connected){ // mouse over
@@ -222,7 +218,7 @@ gravitateToTarget() {
     }
     else {
       fill(255,255,170,95); // moving
-      ellipse(this.x, this.y, this.r * 1.9, this.r * 1.9);
+      ellipse(this.x, this.y, this.r * 1.15, this.r * 1.15);
     }
 
     pop();

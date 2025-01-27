@@ -126,7 +126,7 @@ function setup() {
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
     let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
     let y = gaussianRandom(height / 2, height / 10);
-    particles.push(new Particle(constrain(x, 0, width), constrain(y, 0, height),randomBrightPixel[2]));
+    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
   }
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
@@ -162,10 +162,10 @@ function draw() {
 
 
   image(finalImageCanvasPG,0,0);
-  // print("Amount of dots: "+amountOfDots);
+  print("Amount of dots: "+amountOfDots);
 
-  numParticles = constrain(map(amountOfDots,0,20000,1000,5),5,1000);
-  // print("Num Particles: "+str(int(numParticles)));
+  numParticles = constrain(map(amountOfDots,0,75000,1000,5),5,1000);
+  print("Num Particles: "+str(int(numParticles)));
   if(numParticles==5){
     updateImage();
   }
