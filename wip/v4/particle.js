@@ -8,7 +8,7 @@ class Particle {
       this.x = x+random(-350,350);
       this.y = y+random(-350,350); 
     }
-    if(mouse && random()>0.995){ // shooting star particle
+    if(mouse && random()>0.95){ // shooting star particle
       this.x = mouseX+random(-5,5);
       this.y = mouseY+random(-5,5); 
       this.r = random(2,4);
@@ -41,6 +41,9 @@ class Particle {
     this.connectedColor = color(255,50);
 
     this.inputState = _inputState;
+
+    this.burstParticles = [];
+    this.burstTriggered = false;
   }
 
 
@@ -57,7 +60,7 @@ gravitateToTarget() {
         this.vx = 0;
         this.vy = 0;
         this.finalState = true;
-        this.life=0;
+        // this.life=0;
         this.display();
         return; // Exit the function
     }
@@ -216,29 +219,44 @@ gravitateToTarget() {
     noStroke();
     
     if (!this.connected && this.finalState){
-      finalImageCanvasPG.noStroke();
-      finalImageCanvasPG.fill(this.defaultColor,50);
-      // if(this.burst){
-      //   for(let i=0; i<50; i++){
+      // paints main particle
+      if(!this.burst){
+        finalImageCanvasPG.noStroke();
+        finalImageCanvasPG.fill(this.defaultColor,50);
+        finalImageCanvasPG.ellipse(this.x, this.y, this.r+random(1), this.r+random(1));
+        this.life=0;
+        // amountOfDots+=1;
 
-      //     let angle = random(TWO_PI); // Random angle between 0 and 2π
-      //     let radius = random(50);    // Random radius between 0 and 50
-      //     let closeToX = int(this.x + cos(angle) * radius);
-      //     let closeToY = int(this.y + sin(angle) * radius);
-      //     let pixelColor = effectImageCanvasPG.get(closeToX, closeToY);
+      }
       
-      //     // Draw a circle with the same color on the finalImageCanvasPG graphics
-      //     finalImageCanvasPG.push();
-      //     finalImageCanvasPG.fill(pixelColor);
-      //     finalImageCanvasPG.noStroke();
-      //     finalImageCanvasPG.circle(closeToX, closeToY, random(1,5)); // Adjust the size of the circle as needed
-      //     finalImageCanvasPG.pop();
 
-          finalImageCanvasPG.ellipse(this.x, this.y, this.r+random(1), this.r+random(1));
-          amountOfDots+=1;
-      //   }
-      // }
+      // Generate burst particles
+      if (this.burst && !this.burstTriggered) {
+        for (let i = 0; i < 50; i++) {
+          this.burstParticles.push(new BurstParticle(this.x, this.y));
+        }
+        this.burstTriggered = true;
+      }
 
+      if(this.burst){
+        // Update and draw burst particles
+        for (let i = this.burstParticles.length - 1; i >= 0; i--) {
+          const bp = this.burstParticles[i];
+          bp.update();
+          bp.displayPath();
+  
+          if (bp.isDead()) {
+            bp.display();
+            this.burstParticles.splice(i, 1);
+          }
+        }
+  
+        // kill particle of no more burstParticles
+        if(this.burstParticles.length<=2){
+          this.life=0;
+          // amountOfDots+=1;
+        }
+      }
     }
     else if (this.connected){ // mouse over
       fill(255,255,222);
@@ -265,5 +283,81 @@ gravitateToTarget() {
   run() {
     this.update();
     this.display();
+  }
+}
+
+
+
+class BurstParticle {
+  constructor(x, y) {
+    // Store origin for reference
+    this.originX = x;
+    this.originY = y;
+    
+    // Movement properties
+    this.angle = random(TWO_PI);
+    this.maxRadius = random(1, 50);
+    this.currentRadius = 0;
+    this.lifespan = 30;
+    this.age = 0;
+    
+    // Splatter-style movement variations
+    this.radiusJitter = random(-0.5, 0.5);
+    this.angleJitter = random(-0.1, 0.1);
+    
+    // Appearance properties
+    this.size = random(1, 5);
+    this.targetColor = effectImageCanvasPG.get(
+      int(x + cos(this.angle) * this.maxRadius),
+      int(y + sin(this.angle) * this.maxRadius)
+    );
+    
+    // Initial position
+    this.x = x;
+    this.y = y;
+  }
+
+  update() {
+    if (this.age < this.lifespan) {
+      // Calculate progress with easing
+      const progress = this.age / this.lifespan;
+      const easedProgress = pow(progress, 0.7);
+      
+      // Update radius with organic variation
+      this.currentRadius = easedProgress * this.maxRadius + this.radiusJitter;
+      
+      // Add angle variation over time
+      this.angle += this.angleJitter;
+      
+      // Update position
+      this.x = this.originX + cos(this.angle) * this.currentRadius;
+      this.y = this.originY + sin(this.angle) * this.currentRadius;
+      
+      this.age++;
+    }
+  }
+
+  display() {
+    finalImageCanvasPG.fill(this.targetColor);
+    finalImageCanvasPG.noStroke();
+    
+    // Add splatter-style randomness
+    finalImageCanvasPG.circle(
+      this.x + random(-1, 1),
+      this.y + random(-1, 1),
+      this.size * random(0.8, 1.2)
+    );
+  
+  }
+
+
+  displayPath() {
+    fill(this.targetColor);
+    noStroke();
+    circle(this.x, this.y, this.size);
+  }
+
+  isDead() {
+    return this.age >= this.lifespan;
   }
 }

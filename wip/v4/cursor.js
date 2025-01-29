@@ -120,15 +120,17 @@ function drawCursor() {
           let radius = random(50);    // Random radius between 0 and 50
           let closeToCursorX = int(cursorX + cos(angle) * radius);
           let closeToCursorY = int(cursorY + sin(angle) * radius);
-          let pixelColor = effectImageCanvasPG.get(closeToCursorX, closeToCursorY);
+          let pixelColor = color(effectImageCanvasPG.get(closeToCursorX, closeToCursorY));
       
-          // Draw a circle with the same color on the finalImageCanvasPG graphics
-          finalImageCanvasPG.push();
-          finalImageCanvasPG.fill(pixelColor);
-          finalImageCanvasPG.noStroke();
-          finalImageCanvasPG.circle(closeToCursorX, closeToCursorY, random(1,5)); // Adjust the size of the circle as needed
-          finalImageCanvasPG.pop();
-          amountOfDots+=1;
+          if (pixelColor.toString()!=color(0,0,0,255).toString()){
+            // Draw a circle with the same color on the finalImageCanvasPG graphics
+            finalImageCanvasPG.push();
+            finalImageCanvasPG.fill(pixelColor);
+            finalImageCanvasPG.noStroke();
+            finalImageCanvasPG.circle(closeToCursorX, closeToCursorY, random(1,5)); // Adjust the size of the circle as needed
+            finalImageCanvasPG.pop();
+            amountOfDots+=1;
+          }
         }
       }
   }
@@ -194,5 +196,4 @@ function mouseMoved() {
   // print("Mouse moved!! "+lastSwitchTime)
   lastSwitchTime = millis(); // Update the last switch time
   mouseActive+=1;
-  print(mouseActive)
 }
