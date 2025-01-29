@@ -2,6 +2,8 @@ let cursorX, cursorY; // Smooth cursor position
 let outterX, outterY; // Smooth outer cursor position
 let mouseXPos, mouseYPos; // Mouse position
 let maxMouseCapture = 150; // Max amount of particles for mouse to capture
+
+let mouseActive=0;
 let orbitingParticles = [];
 
 function initCursor(){
@@ -22,8 +24,8 @@ function initCursor(){
 function initOrbitingParticles() {
   for (let i = 0; i < 50; i++) {
     orbitingParticles.push({
-      x: random(width), // Initial x position
-      y: random(height), // Initial y position
+      x: mouseXPos+random(-150,150), // Initial x position
+      y: mouseYPos+random(-150,150), // Initial y position
       angle: random(TWO_PI), // Initial angle for orbit
       radius: random(5, 10), // Initial orbit radius
       speed: random(0.005, 0.02), // Speed of orbit
@@ -112,19 +114,22 @@ function drawCursor() {
     pop()
 
     // paint over
-    for(let i=0; i<30; i++){
-        let angle = random(TWO_PI); // Random angle between 0 and 2π
-        let radius = random(50);    // Random radius between 0 and 50
-        let closeToCursorX = int(cursorX + cos(angle) * radius);
-        let closeToCursorY = int(cursorY + sin(angle) * radius);
-        let pixelColor = effectImageCanvasPG.get(closeToCursorX, closeToCursorY);
-    
-        // Draw a circle with the same color on the finalImageCanvasPG graphics
-        finalImageCanvasPG.push();
-        finalImageCanvasPG.fill(pixelColor);
-        finalImageCanvasPG.noStroke();
-        finalImageCanvasPG.circle(closeToCursorX, closeToCursorY, random(1,5)); // Adjust the size of the circle as needed
-        finalImageCanvasPG.pop();
+    if(mouseActive>50){
+      for(let i=0; i<30; i++){
+          let angle = random(TWO_PI); // Random angle between 0 and 2π
+          let radius = random(50);    // Random radius between 0 and 50
+          let closeToCursorX = int(cursorX + cos(angle) * radius);
+          let closeToCursorY = int(cursorY + sin(angle) * radius);
+          let pixelColor = effectImageCanvasPG.get(closeToCursorX, closeToCursorY);
+      
+          // Draw a circle with the same color on the finalImageCanvasPG graphics
+          finalImageCanvasPG.push();
+          finalImageCanvasPG.fill(pixelColor);
+          finalImageCanvasPG.noStroke();
+          finalImageCanvasPG.circle(closeToCursorX, closeToCursorY, random(1,5)); // Adjust the size of the circle as needed
+          finalImageCanvasPG.pop();
+          amountOfDots+=1;
+        }
       }
   }
 }
@@ -186,4 +191,8 @@ function drawCursorFindQuadrtree() {
 function mouseMoved() {
   mouseXPos = mouseX;
   mouseYPos = mouseY;
+  // print("Mouse moved!! "+lastSwitchTime)
+  lastSwitchTime = millis(); // Update the last switch time
+  mouseActive+=1;
+  print(mouseActive)
 }

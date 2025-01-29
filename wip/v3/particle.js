@@ -8,7 +8,7 @@ class Particle {
       this.x = x+random(-350,350);
       this.y = y+random(-350,350); 
     }
-    if(random()>0.995){
+    if(mouse && random()>0.995){
       this.x = mouseX+random(-5,5);
       this.y = mouseY+random(-5,5); 
       this.r = random(2,4);

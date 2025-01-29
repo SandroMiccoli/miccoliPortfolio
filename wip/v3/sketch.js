@@ -157,7 +157,7 @@ function draw() {
   // Spawn new particles if needed
   while (particles.length < numParticles) {
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
+    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2],true));
   }
 
 
@@ -212,11 +212,6 @@ function mouseClicked(){
   lastSwitchTime = millis(); // Update the last switch time
   updateImage();
 
-}
-
-function mouseMoved(){
-  print("Mouse moved!! "+lastSwitchTime)
-  lastSwitchTime = millis(); // Update the last switch time
 }
 
 function updateImage() {
