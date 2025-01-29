@@ -162,10 +162,10 @@ function draw() {
 
 
   image(finalImageCanvasPG,0,0);
-  print("Amount of dots: "+amountOfDots);
+  // print("Amount of dots: "+amountOfDots);
 
   numParticles = constrain(map(amountOfDots,0,75000,500,5),5,500);
-  print("Num Particles: "+str(int(numParticles)));
+  // print("Num Particles: "+str(int(numParticles)));
   if(numParticles==5){
     updateImage();
   }

@@ -25,12 +25,12 @@ function initOrbitingParticles() {
       x: random(width), // Initial x position
       y: random(height), // Initial y position
       angle: random(TWO_PI), // Initial angle for orbit
-      radius: random(5, 20), // Initial orbit radius
+      radius: random(5, 10), // Initial orbit radius
       speed: random(0.005, 0.02), // Speed of orbit
       size: random(1, 3), // Size of the particle
       vx: 0, // Velocity in x direction
       vy: 0, // Velocity in y direction
-      attractionStrength: random(0.05, 0.25), // How strongly it is attracted to the cursor
+      attractionStrength: random(0.0125, 0.05), // How strongly it is attracted to the cursor
     });
   }
 }
