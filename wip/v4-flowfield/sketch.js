@@ -6,29 +6,19 @@ let boundary;
 let capacity = 1;
 
 let particles = [];
-let numParticles = 500;
+let numParticles = 1000;
 let maxParticlesConnections=30;
 
-let imgs=[];
-let totalImages=9;
-let currentImg=0;
 let img;
 let brightestPixels;
 let randomBrightPixel;
 
-let finalImageCanvasPG;
-let amountOfDots=0;
-
-let effectImageCanvasPG;
-
-let lastSwitchTime = 0; // Keeps track of the last time the image was updated
-let interval = 9500; // Interval in milliseconds (3 seconds)
+let flowfield;
 
 function preload() {
-  for(let i=1; i<=totalImages; i++){
-    img = loadImage('/wip/v3/img00'+i+'.jpeg'); // Replace with your image path  
-    imgs.push(img);
-  }
+  let params = new URLSearchParams(window.location.search);
+  params = params.get('img') || '1'; // Default to 'version1' if no parameter is present
+  img = loadImage('/wip/v3/img00'+params+'.jpeg'); // Replace with your image path
 }
 
 function gaussianRandom(mean, sd) {
@@ -41,7 +31,7 @@ function gaussianRandom(mean, sd) {
 
 // Function to find the brightest pixels in an image
 // Function to find the brightest pixels with a sensitivity threshold
-function findBrightestPixels(img, sensitivity = 0.2) {
+function findBrightestPixels(img, sensitivity = 0.75) {
   img.loadPixels();
   let brightestValue = 0;
   let brightestPixels = [];
@@ -94,51 +84,33 @@ function getRandomBrightPixel(brightestPixels) {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
-  effectImageCanvasPG = createGraphics(windowWidth, windowHeight);
+  // blendMode(REMOVE);
+  noCursor();
+  initCursor();
+  // Create Flowfield
+  flowfield = new FlowField(width,height);
+  print(flowfield)
 
-  // Method 1: Using window.innerWidth
-  let isMobile = window.innerWidth <= 800;
-  
-  // Method 2: More comprehensive device detection
-  let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  // Method 3: Touch capabilities
-  let hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  
-  console.log('Is Mobile (by width):', isMobile);
-  console.log('Is Mobile Device:', isMobileDevice);
-  console.log('Has Touchscreen:', hasTouchScreen);
-
-  if(isMobileDevice){
-    numParticles=100;
-  }
-
-  currentImg=int(random(totalImages))
-  brightestPixels = findBrightestPixels(imgs[currentImg]);
+  brightestPixels = findBrightestPixels(img);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
   console.log('Random Bright Pixel:', randomBrightPixel);
 
   for (let i = 0; i < numParticles; i++) {
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
-    let y = gaussianRandom(height / 2, height / 10);
-    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
+    particles[i] = new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height), randomBrightPixel[2]);
   }
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
   quadtree = new QuadTree(boundary, capacity);
 
-  updateImage();
-  noCursor();
-  initCursor();
+
 }
 
 function draw() {
-  let alpha=75;
-  background(0,alpha);
+  // image(img,0,0);
   quadtree.clearQuadtree();
 
+  // Remove dead particles
   particles = particles.filter(particle => particle.life >= 0);
 
   // Update particles
@@ -146,45 +118,24 @@ function draw() {
     let p = new Point(particles[i].x, particles[i].y, particles[i]);
     quadtree.insert(p);
     
-    // Attract to bright spots
     particles[i].run();
+
+    // Reset connections
     particles[i].connected = false;
-    particles[i].finalState=false;
     particles[i].connections = 0;
   }
 
   // Spawn new particles if needed
-  while (particles.length < numParticles) {
+  if (particles.length < numParticles) {
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2],true));
+    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
   }
 
 
-  image(finalImageCanvasPG,0,0);
-  // print("Amount of dots: "+amountOfDots);
-
-  numParticles = constrain(map(amountOfDots,0,75000,250,5),5,250);
-  // print("Num Particles: "+str(int(numParticles)));
-  if(numParticles==5){
-    updateImage();
-  }
-// 
   drawCursor();
 
-
-
-  // Check if 3 seconds have passed since the last switch
-  if (millis() - lastSwitchTime > interval) {
-    print("Timer switch! "+millis())
-    updateImage();
-    lastSwitchTime = millis(); // Update the last switch time
-  }
-
-  // reset timer when mouse moved
-  if(mouseX!=pmouseX || mouseY!=pmouseY){
-    lastSwitchTime = millis(); // Update the last switch time
-  }
-
+  // if(frameCount%10==0)
+  //   image(img,0,0);
 
   if (DEBUG) {
     quadtree.display();
@@ -196,7 +147,16 @@ function draw() {
       text(int(frameRate()), width - 200, 100);
       pop();
     }
+    flowfield.display();
   }
+
+  push();
+  rectMode(CORNER);
+  noStroke();
+  fill(0,0,0,20)
+  rect(0,0,width,height);
+  pop();
+
 }
 
 
@@ -206,36 +166,6 @@ function keyPressed() {
 	else print("DEBUG OFF");
 }
 
-function mouseClicked(){
-  print("CLICK MOUSE!")
-  lastSwitchTime = millis(); // Update the last switch time
-  updateImage();
-
-}
-
-function updateImage() {
-  finalImageCanvasPG.clear();
-  amountOfDots=0;
-  brightestPixels = findBrightestPixels(imgs[currentImg]);
-  randomBrightPixel = getRandomBrightPixel(brightestPixels);
-  console.log('Random Bright Pixel:', randomBrightPixel);
-
-  for (let i = 0; i < particles.length; i++) {
-    randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    particles[i].setTarget(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height));
-  }
-
-  effectImageCanvasPG.image(imgs[currentImg],width/2-imgs[currentImg].width/2,height/2-imgs[currentImg].height/2);
-  effectImageCanvasPG.loadPixels();
-  
-  if (currentImg < totalImages - 1) {
-    currentImg += 1;
-  } else {
-    currentImg = 0;
-  }
-
-
-}
 const resize = () => {
 	print("Resize canvas!")
     if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {		

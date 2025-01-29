@@ -1,28 +1,20 @@
 class Particle {
-  constructor(x, y, _inputState, mouse=false) {
-    this.life = random(1,50);
+  constructor(x, y, _inputState) {
+    this.life = random(25,100);
     this.lifeInc = random(0.05,0.1);
-    this.x = x+random(-100,100);
-    this.y = y+random(-100,100);
-    if(random()>0.98){
-      this.x = x+random(-350,350);
-      this.y = y+random(-350,350); 
-    }
-    if(mouse && random()>0.995){ // shooting star particle
-      this.x = mouseX+random(-5,5);
-      this.y = mouseY+random(-5,5); 
-      this.r = random(2,4);
-      this.burst = true;
-    }
-    else{
-      this.r = random(1,2);
-      this.burst = false;
+    this.x = x+random(-50,50);
+    this.y = y+random(-50,50);
+    if(random()>0.99){
+      this.x = x+random(-250,250);
+      this.y = y+random(-250,250); 
     }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
+    this.r = 1;
     this.range = 30;
-    this.vx = random(-0.05, 0.05);
-    this.vy = random(-0.05, 0.05);
+    this.vx = random(1, 2);
+    this.vy = random(1, 2);
+    this.velocityModifier = random(-0.5,0.5);
     this.noiseOffsetX = random(1000); // Offset for Perlin noise
     this.noiseOffsetY = random(1000);
 
@@ -30,63 +22,52 @@ class Particle {
     this.connections = 0;
     this.maxConnections = 10;
 
-    this.finalState = false;
-
     this.synapseActive = false;
     this.synapse = 0;
     this.synapseInc = random(0.05);
 
-    this.defaultColor = color(_inputState,_inputState);
-    this.defaultColor.setAlpha(_inputState);
+    this.defaultColor = color(255,255,222,_inputState/2);
     this.connectedColor = color(255,50);
+    // print(_inputState)
 
-    this.inputState = _inputState;
+    this.history = [{x: this.x, y: this.y}];
+
+    this.angle=0;
+
   }
 
 
 
-gravitateToTarget() {
+  gravitateToTarget() {
+    // Calculate distance to target
     let dx = this.targetX - this.x;
     let dy = this.targetY - this.y;
-
-    // Calculate distance to the target
     let distance = sqrt(dx * dx + dy * dy);
 
-    // If the particle is at the target, stop it
-    if (distance < 5.5) { // Threshold for stopping
-        this.vx = 0;
-        this.vy = 0;
-        this.finalState = true;
-        this.life=0;
-        this.display();
-        return; // Exit the function
+    // Smoothly move back to target
+    let returnStrength = 0.025; // Adjust the strength of the return force
+    if (distance > 0.5) { // Avoid oscillations near the target
+      this.vx += dx * returnStrength;
+      this.vy += dy * returnStrength;
+
+      // Limit velocity to prevent overshooting
+      let maxSpeed = 1;
+      let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
+      if (speed > maxSpeed) {
+        this.vx = (this.vx / speed) * maxSpeed;
+        this.vy = (this.vy / speed) * maxSpeed;
+      }
+    } else {
+      // Park the particle (stop movement when near the target)
+      this.vx = 0;
+      this.vy = 0;
     }
-
-    // Adjust speed based on distance
-    let maxSpeed = 0.75; // Maximum speed when far from the target
-    let minSpeed = 0.25; // Minimum speed when close to the target
-    let speedFactor = map(distance, 0, 100, minSpeed, maxSpeed); // Map distance to speed range
-
-    // Calculate normalized direction to target
-    let angle = atan2(dy, dx);
-    this.vx = cos(angle) * speedFactor;
-    this.vy = sin(angle) * speedFactor;
-
-    // Apply velocity
-    this.x += this.vx;
-    this.y += this.vy;
-}
-
-
-  setTarget(x, y){
-    this.targetX = x;
-    this.targetY = y;
   }
 
 
   addTurbulence() {
       // Adjust velocity using Perlin noise with balanced inputs
-      let turbulenceStrength = 0.0125; // Control intensity of turbulence
+      let turbulenceStrength = 0.0000125; // Control intensity of turbulence
       let noiseX = noise(this.noiseOffsetX, this.noiseOffsetY) - 0.5;
       let noiseY = noise(this.noiseOffsetY, this.noiseOffsetX) - 0.5;
 
@@ -99,7 +80,7 @@ gravitateToTarget() {
       this.noiseOffsetY += 0.03; // Use a slightly different increment
 
       // Normalize velocity to prevent uncontrolled speed increase
-      let maxSpeed = 2.85; // Maximum allowed speed
+      let maxSpeed = 0.85; // Maximum allowed speed
       let speed = sqrt(this.vx * this.vx + this.vy * this.vy);
       if (speed > maxSpeed) {
           this.vx = (this.vx / speed) * maxSpeed;
@@ -142,11 +123,11 @@ gravitateToTarget() {
   }
 
   attract(mx, my, mult=1) {
-    let forceStrength = 0.5*mult; // Strength of attraction
+    let forceStrength = 0.05*mult; // Strength of attraction
     let dx = mx - this.x;
     let dy = my - this.y;
     let distance = dist(mx, my, this.x, this.y);
-    distance = constrain(distance, 1, 500); // Avoid overly strong or weak forces
+    distance = constrain(distance, 10, 200); // Avoid overly strong or weak forces
 
     // Calculate attraction force inversely proportional to distance
     let force = forceStrength / distance;
@@ -199,60 +180,65 @@ gravitateToTarget() {
     this.life -= this.lifeInc;
   }
 
+  applyFlowfield() {
+      let x = floor(this.x / flowfield.cellSize);
+      let y = floor(this.y / flowfield.cellSize);
+
+      // Ensure x and y are within bounds
+      if (x >= 0 && x < flowfield.cols && y >= 0 && y < flowfield.rows) {
+          let index = y * flowfield.cols + x;
+
+          // Ensure index is valid
+          if (index >= 0 && index < flowfield.flowField.length) {
+              this.angle = flowfield.flowField[index].colorAngle;
+              this.vx = cos(this.angle);
+              this.vy = sin(this.angle);
+          }
+      }
+  }
+
+
   update() {
-    this.gravitateToTarget();
-    this.updateLife();
-    //this.updateSinapse();
-    this.addTurbulence();
+    // this.gravitateToTarget();
+    // this.updateSinapse();
+    // this.addTurbulence();
     // this.applyBoundaryForce(width*.5, height / 2, 'square', height*0.75);
     // this.applyConnectionGrowth();
     // this.checkEdges();
-    this.x += this.vx;
-    this.y += this.vy;
+    // this.updateHistory();
+    this.updateLife();
+    this.applyFlowfield();
+
+    this.x += this.vx * this.velocityModifier;
+    this.y += this.vy * this.velocityModifier;
+  }
+
+  updateHistory(){
+    this.history.push({x: this.x, y: this.y});
+    if (this.history.length>15)
+      this.history.shift();
+  }
+
+  displayHistory(){
+    for (let i=0; i<this.history.length; i++){
+      push();
+      fill(this.defaultColor,75)
+      noStroke();
+      ellipse(this.history[i].x, this.history[i].y, this.r , this.r);
+      pop();
+    }
   }
   
   display() {
     push();
+    // if (this.connected) fill(255,255,150,this.life);
+    // else fill(255,255,200,this.life);
+    fill(this.defaultColor,255)
     noStroke();
-    
-    if (!this.connected && this.finalState){
-      finalImageCanvasPG.noStroke();
-      finalImageCanvasPG.fill(this.defaultColor,50);
-      // if(this.burst){
-      //   for(let i=0; i<50; i++){
-
-      //     let angle = random(TWO_PI); // Random angle between 0 and 2π
-      //     let radius = random(50);    // Random radius between 0 and 50
-      //     let closeToX = int(this.x + cos(angle) * radius);
-      //     let closeToY = int(this.y + sin(angle) * radius);
-      //     let pixelColor = effectImageCanvasPG.get(closeToX, closeToY);
-      
-      //     // Draw a circle with the same color on the finalImageCanvasPG graphics
-      //     finalImageCanvasPG.push();
-      //     finalImageCanvasPG.fill(pixelColor);
-      //     finalImageCanvasPG.noStroke();
-      //     finalImageCanvasPG.circle(closeToX, closeToY, random(1,5)); // Adjust the size of the circle as needed
-      //     finalImageCanvasPG.pop();
-
-          finalImageCanvasPG.ellipse(this.x, this.y, this.r+random(1), this.r+random(1));
-          amountOfDots+=1;
-      //   }
-      // }
-
-    }
-    else if (this.connected){ // mouse over
-      fill(255,255,222);
-      ellipse(this.x, this.y, this.r * 3, this.r * 3);
-    }
-    else {
-      let pixelColor = effectImageCanvasPG.get(this.x, this.y);
-      fill(255,255,170,95); // moving
-      // fill(pixelColor); // moving
-      ellipse(this.x, this.y, this.r * 1.15, this.r * 1.15);
-
-    }
-
+    ellipse(this.x, this.y, this.r * 2, this.r * 2);
     pop();
+
+    // this.displayHistory();
 
     // display range
     // push();
