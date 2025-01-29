@@ -2,15 +2,22 @@ class Particle {
   constructor(x, y, _inputState, mouse=false) {
     this.life = random(1,50);
     this.lifeInc = random(0.05,0.1);
-    this.x = x;
-    this.y = y;
+    this.x = x+random(-100,100);
+    this.y = y+random(-100,100);
     if(random()>0.98){
       this.x = x+random(-350,350);
       this.y = y+random(-350,350); 
     }
+    if(random()>0.995){
+      this.x = mouseX+random(-5,5);
+      this.y = mouseY+random(-5,5); 
+      this.r = random(2,4);
+    }
+    else{
+      this.r = random(1,2);
+    }
     this.targetX = x; // Target bright pixel position
     this.targetY = y;
-    this.r = random(1,2);
     this.range = 30;
     this.vx = random(-0.05, 0.05);
     this.vy = random(-0.05, 0.05);

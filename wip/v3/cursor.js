@@ -20,17 +20,17 @@ function initCursor(){
 }
 
 function initOrbitingParticles() {
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 50; i++) {
     orbitingParticles.push({
       x: random(width), // Initial x position
       y: random(height), // Initial y position
       angle: random(TWO_PI), // Initial angle for orbit
-      radius: random(15, 50), // Initial orbit radius
+      radius: random(5, 20), // Initial orbit radius
       speed: random(0.005, 0.02), // Speed of orbit
-      size: random(0.5, 3), // Size of the particle
+      size: random(1, 3), // Size of the particle
       vx: 0, // Velocity in x direction
       vy: 0, // Velocity in y direction
-      attractionStrength: random(0.05, 0.2), // How strongly it is attracted to the cursor
+      attractionStrength: random(0.05, 0.25), // How strongly it is attracted to the cursor
     });
   }
 }
@@ -60,14 +60,23 @@ function drawCursor() {
     // Draw outer cursor
     noFill();
     stroke(255, 255, 230, 150 + (foundPoints.length / maxMouseCapture) * 255);
-    strokeWeight(2);
+    strokeWeight(1);
     circle(range.x, range.y, range.r * 2);
     pop();
+
+
+    // push();
+    // fill(0,255,0,50);
+    // noStroke();
+    // for(let a=0; a<TWO_PI; a+=TWO_PI/10){
+    //  circle(cursorX+sin(a)*(50*sin(noise(frameCount*0.5)+a*sin(frameCount*0.01))),cursorY+cos(a)*(50*sin(noise(frameCount*0.5)+a*sin(frameCount*0.01))),5) 
+    // }
+    // pop();
 
     // draw orbiting particles
     push();
     noStroke();
-    fill(255, 255, 0, 100); // Yellow particles
+    fill(255, 255, 202, 100); // Yellow particles
 
     orbitingParticles.forEach(p => {
       // Attraction force towards cursor
@@ -103,7 +112,7 @@ function drawCursor() {
     pop()
 
     // paint over
-    for(let i=0; i<10; i++){
+    for(let i=0; i<30; i++){
         let angle = random(TWO_PI); // Random angle between 0 and 2π
         let radius = random(50);    // Random radius between 0 and 50
         let closeToCursorX = int(cursorX + cos(angle) * radius);
@@ -150,6 +159,7 @@ function drawCursorFindQuadrtree() {
     strokeWeight(1);
     circle(range.x, range.y, range.r * 2);
     pop();
+
 
     if (foundPoints.length<maxMouseCapture){
         for (let i = 0; i < foundPoints.length; i++) {

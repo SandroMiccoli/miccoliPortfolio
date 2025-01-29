@@ -42,7 +42,7 @@ function gaussianRandom(mean, sd) {
 
 // Function to find the brightest pixels in an image
 // Function to find the brightest pixels with a sensitivity threshold
-function findBrightestPixels(img, sensitivity = 0.25) {
+function findBrightestPixels(img, sensitivity = 0.2) {
   img.loadPixels();
   let brightestValue = 0;
   let brightestPixels = [];
@@ -164,7 +164,7 @@ function draw() {
   image(finalImageCanvasPG,0,0);
   print("Amount of dots: "+amountOfDots);
 
-  numParticles = constrain(map(amountOfDots,0,75000,1000,5),5,1000);
+  numParticles = constrain(map(amountOfDots,0,75000,500,5),5,500);
   print("Num Particles: "+str(int(numParticles)));
   if(numParticles==5){
     updateImage();
