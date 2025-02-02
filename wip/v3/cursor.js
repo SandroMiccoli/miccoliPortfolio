@@ -22,7 +22,7 @@ function initCursor(){
 }
 
 function initOrbitingParticles() {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 10; i++) {
     orbitingParticles.push({
       x: mouseXPos+random(-150,150), // Initial x position
       y: mouseYPos+random(-150,150), // Initial y position
@@ -67,13 +67,16 @@ function drawCursor() {
     pop();
 
 
-    // push();
-    // fill(0,255,0,50);
-    // noStroke();
-    // for(let a=0; a<TWO_PI; a+=TWO_PI/10){
-    //  circle(cursorX+sin(a)*(50*sin(noise(frameCount*0.5)+a*sin(frameCount*0.01))),cursorY+cos(a)*(50*sin(noise(frameCount*0.5)+a*sin(frameCount*0.01))),5) 
-    // }
-    // pop();
+    // Draw close oscilating particles
+    push();
+    fill(255,255,180,150);
+    noStroke();
+    for(let a=0; a<TWO_PI; a+=TWO_PI/10){
+      let r=sin(frameCount*0.0125667+cos(frameCount*0.0255123+2+a)+a+5+noise(a))*50;
+      let aInc = sin(frameCount*0.01+a*2)*2;
+      circle(cursorX+sin(a+aInc)*r,cursorY+cos(a+aInc)*r,2);
+    }
+    pop();
 
     // draw orbiting particles
     push();
@@ -121,6 +124,7 @@ function drawCursor() {
           let closeToCursorX = int(cursorX + cos(angle) * radius);
           let closeToCursorY = int(cursorY + sin(angle) * radius);
           let pixelColor = effectImageCanvasPG.get(closeToCursorX, closeToCursorY);
+          // pixelColor[2] *= 0.8;
       
           // Draw a circle with the same color on the finalImageCanvasPG graphics
           finalImageCanvasPG.push();
@@ -194,5 +198,5 @@ function mouseMoved() {
   // print("Mouse moved!! "+lastSwitchTime)
   lastSwitchTime = millis(); // Update the last switch time
   mouseActive+=1;
-  print(mouseActive)
+  // print(mouseActive)
 }
