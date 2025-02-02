@@ -79,10 +79,6 @@ function drawCursor() {
     pop();
 
     // draw orbiting particles
-    push();
-    noStroke();
-    fill(255, 255, 202, 100); // Yellow particles
-
     orbitingParticles.forEach(p => {
       // Attraction force towards cursor
       let dx = cursorX - p.x;
@@ -112,9 +108,12 @@ function drawCursor() {
       p.y += sin(p.angle) * p.radius * 0.05;
 
       // Draw particle
+      push();
+      noStroke();
+      fill(255, 255, 202, 100); // Yellow particles
       ellipse(p.x, p.y, p.size, p.size);
+      pop()
     });
-    pop()
 
     // paint over
     if(mouseActive>50){

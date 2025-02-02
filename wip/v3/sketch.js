@@ -24,6 +24,9 @@ let effectImageCanvasPG;
 let lastSwitchTime = 0; // Keeps track of the last time the image was updated
 let interval = 9500; // Interval in milliseconds (3 seconds)
 
+let startTransition = false;
+let transition=0;
+
 function preload() {
   for(let i=1; i<=totalImages; i++){
     img = loadImage('/wip/v3/img00'+i+'.jpeg'); // Replace with your image path  
@@ -139,6 +142,7 @@ function draw() {
   let alpha=75;
   background(0,alpha);
   quadtree.clearQuadtree();
+  transitionImage();
 
   particles = particles.filter(particle => particle.life >= 0);
 
@@ -171,7 +175,6 @@ function draw() {
   }
 // 
   drawCursor();
-
 
 
   // Check if 3 seconds have passed since the last switch
@@ -214,8 +217,24 @@ function mouseClicked(){
 
 }
 
+function transitionImage() {
+  if (startTransition){
+    finalImageCanvasPG.push();
+    finalImageCanvasPG.fill(0,transition*25)
+    finalImageCanvasPG.noStroke();
+    finalImageCanvasPG.rect(0,0,width,height)
+    finalImageCanvasPG.pop();
+    transition+=0.1;
+  }
+  if(transition>1){
+    finalImageCanvasPG.clear();
+    startTransition=false;
+    transition=0;
+  }
+}
+
 function updateImage() {
-  finalImageCanvasPG.clear();
+  startTransition=true;
   amountOfDots=0;
   brightestPixels = findBrightestPixels(imgs[currentImg]);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
@@ -234,9 +253,8 @@ function updateImage() {
   } else {
     currentImg = 0;
   }
-
-
 }
+
 const resize = () => {
 	print("Resize canvas!")
     if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {		

@@ -2,13 +2,13 @@ class Particle {
   constructor(x, y, _inputState, mouse=false) {
     this.life = random(1,50);
     this.lifeInc = random(0.05,0.1);
-    this.x = x+random(-100,100);
-    this.y = y+random(-100,100);
-    if(random()>0.98){
+    this.x = x+random(-5,5);
+    this.y = y+random(-5,5);
+    if(random()>0.99){
       this.x = x+random(-350,350);
       this.y = y+random(-350,350); 
     }
-    if(mouse && random()>0.995){
+    if(mouse && random()>0.9999 && mouseY!=0){
       this.x = mouseX+random(-5,5);
       this.y = mouseY+random(-5,5); 
       this.r = random(2,4);
