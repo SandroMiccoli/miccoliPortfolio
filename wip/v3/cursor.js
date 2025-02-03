@@ -72,7 +72,7 @@ function drawCursor() {
     fill(255,255,180,150);
     noStroke();
     for(let a=0; a<TWO_PI; a+=TWO_PI/10){
-      let r=sin(frameCount*0.0125667+cos(frameCount*0.0255123+2+a)+a+5+noise(a))*50;
+      let r=sin(frameCount*0.0125667+cos(frameCount*0.0255123+2+a)+a+5+noise(a))*40;
       let aInc = sin(frameCount*0.01+a*2)*2;
       circle(cursorX+sin(a+aInc)*r,cursorY+cos(a+aInc)*r,2);
     }
