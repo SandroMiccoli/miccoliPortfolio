@@ -2,8 +2,8 @@ class Particle {
   constructor(x, y, _inputState, mouse=false) {
     this.life = random(1,50);
     this.lifeInc = random(0.05,0.1);
-    this.x = x+random(-5,5);
-    this.y = y+random(-5,5);
+    this.x = x+random(-10,10);
+    this.y = y+random(-10,10);
     if(random()>0.99){
       this.x = x+random(-350,350);
       this.y = y+random(-350,350); 
@@ -61,8 +61,8 @@ gravitateToTarget() {
     }
 
     // Adjust speed based on distance
-    let maxSpeed = 0.75; // Maximum speed when far from the target
-    let minSpeed = 0.25; // Minimum speed when close to the target
+    let maxSpeed = 0.5; // Maximum speed when far from the target
+    let minSpeed = 0.15; // Minimum speed when close to the target
     let speedFactor = map(distance, 0, 100, minSpeed, maxSpeed); // Map distance to speed range
 
     // Calculate normalized direction to target
