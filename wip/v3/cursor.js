@@ -74,7 +74,7 @@ function drawCursor() {
     for(let a=0; a<TWO_PI; a+=TWO_PI/10){
       let r=sin(frameCount*0.0125667+cos(frameCount*0.0255123+2+a)+a+5+noise(a))*40;
       let aInc = sin(frameCount*0.01+a*2)*2;
-      circle(cursorX+sin(a+aInc)*r,cursorY+cos(a+aInc)*r,2);
+      circle(cursorX+sin(a+aInc)*r,cursorY+cos(a+aInc)*r,3);
     }
     pop();
 
@@ -117,7 +117,7 @@ function drawCursor() {
 
     // paint over
     if(mouseActive>50){
-      for(let i=0; i<30; i++){
+      for(let i=0; i<50; i++){
           let angle = random(TWO_PI); // Random angle between 0 and 2π
           let radius = random(50);    // Random radius between 0 and 50
           let closeToCursorX = int(cursorX + cos(angle) * radius);
