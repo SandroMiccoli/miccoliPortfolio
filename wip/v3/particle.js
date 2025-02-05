@@ -34,7 +34,7 @@ class Particle {
     this.synapse = 0;
     this.synapseInc = random(0.05);
 
-    this.defaultColor = color(_inputState,_inputState);
+    this.defaultColor = color('hsla(50, 20%, '+str(_inputState/255*100)+'%,'+str(_inputState/255)+')');
     this.defaultColor.setAlpha(_inputState);
     this.connectedColor = color(255,50);
 
@@ -215,7 +215,8 @@ gravitateToTarget() {
     
     if (!this.connected && this.finalState){
       finalImageCanvasPG.noStroke();
-      finalImageCanvasPG.fill(this.defaultColor,50);
+      finalImageCanvasPG.colorMode(HSB);
+      finalImageCanvasPG.fill(this.defaultColor);
       finalImageCanvasPG.ellipse(this.x, this.y, this.r+random(1), this.r+random(1));
       amountOfDots+=1;
     }

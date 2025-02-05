@@ -127,7 +127,7 @@ function drawCursor() {
       
           // Draw a circle with the same color on the finalImageCanvasPG graphics
           finalImageCanvasPG.push();
-          finalImageCanvasPG.fill(pixelColor);
+          finalImageCanvasPG.fill(50,20,pixelColor[0]/255*100,pixelColor[0]/255);
           finalImageCanvasPG.noStroke();
           finalImageCanvasPG.circle(closeToCursorX, closeToCursorY, random(1,5)); // Adjust the size of the circle as needed
           finalImageCanvasPG.pop();

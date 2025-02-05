@@ -101,6 +101,7 @@ function setup() {
   finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
   effectImageCanvasPG = createGraphics(windowWidth, windowHeight);
 
+
   // Method 1: Using window.innerWidth
   let isMobile = window.innerWidth <= 800;
   
@@ -143,7 +144,6 @@ function draw() {
   background(0,alpha);
   quadtree.clearQuadtree();
   transitionImage();
-
   particles = particles.filter(particle => particle.life >= 0);
 
   // Update particles
