@@ -1,7 +1,7 @@
 // thanks to Patt Vira: https://www.youtube.com/watch?v=7pxyIC_ZEwA
 let DEBUG = false;
 
-let quadtree;
+// let quadtree;
 let boundary;
 let capacity = 1;
 
@@ -101,20 +101,9 @@ function setup() {
   finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
   effectImageCanvasPG = createGraphics(windowWidth, windowHeight);
 
-
-  // Method 1: Using window.innerWidth
-  let isMobile = window.innerWidth <= 800;
-  
-  // Method 2: More comprehensive device detection
+  // mobile
   let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  // Method 3: Touch capabilities
-  let hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  
-  console.log('Is Mobile (by width):', isMobile);
   console.log('Is Mobile Device:', isMobileDevice);
-  console.log('Has Touchscreen:', hasTouchScreen);
-
   if(isMobileDevice){
     numParticles=100;
   }
@@ -134,7 +123,6 @@ function setup() {
   }
 
   boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
-  quadtree = new QuadTree(boundary, capacity);
 
   updateImage();
 }
@@ -142,14 +130,13 @@ function setup() {
 function draw() {
   let alpha=75;
   background(0,alpha);
-  quadtree.clearQuadtree();
   transitionImage();
   particles = particles.filter(particle => particle.life >= 0);
 
   // Update particles
   for (let i = 0; i < particles.length; i++) {
     let p = new Point(particles[i].x, particles[i].y, particles[i]);
-    quadtree.insert(p);
+    // quadtree.insert(p);
     
     // Attract to bright spots
     particles[i].run();
@@ -191,7 +178,7 @@ function draw() {
 
 
   if (DEBUG) {
-    quadtree.display();
+    // quadtree.display();
     if (frameCount % 2 == 0) {
       push();
       textSize(90);
@@ -260,7 +247,7 @@ const resize = () => {
     if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {		
 			resizeCanvas(windowWidth, windowHeight);
 	    boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
-		  quadtree = new QuadTree(boundary, capacity);
+		  // quadtree = new QuadTree(boundary, capacity);
 			// background(255,0,0);
     }
 }
