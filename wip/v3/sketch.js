@@ -10,7 +10,7 @@ let numParticles = 1000;
 let maxParticlesConnections=30;
 
 let imgs=[];
-let totalImages=5;
+let totalImages=7;
 let currentImg=0;
 let img;
 let brightestPixels;
@@ -174,7 +174,7 @@ function draw() {
   
     // Update particles
     for (let i = 0; i < particles.length; i++) {
-      let p = new Point(particles[i].x, particles[i].y, particles[i]);
+      // let p = new Point(particles[i].x, particles[i].y, particles[i]);
       // quadtree.insert(p);
       
       // Attract to bright spots
