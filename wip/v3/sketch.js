@@ -27,10 +27,24 @@ let interval = 9500; // Interval in milliseconds (3 seconds)
 let startTransition = false;
 let transition=0;
 
+let videoElement;
+
+let isMobileDevice=false;
+
 function preload() {
-  for(let i=1; i<=totalImages; i++){
-    img = loadImage('/wip/v3/img00'+i+'.jpeg'); // Replace with your image path  
-    imgs.push(img);
+  // mobile
+  isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  console.log('Is Mobile Device:', isMobileDevice);
+
+  if(!isMobileDevice){
+    for(let i=1; i<=totalImages; i++){
+      img = loadImage('/wip/v3/img00'+i+'.jpeg'); // Replace with your image path  
+      imgs.push(img);
+    }
+  }
+  else{
+    // Create a video element and play it
+    videoElement = createVideo("/wip/v3/SharpCharacter.mp4",muteVideo); // Replace with actual video path
   }
   
 }
@@ -96,96 +110,128 @@ function getRandomBrightPixel(brightestPixels) {
   return brightestPixels[Math.floor(Math.random() * brightestPixels.length)];
 }
 
+// Mute the video once it loads.
+function muteVideo() {
+  print("MUTE VIDEO")
+  videoElement.volume(0);
+  videoElement.autoplay(true);
+  videoElement.play();
+}
+
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
-  effectImageCanvasPG = createGraphics(windowWidth, windowHeight);
-
   // mobile
-  let isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   console.log('Is Mobile Device:', isMobileDevice);
+
+
   if(isMobileDevice){
-    numParticles=100;
+
+    // Hide the canvas (if created)
+    noCanvas();
+
+    videoElement.size(windowWidth, windowHeight);
+    videoElement.position(0, 0);
+    videoElement.style("object-fit", "cover");
+    videoElement.autoplay(true);
+    videoElement.loop(); // Make it loop
+    // videoElement.showControls(); // Optional: Show play/pause controls
   }
-
-  noCursor();
-  initCursor();
-  currentImg=int(random(totalImages))
-  brightestPixels = findBrightestPixels(imgs[currentImg]);
-  randomBrightPixel = getRandomBrightPixel(brightestPixels);
-  console.log('Random Bright Pixel:', randomBrightPixel);
-
-  for (let i = 0; i < numParticles; i++) {
+  else{
+    createCanvas(windowWidth, windowHeight);
+    finalImageCanvasPG = createGraphics(windowWidth, windowHeight);
+    effectImageCanvasPG = createGraphics(windowWidth, windowHeight, P2D);
+  
+    finalImageCanvasPG.drawingContext.willReadFrequently = true;
+    effectImageCanvasPG.drawingContext.willReadFrequently = true;
+  
+  
+    noCursor();
+    initCursor();
+    currentImg=int(random(totalImages))
+    brightestPixels = findBrightestPixels(imgs[currentImg]);
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
-    let y = gaussianRandom(height / 2, height / 10);
-    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
+    console.log('Random Bright Pixel:', randomBrightPixel);
+  
+    for (let i = 0; i < numParticles; i++) {
+      randomBrightPixel = getRandomBrightPixel(brightestPixels);
+      let x = gaussianRandom(width / 2, width / 20); // Mean and standard deviation
+      let y = gaussianRandom(height / 2, height / 10);
+      particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
+    }
+  
+    boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
+  
+    updateImage();
   }
-
-  boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
-
-  updateImage();
 }
 
 function draw() {
-  let alpha=75;
-  background(0,alpha);
-  transitionImage();
-  particles = particles.filter(particle => particle.life >= 0);
-
-  // Update particles
-  for (let i = 0; i < particles.length; i++) {
-    let p = new Point(particles[i].x, particles[i].y, particles[i]);
-    // quadtree.insert(p);
-    
-    // Attract to bright spots
-    particles[i].run();
-    particles[i].connected = false;
-    particles[i].finalState=false;
-    particles[i].connections = 0;
-  }
-
-  // Spawn new particles if needed
-  while (particles.length < numParticles) {
-    randomBrightPixel = getRandomBrightPixel(brightestPixels);
-    particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2],true));
-  }
-
-
-  image(finalImageCanvasPG,0,0);
-  // print("Amount of dots: "+amountOfDots);
-
-  numParticles = constrain(map(amountOfDots,0,75000,500,5),5,500);
-  // print("Num Particles: "+str(int(numParticles)));
-  if(numParticles==5){
-    updateImage();
-  }
-// 
-  drawCursor();
-
-
-  // Check if 3 seconds have passed since the last switch
-  if (millis() - lastSwitchTime > interval) {
-    print("Timer switch! "+millis())
-    updateImage();
-    lastSwitchTime = millis(); // Update the last switch time
-  }
-
-  // reset timer when mouse moved
-  if(mouseX!=pmouseX || mouseY!=pmouseY){
-    lastSwitchTime = millis(); // Update the last switch time
-  }
-
-
-  if (DEBUG) {
-    // quadtree.display();
-    if (frameCount % 2 == 0) {
-      push();
-      textSize(90);
-      noStroke();
-      fill(255, 125);
-      text(int(frameRate()), width - 200, 100);
-      pop();
+  if(!isMobileDevice){
+    let alpha=75;
+    background(0,alpha);
+    transitionImage();
+    particles = particles.filter(particle => particle.life >= 0);
+  
+    // Update particles
+    for (let i = 0; i < particles.length; i++) {
+      let p = new Point(particles[i].x, particles[i].y, particles[i]);
+      // quadtree.insert(p);
+      
+      // Attract to bright spots
+      particles[i].run();
+      particles[i].connected = false;
+      particles[i].finalState=false;
+      particles[i].connections = 0;
+    }
+  
+    // Spawn new particles if needed
+    while (particles.length < numParticles) {
+      randomBrightPixel = getRandomBrightPixel(brightestPixels);
+      particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2],true));
+    }
+  
+  
+    image(finalImageCanvasPG,0,0);
+    // print("Amount of dots: "+amountOfDots);
+  
+    numParticles = constrain(map(amountOfDots,0,75000,500,5),5,500);
+    // print("Num Particles: "+str(int(numParticles)));
+    if(numParticles==5){
+      updateImage();
+    }
+  // 
+    drawCursor();
+  
+  
+    // Check if 3 seconds have passed since the last switch
+    if (millis() - lastSwitchTime > interval) {
+      if(DEBUG) print("Timer switch!")
+      updateImage();
+      lastSwitchTime = millis(); // Update the last switch time
+    }
+  
+    // reset timer when mouse moved
+    if(mouseX!=pmouseX || mouseY!=pmouseY){
+      lastSwitchTime = millis(); // Update the last switch time
+    }
+  
+  
+    if (DEBUG) {
+      // quadtree.display();
+      if (frameCount % 2 == 0) {
+        push();
+        textSize(90);
+        noStroke();
+        fill(255, 125);
+        text(int(frameRate()), width - 200, 100);
+        pop();
+  
+        push();
+        stroke(0,205,0,150)
+        line(width/2,0,width/2,height);
+        line(0,height/2,width,height/2);
+        pop();
+      }
     }
   }
 }
@@ -199,8 +245,11 @@ function keyPressed() {
 
 function mouseClicked(){
   print("CLICK MOUSE!")
-  lastSwitchTime = millis(); // Update the last switch time
-  updateImage();
+
+  if(!isMobileDevice){
+    lastSwitchTime = millis(); // Update the last switch time
+    updateImage();
+  }
 
 }
 
@@ -225,7 +274,6 @@ function updateImage() {
   amountOfDots=0;
   brightestPixels = findBrightestPixels(imgs[currentImg]);
   randomBrightPixel = getRandomBrightPixel(brightestPixels);
-  console.log('Random Bright Pixel:', randomBrightPixel);
 
   for (let i = 0; i < particles.length; i++) {
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
