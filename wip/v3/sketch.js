@@ -1,8 +1,7 @@
-// thanks to Patt Vira: https://www.youtube.com/watch?v=7pxyIC_ZEwA
 let DEBUG = false;
 
 // let quadtree;
-let boundary;
+// let boundary;
 let capacity = 1;
 
 let particles = [];
@@ -31,6 +30,9 @@ let videoElement;
 
 let isMobileDevice=false;
 
+let horizontalPosition = 0.7;
+let verticalPosition = 0.6;
+
 function preload() {
   // mobile
   isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -39,6 +41,8 @@ function preload() {
   if(!isMobileDevice){
     for(let i=1; i<=totalImages; i++){
       img = loadImage('/wip/v3/img00'+i+'.jpeg'); // Replace with your image path  
+      // print(img.width, img.height)
+      // print(img.width, img.height)
       imgs.push(img);
     }
   }
@@ -57,10 +61,17 @@ function gaussianRandom(mean, sd) {
     return z * sd + mean;
 }
 
-// Function to find the brightest pixels in an image
 // Function to find the brightest pixels with a sensitivity threshold
 function findBrightestPixels(img, sensitivity = 0.2) {
+  print(windowWidth)
+
+  // Scale up image for higher resolutions
+  if(windowWidth>1920)
+    img.resize(1280,0)
+  print(img.width, img.height)
+
   img.loadPixels();
+
   let brightestValue = 0;
   let brightestPixels = [];
 
@@ -95,7 +106,7 @@ function findBrightestPixels(img, sensitivity = 0.2) {
       let brightness = 0.299 * r + 0.587 * g + 0.114 * b;
 
       if (brightness >= threshold) {
-        brightestPixels.push([x+(width/2-img.width/2), y+(height/2-img.height/2), brightness]);
+        brightestPixels.push([x+(width*horizontalPosition-img.width/2), y+(height*verticalPosition-img.height/2), brightness]);
       }
     }
   }
@@ -114,6 +125,7 @@ function getRandomBrightPixel(brightestPixels) {
 function muteVideo() {
   print("MUTE VIDEO")
   videoElement.volume(0);
+  videoElement.hideControls();
   videoElement.autoplay(true);
   videoElement.play();
 }
@@ -122,7 +134,6 @@ function setup() {
   // mobile
   isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   console.log('Is Mobile Device:', isMobileDevice);
-
 
   if(isMobileDevice){
 
@@ -145,9 +156,9 @@ function setup() {
     effectImageCanvasPG.drawingContext.willReadFrequently = true;
   
   
-    noCursor();
+    // noCursor();
     initCursor();
-    currentImg=int(random(totalImages))
+    currentImg=0;
     brightestPixels = findBrightestPixels(imgs[currentImg]);
     randomBrightPixel = getRandomBrightPixel(brightestPixels);
     console.log('Random Bright Pixel:', randomBrightPixel);
@@ -158,8 +169,6 @@ function setup() {
       let y = gaussianRandom(height / 2, height / 10);
       particles.push(new Particle(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height),randomBrightPixel[2]));
     }
-  
-    boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
   
     updateImage();
   }
@@ -238,9 +247,9 @@ function draw() {
 
 
 function keyPressed() {
-	if (key == "d") DEBUG = !DEBUG;
-	if (DEBUG) print("DEBUG ON");
-	else print("DEBUG OFF");
+  if (key == "d") DEBUG = !DEBUG;
+  if (DEBUG) print("DEBUG ON");
+  else print("DEBUG OFF");
 }
 
 function mouseClicked(){
@@ -280,7 +289,7 @@ function updateImage() {
     particles[i].setTarget(constrain(randomBrightPixel[0], 0, width), constrain(randomBrightPixel[1], 0, height));
   }
 
-  effectImageCanvasPG.image(imgs[currentImg],width/2-imgs[currentImg].width/2,height/2-imgs[currentImg].height/2);
+  effectImageCanvasPG.image(imgs[currentImg],width*horizontalPosition-imgs[currentImg].width/2,height*verticalPosition-imgs[currentImg].height/2);
   effectImageCanvasPG.loadPixels();
   
   if (currentImg < totalImages - 1) {
@@ -290,14 +299,18 @@ function updateImage() {
   }
 }
 
-const resize = () => {
-	print("Resize canvas!")
-    if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {		
-			resizeCanvas(windowWidth, windowHeight);
-	    boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
-		  // quadtree = new QuadTree(boundary, capacity);
-			// background(255,0,0);
+function windowResized() {
+  print("Resize canvas!")
+    if(navigator.userAgent.indexOf("HeadlessChrome") == -1) {   
+      resizeCanvas(windowWidth, windowHeight);
+      if(!isMobileDevice){
+        finalImageCanvasPG.resizeCanvas(windowWidth, windowHeight);
+        effectImageCanvasPG.resizeCanvas(windowWidth, windowHeight);
+        brightestPixels = findBrightestPixels(imgs[currentImg]);
+        updateImage();
+      }
+      // boundary = new Rect(width / 2, height / 2, width / 2, height / 2);
+      // quadtree = new QuadTree(boundary, capacity);
+      // background(255,0,0);
     }
 }
-
-window.addEventListener('resize', resize);

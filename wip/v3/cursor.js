@@ -41,7 +41,7 @@ function initOrbitingParticles() {
 
 function drawCursor() {
   if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-    let range = new Circle(mouseX, mouseY, 50);
+    // let range = new Circle(mouseX, mouseY, 50);
 
     // Smoothly interpolate cursor positions using easing
     cursorX += (mouseXPos - cursorX) * 0.075;
@@ -52,17 +52,17 @@ function drawCursor() {
 
     push();
 
-    // Draw inner cursor
-    fill(255, 255, 230, 150 );
-    noStroke();
-    ellipse(cursorX, cursorY, 7);
+    // // Draw inner cursor
+    // fill(255, 255, 230, 150 );
+    // noStroke();
+    // ellipse(cursorX, cursorY, 7);
 
-    // Draw outer cursor
-    noFill();
-    stroke(255, 255, 230, 150);
-    strokeWeight(1);
-    circle(range.x, range.y, range.r * 2);
-    pop();
+    // // Draw outer cursor
+    // noFill();
+    // stroke(255, 255, 230, 150);
+    // strokeWeight(1);
+    // circle(range.x, range.y, range.r * 2);
+    // pop();
 
 
     // Draw close oscilating particles
