@@ -274,14 +274,19 @@
 					});
 							
 					// Init fluidbox
-					$this.find('.gallery__item__link').fluidbox({
+					// SHOW CAPTION
+					$this.find('.gallery__item__link').on('openend.fluidbox',function(){
+						console.log("OPEN END");
+						var $img = $(this).find('img');
+						$('body').find('.caption')
+							.addClass('visible')
+							.text($img.attr('title'))
+					}).on('closestart.fluidbox',function(){
+						$('body').find('.caption')
+							.removeClass('visible')
+					}).fluidbox({
 						loader: true
 					});
-
-					$this.find('.gallery__item__link').on('openend.fluidbox',function(){
-						console.log("OPEN END")
-					})
-					.fluidbox();
 
 				}
 

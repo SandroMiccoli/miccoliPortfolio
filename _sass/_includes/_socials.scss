@@ -29,10 +29,10 @@
 	width: 30px;
 	height: 30px;
 	border-radius: 100%;
-	background: $text-light-color;
+	background: $background-color;
 	font-size: 17px;
 	line-height: 1;
-	color: $background-color;
+	color: $text-light-color;
 
 	@include mq(tabletp) {
 		width: 40px;

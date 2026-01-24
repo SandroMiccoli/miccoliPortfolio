@@ -4,6 +4,17 @@
 
 // - - - - - - - - - - - - - - - - - -
 
+/* FULL SCREEN BACKGROUND  */
+
+.fullscreen-bg {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: -1 !important;
+    object-fit: contain !important;
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Basics
 
@@ -18,6 +29,7 @@ body {
 	font-style: normal;
 	line-height: 1;
 	color: $text-medium-color;
+	overflow-x: hidden; /* Hide horizontal scrollbar */
 }
 
 
@@ -201,11 +213,11 @@ a {
 	font-weight: $bold-weight;
 	@include transition(all 0.15s ease-in-out);
 
-	&:hover {
-		background-image: repeating-linear-gradient(to top, rgb(0 160 176), rgb(0 160 176) 5px, rgb(10 35 66) 5px 10px, rgb(204 51 63) 10px 15px, rgb(235 104 65) 15px 20px, rgb(237 201 81) 20px 25px);
-		-webkit-background-clip: text;
-		color: transparent;
-	}
+	// &:hover {
+	// 	background-image: repeating-linear-gradient(to top, rgb(0 160 176), rgb(0 160 176) 5px, rgb(10 35 66) 5px 10px, rgb(204 51 63) 10px 15px, rgb(235 104 65) 15px 20px, rgb(237 201 81) 20px 25px);
+	// 	-webkit-background-clip: text;
+	// 	color: transparent;
+	// }
 }
 
 .button {
@@ -232,7 +244,7 @@ a {
 		background-image: repeating-linear-gradient(to right, rgb(0 160 176), rgb(0 160 176) 5px, rgb(10 35 66) 5px 10px, rgb(204 51 63) 10px 15px, rgb(235 104 65) 15px 20px, rgb(237 201 81) 20px 25px);
 		-webkit-background-clip: text;
 		color: transparent;
-		border-color: transparent;
+/*		border-color: transparent;*/
 	}
 
 	svg {
@@ -483,12 +495,12 @@ h1, h2, h3, h4{
 	@include transition(all 0.5s ease-out-in);
 }
 
-h1:hover, h2:hover, h3:hover, h4:hover{
-	@include transition(all 0.25s ease-in-out);
-	background-image: repeating-linear-gradient(to top, rgb(0 160 176), rgb(0 160 176) 5px, rgb(10 35 66) 5px 10px, rgb(204 51 63) 10px 15px, rgb(235 104 65) 15px 20px, rgb(237 201 81) 20px 25px);
-	-webkit-background-clip: text;
-	color: transparent;
-}
+// h1:hover, h2:hover, h3:hover, h4:hover{
+// 	@include transition(all 0.25s ease-in-out);
+// 	background-image: repeating-linear-gradient(to top, rgb(0 160 176), rgb(0 160 176) 5px, rgb(10 35 66) 5px 10px, rgb(204 51 63) 10px 15px, rgb(235 104 65) 15px 20px, rgb(237 201 81) 20px 25px);
+// 	-webkit-background-clip: text;
+// 	color: transparent;
+// }
 
 a.socials__item__link:hover{
 	@include transition(all 0.25s ease-in-out);
@@ -502,6 +514,50 @@ a.socials__item__link:hover{
 	color: transparent;
 }
 
+/* MY CAPTION */
+
+.caption {
+	@include transition(all 0.5s ease-out-in);
+	background: #000000cf;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 9999;
+    text-align: center;
+    line-height: normal;
+    visibility: hidden;
+    font-size: large;
+    height: 10%;
+    display: flex;
+    align-conten: center;
+    justify-content: center;
+    flex-direction: column;
+    align-content: center;
+    align-items: center;
+}
+
+.visible {
+	@include transition(all 0.5s ease-out-in);
+	visibility: visible;
+}
+
+/* MY IFRAME */
+
+.frame {
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+}
+
+iframe {
+    width: 50%;
+    height: 100%;
+    border: 0;
+}
 
 /* MY SVG ICONS */
 
@@ -519,4 +575,14 @@ a.socials__item__link:hover{
 .icon.baseline svg, .icon img {
     top: .125em;
     position: relative;
+}
+
+
+/* TEZ SYMBOL */
+
+@media only screen and (max-width: 600px) {
+  .tezos-symbol {
+    content: 'XTZ'; /* Display 'XTZ' or any alternative text */
+  	font-size: 1em; /* Adjust the font size accordingly */
+  }
 }

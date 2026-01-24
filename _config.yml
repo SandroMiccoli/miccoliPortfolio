@@ -1,6 +1,6 @@
-site: Sandro Miccoli
+site: Sandro Micocli
 
-url: 
+url: sandromiccoli.com
 baseurl: 
 
 collections:
@@ -12,7 +12,7 @@ collections:
     permalink: /blog/:slug
   projects:
     output: true
-    permalink: /project/:slug
+    permalink: /:slug
 
 defaults:
   -

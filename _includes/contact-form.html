@@ -3,13 +3,18 @@
 	<form method="post" action="{{ site.data.settings.contact_settings.form_action }}" id="contact-form">
 
 		<div class="contact-form__item">
-			<label class="contact-form__label">Email Address *</label>
-			<input type="text" name="email" placeholder="Your email address..." class="contact-form__input">
+			<label class="contact-form__label">Name *</label>
+			<input type="text" name="name" placeholder="You name..." class="contact-form__input">
 		</div>
 
 		<div class="contact-form__item">
-			<label class="contact-form__label">Name *</label>
-			<input type="text" name="name" placeholder="Your name..." class="contact-form__input">
+			<label class="contact-form__label">Email Address *</label>
+			<input type="text" name="email" placeholder="you@mail.com" class="contact-form__input">
+		</div>
+
+		<div class="contact-form__item">
+			<label class="contact-form__label">Subject *</label>
+			<input type="text" name="subject" placeholder="Your subject..." class="contact-form__input">
 		</div>
 
 		<div class="contact-form__item">

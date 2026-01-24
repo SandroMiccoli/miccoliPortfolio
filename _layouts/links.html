@@ -1,0 +1,18 @@
+---
+layout: default
+---
+<section class="single"  style="text-align: center;">
+
+		<div class="image-wrap" style="max-width: 45%;">
+			<img src="/images/about/code2pixels_tumblr.jpg">
+		</div>
+
+		{% for item in site.data.settings.links %}
+		<p>
+			<a href="{{ item.url | relative_url }}" class="button button--large" target="_blank" style="width: 45%">{{ item.title }}
+			</a>
+		</p>
+		{% endfor %}
+	</ul>
+
+</section>
