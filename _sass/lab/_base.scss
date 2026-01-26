@@ -1,0 +1,101 @@
+// Lab Base Styles - Dark Theme
+
+// Variables
+$lab-bg-dark: #000000;
+$lab-bg-alt: #0a0a0a;
+$lab-text-primary: #ffffff;
+$lab-text-secondary: #eeeeee;
+$lab-text-tertiary: #dddddd;
+$lab-accent: #ffffff;
+$lab-border: #333333;
+$lab-overlay: rgba(0, 0, 0, 0.8);
+
+// Typography
+$lab-font-family: 'Poppins', sans-serif;
+$lab-font-weight-regular: 300;
+$lab-font-weight-medium: 500;
+$lab-font-weight-bold: 700;
+
+// Spacing
+$lab-spacing-xs: 0.5rem;
+$lab-spacing-sm: 1rem;
+$lab-spacing-md: 1.5rem;
+$lab-spacing-lg: 2rem;
+$lab-spacing-xl: 3rem;
+
+// Reset & Base
+* {
+	box-sizing: border-box;
+}
+
+body.lab-body {
+	margin: 0;
+	padding: 0;
+	background-color: $lab-bg-dark;
+	color: $lab-text-primary;
+	font-family: $lab-font-family;
+	font-weight: $lab-font-weight-regular;
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.lab-transition-container {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.lab-main {
+	flex: 1;
+}
+
+// Typography
+h1, h2, h3, h4, h5, h6 {
+	font-family: $lab-font-family;
+	font-weight: $lab-font-weight-medium;
+	line-height: 1.2;
+	margin: 0 0 $lab-spacing-md 0;
+	color: $lab-text-primary;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+p {
+	margin: 0 0 $lab-spacing-md 0;
+	color: $lab-text-secondary;
+}
+
+a {
+	color: $lab-accent;
+	text-decoration: none;
+	transition: opacity 0.2s ease;
+
+	&:hover {
+		opacity: 0.8;
+	}
+}
+
+// Utility classes
+.lab-container {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 0 $lab-spacing-md;
+}
+
+.lab-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}

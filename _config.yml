@@ -1,43 +1,29 @@
-site: Sandro Micocli
+site: Lab
 
-url: sandromiccoli.com
+url: lab.sandromiccoli.com
 baseurl: 
 
 collections:
   pages:
     output: true
     permalink: /:name
-  posts:
+  experiments:
     output: true
-    permalink: /blog/:slug
-  projects:
-    output: true
-    permalink: /:slug
+    permalink: /:slug/
 
 defaults:
   -
     scope:
       path: ""
-    values:
-      layout: "default"
-  -
-    scope:
-      path: ""
       type: "pages"
     values:
-      layout: "page"
+      layout: "lab-home"
   -
     scope:
       path: ""
-      type: "posts"
+      type: "experiments"
     values:
-      layout: "post"
-  -
-    scope:
-      path: ""
-      type: "projects"
-    values:
-      layout: "project"
+      layout: "lab-experiment"
 
 markdown: kramdown
 
@@ -49,13 +35,10 @@ sass:
   style: compressed
 
 plugins:
-  - jekyll-paginate
   - jekyll-sitemap
+  - jekyll-seo-tag
 
-paginate: 10
-paginate_path: "/blog/page:num/"
-
-grid_alignments:
-  - top
-  - center
-  - bottom
+# Lab site configuration
+github_repo: https://github.com/username/repo
+site_title: Lab
+site_description: Creative dev experiments and explorations

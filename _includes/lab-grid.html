@@ -1,0 +1,36 @@
+<div class="lab-grid-container">
+	<div class="lab-grid" id="lab-grid">
+		{% if include.show_all or page.show_all %}
+			{% assign filtered_experiments = site.experiments %}
+		{% else %}
+			{% assign filtered_experiments = site.experiments | where: 'show_on_home', true %}
+		{% endif %}
+		{% assign sorted_experiments = filtered_experiments | sort: 'date' | reverse %}
+		{% for experiment in sorted_experiments %}
+			{% assign exp_slug = experiment.slug | default: experiment.name | remove: '.md' %}
+			{% assign tile_size = experiment.tile_size | default: '1x1' %}
+			{% assign thumb_path = '/experiments/' | append: exp_slug | append: '/' | append: experiment.thumbnail %}
+			
+			<div class="lab-grid-item tile-{{ tile_size }}" 
+			     data-tags="{{ experiment.tags | join: ',' }}"
+			     data-title="{{ experiment.title | downcase }}"
+			     data-description="{{ experiment.description | downcase }}"
+			     data-stack="{{ experiment.stack | join: ',' | downcase }}">
+				<a href="{{ experiment.url | relative_url }}" class="lab-grid-item__link">
+					<div class="lab-grid-item__image">
+						<img src="{{ thumb_path | relative_url }}" alt="{{ experiment.title }}" loading="lazy">
+					</div>
+					<div class="lab-grid-item__overlay">
+						<h3 class="lab-grid-item__title">{{ experiment.title }}</h3>
+						<p class="lab-grid-item__description">{{ experiment.description }}</p>
+						<div class="lab-grid-item__tags">
+							{% for tag in experiment.tags %}
+								<span class="lab-grid-item__tag-badge">{{ tag }}</span>
+							{% endfor %}
+						</div>
+					</div>
+				</a>
+			</div>
+		{% endfor %}
+	</div>
+</div>

@@ -1,15 +1,19 @@
 ---
-layout: default
-title: Page Not Found
-description: Sorry – the page your looking for doesn't exist.
-featured_image: /images/social.jpg
+layout: lab-default
+title: "404 - Page Not Found"
+description: "The page you're looking for doesn't exist."
+permalink: /404.html
 ---
 
-<section class="single">
-
-	<h1>Page not found.</h1>
-	<p class="hero__text editable">Sorry – the page your looking for doesn't exist.</p>
-	<p class="hero__text editable">Perhaps you typed the URL incorrectly, or it may have moved.</p>
-	<p><a href="/" class="button button--large">Back To Home</a></p>
-
-</section>
+<div class="lab-404">
+	<div class="lab-404__content">
+		<h1 class="lab-404__title">404</h1>
+		<h2 class="lab-404__subtitle">Experiment Not Found</h2>
+		<p class="lab-404__description">
+			The page you're looking for doesn't exist or has been moved.
+		</p>
+		<div class="lab-404__actions">
+			<a href="{{ '/' | relative_url }}" class="lab-404__link">Return to Lab</a>
+		</div>
+	</div>
+</div>

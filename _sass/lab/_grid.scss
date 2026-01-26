@@ -1,0 +1,252 @@
+// Lab Grid Styles - Isotope masonry grid
+
+.lab-grid-container {
+	width: 100%;
+	padding: $lab-spacing-lg $lab-spacing-md;
+	box-sizing: border-box;
+}
+
+.lab-grid {
+	position: relative;
+	width: 100%;
+	margin: 0 auto;
+	min-height: 200px;
+	// Clear floats for proper layout
+	&::after {
+		content: '';
+		display: table;
+		clear: both;
+	}
+	
+	// Isotope handles layout - items use normal flow positioning
+	.lab-grid-item {
+		display: block;
+		float: left; // Required for Isotope masonry layout
+		margin: 0 6px 12px 6px; // Gutter: 6px on sides, 12px bottom
+		opacity: 0; // Start hidden for GSAP fade-in
+		box-sizing: border-box;
+		visibility: visible; // Ensure items are visible for size calculation
+		
+		// Base tile size (1x1) - 25% width, square (height = width)
+		// Using explicit width and aspect-ratio for Isotope to calculate positions correctly
+		&.tile-1x1 {
+			width: calc(25% - 12px);
+			aspect-ratio: 1 / 1; // Square
+		}
+		
+		// Tall tile (1x2) - 25% width, double height (2:1 aspect ratio)
+		&.tile-1x2 {
+			width: calc(25% - 12px);
+			aspect-ratio: 1 / 2; // Tall (width:height = 1:2)
+		}
+		
+		// Wide tile (2x1) - 50% width, same height as 1x1 (2:1 aspect ratio)
+		&.tile-2x1 {
+			width: calc(50% - 12px);
+			aspect-ratio: 2 / 1; // Wide (width:height = 2:1)
+		}
+		
+		// Large tile (2x2) - 50% width, double height (1:1 aspect ratio but larger)
+		&.tile-2x2 {
+			width: calc(50% - 12px);
+			aspect-ratio: 1 / 1; // Square but 2x the size of 1x1
+		}
+	}
+}
+
+// Grid item content
+.lab-grid-item {
+	position: relative; // Required for absolute positioned link
+	overflow: hidden;
+	border-radius: 4px;
+	background: $lab-bg-alt;
+	border: 1px solid $lab-border;
+	cursor: pointer;
+	// Isotope handles layout animations
+	// Only keep border-color transition for hover
+	transition: border-color 0.2s ease;
+	
+	&:hover {
+		border-color: $lab-accent;
+		z-index: 10;
+	}
+}
+
+.lab-grid-item__link {
+	display: block;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	overflow: hidden;
+}
+
+.lab-grid-item__image {
+	width: 100%;
+	height: 100%;
+	position: relative;
+	overflow: hidden;
+	
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+		transition: transform 0.3s ease;
+	}
+}
+
+.lab-grid-item:hover .lab-grid-item__image img {
+	transform: scale(1.05);
+}
+
+.lab-grid-item__overlay {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	padding: $lab-spacing-md;
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 70%, transparent 100%);
+	opacity: 0;
+	transform: translateY(10px);
+	transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.lab-grid-item:hover .lab-grid-item__overlay {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.lab-grid-item__title {
+	font-size: 1.125rem;
+	font-weight: $lab-font-weight-medium;
+	color: $lab-text-primary;
+	margin: 0 0 $lab-spacing-xs 0;
+	line-height: 1.3;
+}
+
+.lab-grid-item__description {
+	font-size: 0.875rem;
+	color: $lab-text-secondary;
+	margin: 0 0 $lab-spacing-xs 0;
+	line-height: 1.4;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.lab-grid-item__tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: $lab-spacing-xs;
+	margin-top: $lab-spacing-xs;
+}
+
+.lab-grid-item__tag-badge {
+	display: inline-block;
+	padding: 0.25rem 0.5rem;
+	background: $lab-bg-dark;
+	border: 1px solid $lab-border;
+	border-radius: 3px;
+	font-size: 0.75rem;
+	color: $lab-text-secondary;
+	font-weight: $lab-font-weight-regular;
+}
+
+// Responsive breakpoints
+@media (max-width: 1200px) {
+	.lab-grid {
+		.lab-grid-item {
+			margin: 0 6px 12px 6px;
+			
+			&.tile-1x1 {
+				width: calc(33.333% - 12px);
+				aspect-ratio: 1 / 1; // Square
+			}
+			
+			&.tile-1x2 {
+				width: calc(33.333% - 12px);
+				aspect-ratio: 1 / 2; // Tall
+			}
+			
+			&.tile-2x1 {
+				width: calc(66.666% - 12px);
+				aspect-ratio: 2 / 1; // Wide
+			}
+			
+			&.tile-2x2 {
+				width: calc(66.666% - 12px);
+				aspect-ratio: 1 / 1; // Square but larger
+			}
+		}
+	}
+}
+
+@media (max-width: 768px) {
+	.lab-grid-container {
+		padding: $lab-spacing-md $lab-spacing-sm;
+	}
+	
+	.lab-grid {
+		.lab-grid-item {
+			width: calc(50% - 12px);
+			margin: 0 6px 12px 6px;
+			
+			&.tile-1x1 {
+				width: calc(50% - 12px);
+				aspect-ratio: 1 / 1; // Square
+			}
+			
+			&.tile-1x2 {
+				width: calc(50% - 12px);
+				aspect-ratio: 1 / 2; // Tall
+			}
+			
+			&.tile-2x1 {
+				width: calc(50% - 12px);
+				aspect-ratio: 2 / 1; // Wide
+			}
+			
+			&.tile-2x2 {
+				width: calc(50% - 12px);
+				aspect-ratio: 1 / 1; // Square
+			}
+		}
+	}
+	
+	.lab-grid-item__overlay {
+		padding: $lab-spacing-sm;
+		opacity: 1;
+		transform: translateY(0);
+		background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 50%, transparent 100%);
+	}
+	
+	.lab-grid-item__title {
+		font-size: 1rem;
+	}
+	
+	.lab-grid-item__description {
+		font-size: 0.8125rem;
+		-webkit-line-clamp: 1;
+	}
+}
+
+@media (max-width: 480px) {
+	.lab-grid {
+		.lab-grid-item {
+			width: calc(100% - 12px);
+			margin: 0 6px 12px 6px;
+			
+			&.tile-1x1,
+			&.tile-1x2,
+			&.tile-2x1,
+			&.tile-2x2 {
+				width: calc(100% - 12px);
+				aspect-ratio: 1 / 1; // All tiles become square on mobile
+			}
+		}
+	}
+}
+

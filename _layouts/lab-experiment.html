@@ -1,0 +1,65 @@
+---
+layout: lab-default
+---
+
+<div class="lab-experiment">
+	<a href="{{ '/' | relative_url }}" class="lab-experiment-back" aria-label="Back to homepage">
+		<i class="fas fa-arrow-left"></i>
+	</a>
+	
+	<button class="lab-info-toggle" aria-label="Toggle info panel">
+		<i class="fas fa-info-circle"></i>
+	</button>
+
+	<div class="lab-experiment-demo" id="lab-experiment-container">
+		<!-- Experiment content will be loaded here -->
+		<div class="lab-experiment-loading">Loading experiment...</div>
+	</div>
+
+	{% include lab-info-panel.html %}
+</div>
+
+<!-- Load experiment CSS -->
+{% assign exp_slug = page.slug | default: page.name | remove: '.md' %}
+{% if exp_slug %}
+<link rel="stylesheet" href="{{ '/experiments/' | append: exp_slug | append: '/style.css' | relative_url }}">
+{% endif %}
+
+<!-- Load experiment content -->
+{% if exp_slug %}
+<script>
+	// Load experiment HTML content
+	(function() {
+		const container = document.getElementById('lab-experiment-container');
+		const slug = '{{ exp_slug }}';
+		const expPath = '/experiments/' + slug + '/index.html';
+		
+		fetch(expPath)
+			.then(response => {
+				if (!response.ok) throw new Error('Failed to fetch');
+				return response.text();
+			})
+			.then(html => {
+				// Extract body content from HTML
+				const parser = new DOMParser();
+				const doc = parser.parseFromString(html, 'text/html');
+				const bodyContent = doc.body.innerHTML;
+				
+				container.innerHTML = bodyContent;
+				
+				// Load experiment JS after HTML is loaded
+				const script = document.createElement('script');
+				script.src = '/experiments/' + slug + '/main.js';
+				script.onerror = function() {
+					console.warn('Experiment JS not found or failed to load');
+				};
+				document.head.appendChild(script);
+			})
+			.catch(error => {
+				container.innerHTML = '<div class="lab-experiment-error">Failed to load experiment. Please check the experiment files exist in /experiments/' + slug + '/</div>';
+				console.error('Failed to load experiment:', error);
+			});
+	})();
+</script>
+{% endif %}
+

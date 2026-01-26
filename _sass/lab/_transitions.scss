@@ -1,0 +1,53 @@
+// Lab Transitions Styles
+
+.lab-transition-container {
+	position: relative;
+	overflow: hidden;
+}
+
+.lab-page-enter {
+	animation: labFadeIn 0.4s ease forwards;
+}
+
+.lab-page-exit {
+	animation: labFadeOut 0.3s ease forwards;
+}
+
+@keyframes labFadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes labFadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+.lab-loading {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: $lab-bg-dark;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.3s ease, visibility 0.3s ease;
+
+	&.active {
+		opacity: 1;
+		visibility: visible;
+	}
+}
