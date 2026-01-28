@@ -8,12 +8,20 @@
 		{% if page.title %}
 		<div class="lab-info-panel__section">
 			<h1 class="lab-info-panel__title">{{ page.title }}</h1>
+			<p class="lab-info-panel__meta">
+				{{ page.date | date: "%B %Y" }}
+			</p>
+		</div>
+		{% endif %}
+		
+		{% if page.date %}
+		<div class="lab-info-panel__section">
 		</div>
 		{% endif %}
 		
 		{% if page.description %}
 		<div class="lab-info-panel__section">
-			<p class="lab-info-panel__description">{{ page.description }}</p>
+			<div class="lab-info-panel__description">{{ page.description | markdownify }}</div>
 		</div>
 		{% endif %}
 		
@@ -33,17 +41,12 @@
 			<h3 class="lab-info-panel__section-title">Tags</h3>
 			<div class="lab-info-panel__badges">
 				{% for tag in page.tags %}
-					<span class="lab-info-panel__badge lab-info-panel__badge--tag">{{ tag }}</span>
+					<a href="{{ '/' | relative_url }}?tags={{ tag | downcase }}" 
+					   class="lab-info-panel__badge lab-info-panel__badge--tag">
+						{{ tag }}
+					</a>
 				{% endfor %}
 			</div>
-		</div>
-		{% endif %}
-		
-		{% if page.date %}
-		<div class="lab-info-panel__section">
-			<p class="lab-info-panel__meta">
-				<strong>Date:</strong> {{ page.date | date: "%B %d, %Y" }}
-			</p>
 		</div>
 		{% endif %}
 		
@@ -56,7 +59,7 @@
 		{% assign exp_slug = page.slug | default: page.name | remove: '.md' %}
 		{% if exp_slug %}
 		<div class="lab-info-panel__section">
-			<a href="{{ site.github_repo | default: 'https://github.com/username/repo' }}/tree/main/experiments/{{ exp_slug }}/" 
+			<a href="{{ site.github_repo | default: 'https://github.com/username/repo' }}/tree/lab/experiments/{{ exp_slug }}/" 
 			   class="lab-info-panel__github-link" 
 			   target="_blank" 
 			   rel="noopener">

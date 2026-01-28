@@ -17,6 +17,32 @@
 		if (isTransitioning) return;
 		isTransitioning = true;
 
+		// Close info panels if they're open
+		const infoPanel = document.getElementById('lab-info-panel');
+		const globalInfoPanel = document.getElementById('lab-global-info-panel');
+		const hasOpenPanel = (infoPanel && infoPanel.classList.contains('active')) || 
+		                     (globalInfoPanel && globalInfoPanel.classList.contains('active'));
+
+		if (hasOpenPanel && window.LabCore) {
+			// Close panels first
+			if (infoPanel && infoPanel.classList.contains('active')) {
+				window.LabCore.closeInfoPanel();
+			}
+			if (globalInfoPanel && globalInfoPanel.classList.contains('active')) {
+				window.LabCore.closeGlobalInfoPanel();
+			}
+			
+			// Wait for panel close animation (0.3s) before starting page transition
+			setTimeout(function() {
+				startPageTransition(url);
+			}, 300);
+		} else {
+			// No panels open, proceed immediately
+			startPageTransition(url);
+		}
+	}
+
+	function startPageTransition(url) {
 		// Exit animation (fade only)
 		gsap.to(transitionContainer, {
 			opacity: 0,

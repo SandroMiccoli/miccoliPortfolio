@@ -9,7 +9,7 @@
 	height: 48px;
 	background: rgba(0, 0, 0, 0.8);
 	border: 1px solid $lab-border;
-	border-radius: 50%;
+	border-radius: 4px;
 	color: $lab-text-primary;
 	cursor: pointer;
 	display: flex;
@@ -114,6 +114,19 @@
 	font-size: 1rem;
 	line-height: 1.6;
 	color: $lab-text-secondary;
+
+	a {
+		color: $lab-text-primary;
+		text-decoration: underline;
+		text-decoration-color: hsla(0, 0%, 100%, 0.5);
+		text-underline-offset: 4px;
+		transition: all 0.2s ease;
+
+		&:hover {
+			color: $lab-accent;
+			text-decoration-color: $lab-accent;
+		}
+	}
 }
 
 .lab-info-panel__section-title {
@@ -144,7 +157,17 @@
 
 	&--tag {
 		background: rgba(255, 255, 255, 0.2);
+		border: 1px solid transparent;
 		color: $lab-text-primary;
+		text-decoration: none;
+		cursor: pointer;
+		transition: all 0.2s ease;
+
+		&:hover {
+			background: rgba(255, 255, 255, 0.3);
+			border-color: $lab-accent;
+			transform: translateY(-1px);
+		}
 	}
 }
 

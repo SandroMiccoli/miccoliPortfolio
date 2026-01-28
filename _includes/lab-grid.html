@@ -10,19 +10,27 @@
 			{% assign exp_slug = experiment.slug | default: experiment.name | remove: '.md' %}
 			{% assign tile_size = experiment.tile_size | default: '1x1' %}
 			{% assign thumb_path = '/experiments/' | append: exp_slug | append: '/' | append: experiment.thumbnail %}
-			
+			{% assign thumb_ext = experiment.thumbnail | split: '.' | last | downcase %}
+			{% assign is_video = false %}
+			{% if thumb_ext == 'webm' or thumb_ext == 'mp4' or thumb_ext == 'mov' or thumb_ext == 'ogg' %}
+				{% assign is_video = true %}
+			{% endif %}
 			<div class="lab-grid-item tile-{{ tile_size }}" 
 			     data-tags="{{ experiment.tags | join: ',' }}"
 			     data-title="{{ experiment.title | downcase }}"
-			     data-description="{{ experiment.description | downcase }}"
+			     data-description="{{ experiment.description  | markdownify | strip_html}}"
 			     data-stack="{{ experiment.stack | join: ',' | downcase }}">
 				<a href="{{ experiment.url | relative_url }}" class="lab-grid-item__link">
 					<div class="lab-grid-item__image">
-						<img src="{{ thumb_path | relative_url }}" alt="{{ experiment.title }}" loading="lazy">
+						{% if is_video %}
+							<video src="{{ thumb_path | relative_url }}" alt="{{ experiment.title }}" autoplay loop muted playsinline></video>
+						{% else %}
+							<img src="{{ thumb_path | relative_url }}" alt="{{ experiment.title }}" loading="lazy">
+						{% endif %}
 					</div>
 					<div class="lab-grid-item__overlay">
 						<h3 class="lab-grid-item__title">{{ experiment.title }}</h3>
-						<p class="lab-grid-item__description">{{ experiment.description }}</p>
+						<div class="lab-grid-item__description">{{ experiment.description | markdownify | strip_html }}</div>
 						<div class="lab-grid-item__tags">
 							{% for tag in experiment.tags %}
 								<span class="lab-grid-item__tag-badge">{{ tag }}</span>

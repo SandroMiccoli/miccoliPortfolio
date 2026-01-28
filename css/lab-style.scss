@@ -48,7 +48,7 @@
 	height: 48px;
 	background: rgba(0, 0, 0, 0.8);
 	border: 1px solid $lab-border;
-	border-radius: 50%;
+	border-radius: 4px;
 	color: $lab-text-primary;
 	cursor: pointer;
 	display: flex;
@@ -173,7 +173,7 @@
 	height: 48px;
 	background: rgba(0, 0, 0, 0.8);
 	border: 1px solid $lab-border;
-	border-radius: 50%;
+	border-radius: 4px;
 	color: $lab-text-primary;
 	cursor: pointer;
 	display: flex;
@@ -248,11 +248,14 @@
 
 	a {
 		color: $lab-text-primary;
-		text-decoration: none;
-		transition: color 0.2s ease;
+		text-decoration: underline;
+		text-decoration-color: hsla(0, 0%, 100%, 0.5);
+		text-underline-offset: 4px;
+		transition: all 0.2s ease;
 
 		&:hover {
 			color: $lab-accent;
+			text-decoration-color: $lab-accent;
 		}
 	}
 }
