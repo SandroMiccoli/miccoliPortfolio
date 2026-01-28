@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Slot Machine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="slot-machine-wrapper">
+        <div class="display" style="animation: glowPulse 2s ease-in-out infinite; box-shadow: 0 0 20px rgba(255, 0, 0, 0.2); position: relative;">
+            <div class="reel" id="reel1">
+            <div class="reel-container">🎲</div>
+            </div>
+            <div class="reel" id="reel2">
+            <div class="reel-container">💫</div>
+            </div>
+            <div class="reel" id="reel3">
+            <div class="reel-container">✨</div>
+            </div>
+            <div class="lever" id="lever" style="background: linear-gradient(90deg, #ff0000, #800000); box-shadow: 0 0 15px rgba(255, 0, 0, 0.5); width: 20px; height: 80px; position: absolute; right: -30px; top: 50%; transform: translateY(-50%); transform-origin: center bottom; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+
+        </div>
+        </div>
+        <div class="win-amount" id="winDisplay"></div>
+        <div class="lever" id="lever" style="display: none;"></div>
+    </div>
+    <button class="debug-btn" id="debugWin">DEBUG: Force Win</button>
+
+    <script src="main.js"></script>
+
+</body></html>

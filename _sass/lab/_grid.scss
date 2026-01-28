@@ -92,12 +92,23 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+		object-position: center;
+		display: block;
+		transition: transform 0.3s ease;
+	}
+	
+	video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center;
 		display: block;
 		transition: transform 0.3s ease;
 	}
 }
 
-.lab-grid-item:hover .lab-grid-item__image img {
+.lab-grid-item:hover .lab-grid-item__image img,
+.lab-grid-item:hover .lab-grid-item__image video {
 	transform: scale(1.05);
 }
 
