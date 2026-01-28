@@ -13,6 +13,6 @@ show_on_home: true
 tile_size: "1x1"
 thumbnail: "thumb.webm"
 description: |
-  An interactive emoji slot machine made for fun using <a href="websim.ai" target="_blank">websim.ai</a>
+  An interactive emoji slot machine made for fun using <a href="http://websim.ai" target="_blank">websim.ai</a>
 github_path: "/experiments/ai-emoji-slot-machine/"
 ---
