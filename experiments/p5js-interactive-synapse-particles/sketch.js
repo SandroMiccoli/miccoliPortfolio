@@ -6,7 +6,7 @@ let boundary;
 let capacity = 1;
 
 let particles = [];
-let numParticles = 250;
+let numParticles = 150;
 let maxParticlesConnections=30;
 
 function setup() {
@@ -17,8 +17,8 @@ function setup() {
 	// Define the grid center and dimensions
 	let gridCenterX = width*0.5; // Center of the grid on the canvas (X-coordinate)
 	let gridCenterY = height*0.5; // Center of the grid on the canvas (Y-coordinate)
-	let gridWidth = width * 0.5; // Total width of the grid
-	let gridHeight = height * 0.5*16/9; // Total height of the grid
+	let gridWidth = width * 0.25; // Total width of the grid
+	let gridHeight = height * 0.25*16/9; // Total height of the grid
 
 	// Calculate the number of rows and columns based on the number of particles
 	let cols = Math.floor(Math.sqrt(numParticles)); // Number of columns
