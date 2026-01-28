@@ -55,9 +55,12 @@
 			<img src="{{ '/images/favicon/favicon-32x32.png' | relative_url }}" alt="Info" class="lab-info-toggle__icon">
 		</button>
 
+		<div class="lab-experiment-loading" id="lab-experiment-loader">
+			<div class="lab-experiment-loading__spinner"></div>
+		</div>
+		
 		<div class="lab-experiment-demo" id="lab-experiment-container">
 			<!-- Experiment content will be loaded here -->
-			<div class="lab-experiment-loading"><!-- Later there should be a loading animation --></div>
 		</div>
 
 		{% include lab-info-panel.html %}
@@ -89,8 +92,26 @@
 			};
 			
 			const container = document.getElementById('lab-experiment-container');
+			const loader = document.getElementById('lab-experiment-loader');
 			const slug = '{{ exp_slug }}';
 			const expPath = '/experiments/' + slug + '/index.html';
+			
+			// Function to reveal experiment once loaded
+			function revealExperiment() {
+				loader.classList.add('hidden');
+				container.classList.add('loaded');
+			}
+			
+			// Track loaded stylesheets
+			let pendingStylesheets = 0;
+			let scriptsFullyLoaded = false;
+			
+			function checkAllLoaded() {
+				if (pendingStylesheets === 0 && scriptsFullyLoaded) {
+					// Small delay to ensure styles are applied
+					setTimeout(revealExperiment, 50);
+				}
+			}
 			
 			fetch(expPath)
 				.then(response => {
@@ -104,6 +125,13 @@
 					
 					// Extract CSS from head
 					const stylesheets = doc.head.querySelectorAll('link[rel="stylesheet"]');
+					pendingStylesheets = stylesheets.length;
+					
+					if (pendingStylesheets === 0) {
+						// No stylesheets to load
+						debugLog.log('No stylesheets to load');
+					}
+					
 					stylesheets.forEach(link => {
 						const stylesheet = document.createElement('link');
 						stylesheet.rel = 'stylesheet';
@@ -114,6 +142,16 @@
 							href = '/experiments/' + slug + '/' + href;
 						}
 						stylesheet.href = href;
+						stylesheet.onload = () => {
+							pendingStylesheets--;
+							debugLog.log('Stylesheet loaded:', href, 'remaining:', pendingStylesheets);
+							checkAllLoaded();
+						};
+						stylesheet.onerror = () => {
+							pendingStylesheets--;
+							debugLog.warn('Stylesheet failed to load:', href);
+							checkAllLoaded();
+						};
 						document.head.appendChild(stylesheet);
 					});
 					
@@ -285,11 +323,15 @@
 													debugLog.log('p5.js sketch initialized successfully');
 												}
 											}
+											scriptsFullyLoaded = true;
+											checkAllLoaded();
 										}, 200);
 									})
 									.catch(error => {
 										debugLog.error('Failed to load p5.js:', error);
 										container.innerHTML = '<div class="lab-experiment-error">Failed to load p5.js library. Please check your internet connection.</div>';
+										scriptsFullyLoaded = true;
+										checkAllLoaded();
 									});
 							}
 						}
@@ -299,9 +341,15 @@
 						} else {
 							// No sketch scripts, load p5.js directly
 							loadScript(p5jsScript, document.head)
+								.then(() => {
+									scriptsFullyLoaded = true;
+									checkAllLoaded();
+								})
 								.catch(error => {
 									debugLog.error('Failed to load p5.js:', error);
 									container.innerHTML = '<div class="lab-experiment-error">Failed to load p5.js library. Please check your internet connection.</div>';
+									scriptsFullyLoaded = true;
+									checkAllLoaded();
 								});
 						}
 					} else {
@@ -328,17 +376,29 @@
 									scriptsLoaded++;
 									loadNextScript();
 								}
+							} else {
+								// All scripts loaded
+								scriptsFullyLoaded = true;
+								checkAllLoaded();
 							}
 						}
 						
 						if (scriptSources.length > 0) {
 							loadNextScript();
+						} else {
+							// No scripts to load
+							scriptsFullyLoaded = true;
+							checkAllLoaded();
 						}
 					}
 				})
 				.catch(error => {
 					container.innerHTML = '<div class="lab-experiment-error">Failed to load experiment. Please check the experiment files exist in /experiments/' + slug + '/</div>';
 					debugLog.error('Failed to load experiment:', error);
+					// Still reveal to show error message
+					scriptsFullyLoaded = true;
+					pendingStylesheets = 0;
+					revealExperiment();
 				});
 		})();
 	</script>
