@@ -72,6 +72,22 @@
 	<script>
 		// Load experiment HTML content and let it handle its own CSS/JS
 		(function() {
+			// Debug flag - set to true to enable console logging
+			const DEBUG = false;
+			
+			// Debug logging helper
+			const debugLog = {
+				log: function(...args) {
+					if (DEBUG) console.log(...args);
+				},
+				warn: function(...args) {
+					if (DEBUG) console.warn(...args);
+				},
+				error: function(...args) {
+					if (DEBUG) console.error(...args);
+				}
+			};
+			
 			const container = document.getElementById('lab-experiment-container');
 			const slug = '{{ exp_slug }}';
 			const expPath = '/experiments/' + slug + '/index.html';
@@ -111,6 +127,8 @@
 					// Extract and load all scripts from body in order
 					const scripts = doc.body.querySelectorAll('script');
 					const scriptSources = [];
+					let p5jsScript = null;
+					
 					scripts.forEach(script => {
 						const srcAttr = script.getAttribute('src');
 						if (srcAttr) {
@@ -120,52 +138,207 @@
 							if (!src.startsWith('/') && !src.startsWith('http')) {
 								src = '/experiments/' + slug + '/' + src;
 							}
-							scriptSources.push(src);
+							
+							// Detect p5.js script
+							if (src.includes('p5.js') || src.includes('p5.min.js')) {
+								p5jsScript = src;
+							} else {
+								scriptSources.push(src);
+							}
 						} else if (script.textContent.trim()) {
 							// Inline scripts - store to execute later
 							scriptSources.push({ inline: script.textContent });
 						}
 					});
 					
-					// Load all scripts in order (external first, then inline)
-					let scriptsLoaded = 0;
-					
-					function loadNextScript() {
-						if (scriptsLoaded < scriptSources.length) {
-							const scriptSrc = scriptSources[scriptsLoaded];
-							if (typeof scriptSrc === 'string') {
-								// External script
-								const script = document.createElement('script');
-								script.src = scriptSrc;
-								script.onload = function() {
-									scriptsLoaded++;
-									loadNextScript();
-								};
-								script.onerror = function() {
-									console.warn('Failed to load script:', scriptSrc);
-									scriptsLoaded++;
-									loadNextScript();
-								};
-								document.head.appendChild(script);
-							} else if (scriptSrc.inline) {
-								// Inline script
-								const script = document.createElement('script');
-								script.textContent = scriptSrc.inline;
-								document.head.appendChild(script);
-								scriptsLoaded++;
-								loadNextScript();
+					// Function to wait for p5.js to be ready
+					function waitForP5Ready(callback, maxAttempts = 20) {
+						let attempts = 0;
+						const checkP5 = setInterval(() => {
+							attempts++;
+							if (typeof window.p5 !== 'undefined') {
+								clearInterval(checkP5);
+								// Small delay to ensure p5.js is fully initialized
+								setTimeout(callback, 50);
+							} else if (attempts >= maxAttempts) {
+								clearInterval(checkP5);
+								debugLog.warn('p5.js did not initialize within expected time, continuing anyway...');
+								callback();
 							}
-						}
-						// No additional main.js load - experiment HTML handles everything
+						}, 50);
 					}
 					
-					if (scriptSources.length > 0) {
-						loadNextScript();
+					// Function to manually initialize p5.js if setup/draw exist but p5 hasn't started
+					function initializeP5IfNeeded() {
+						// Check if setup and draw functions exist
+						if (typeof window.setup === 'function' && typeof window.draw === 'function') {
+							// Check if p5 instance already exists
+							if (window._p5Instances && window._p5Instances.length > 0) {
+								debugLog.log('p5.js already initialized');
+								return;
+							}
+							
+							// Check if p5 is available
+							if (typeof window.p5 === 'undefined') {
+								debugLog.warn('p5.js not available, cannot initialize sketch');
+								return;
+							}
+							
+							// Manually create a p5 instance to trigger setup/draw
+							debugLog.log('Manually initializing p5.js sketch...');
+							try {
+								// Create a new p5 instance in global mode
+								// p5.js will automatically detect setup/draw functions
+								new window.p5(function(p) {
+									// This shouldn't be needed in global mode, but we'll try it
+									// Actually, in global mode, p5 auto-detects setup/draw
+									// So we need to trigger the detection
+								});
+								
+								// Alternative: Check if we need to manually call setup
+								// Wait a bit and check if setup was called
+								setTimeout(() => {
+									if (window._p5Instances && window._p5Instances.length === 0) {
+										debugLog.log('p5.js did not auto-detect functions, trying manual initialization...');
+										// Force p5 to check for global functions again
+										if (window.p5.prototype && window.p5.prototype._setup) {
+											// p5 already initialized, try to restart
+											debugLog.log('Attempting to restart p5.js...');
+										}
+									}
+								}, 100);
+							} catch (e) {
+								debugLog.error('Error initializing p5.js:', e);
+							}
+						} else {
+							debugLog.warn('setup() or draw() functions not found in global scope');
+						}
+					}
+					
+					// Function to load a script
+					function loadScript(src, targetElement) {
+						return new Promise((resolve, reject) => {
+							const script = document.createElement('script');
+							script.src = src;
+							script.onload = () => {
+								debugLog.log('Loaded script:', src);
+								resolve();
+							};
+							script.onerror = () => {
+								debugLog.warn('Failed to load script:', src);
+								reject(new Error('Failed to load: ' + src));
+							};
+							targetElement.appendChild(script);
+						});
+					}
+					
+					// Function to load inline script
+					function loadInlineScript(content, targetElement) {
+						const script = document.createElement('script');
+						script.textContent = content;
+						targetElement.appendChild(script);
+					}
+					
+					// Load scripts based on whether p5.js is detected
+					if (p5jsScript) {
+						// p5.js experiment: load sketch scripts FIRST, then p5.js
+						// This ensures setup/draw exist when p5.js checks for them
+						debugLog.log('Detected p5.js experiment, loading sketch scripts first...');
+						
+						// Load sketch scripts into document.head (global scope) first
+						let scriptsLoaded = 0;
+						
+						function loadNextSketchScript() {
+							if (scriptsLoaded < scriptSources.length) {
+								const scriptSrc = scriptSources[scriptsLoaded];
+								if (typeof scriptSrc === 'string') {
+									// External script - load into document.head for global scope
+									loadScript(scriptSrc, document.head)
+										.then(() => {
+											scriptsLoaded++;
+											loadNextSketchScript();
+										})
+										.catch(() => {
+											scriptsLoaded++;
+											loadNextSketchScript();
+										});
+								} else if (scriptSrc.inline) {
+									// Inline script - load into document.head for global scope
+									loadInlineScript(scriptSrc.inline, document.head);
+									scriptsLoaded++;
+									loadNextSketchScript();
+								}
+							} else {
+								debugLog.log('All sketch scripts loaded, now loading p5.js...');
+								// All sketch scripts loaded, now load p5.js
+								// p5.js will detect setup/draw functions immediately
+								loadScript(p5jsScript, document.head)
+									.then(() => {
+										debugLog.log('p5.js loaded, sketch should initialize automatically');
+										// Give p5.js a moment to initialize
+										setTimeout(() => {
+											if (typeof window.setup === 'function' && typeof window.draw === 'function') {
+												if (window._p5Instances && window._p5Instances.length === 0) {
+													debugLog.warn('p5.js loaded but sketch did not start, attempting manual initialization...');
+													initializeP5IfNeeded();
+												} else {
+													debugLog.log('p5.js sketch initialized successfully');
+												}
+											}
+										}, 200);
+									})
+									.catch(error => {
+										debugLog.error('Failed to load p5.js:', error);
+										container.innerHTML = '<div class="lab-experiment-error">Failed to load p5.js library. Please check your internet connection.</div>';
+									});
+							}
+						}
+						
+						if (scriptSources.length > 0) {
+							loadNextSketchScript();
+						} else {
+							// No sketch scripts, load p5.js directly
+							loadScript(p5jsScript, document.head)
+								.catch(error => {
+									debugLog.error('Failed to load p5.js:', error);
+									container.innerHTML = '<div class="lab-experiment-error">Failed to load p5.js library. Please check your internet connection.</div>';
+								});
+						}
+					} else {
+						// Non-p5.js experiment: load scripts normally into container
+						let scriptsLoaded = 0;
+						
+						function loadNextScript() {
+							if (scriptsLoaded < scriptSources.length) {
+								const scriptSrc = scriptSources[scriptsLoaded];
+								if (typeof scriptSrc === 'string') {
+									// External script - load into container
+									loadScript(scriptSrc, container)
+										.then(() => {
+											scriptsLoaded++;
+											loadNextScript();
+										})
+										.catch(() => {
+											scriptsLoaded++;
+											loadNextScript();
+										});
+								} else if (scriptSrc.inline) {
+									// Inline script - load into container
+									loadInlineScript(scriptSrc.inline, container);
+									scriptsLoaded++;
+									loadNextScript();
+								}
+							}
+						}
+						
+						if (scriptSources.length > 0) {
+							loadNextScript();
+						}
 					}
 				})
 				.catch(error => {
 					container.innerHTML = '<div class="lab-experiment-error">Failed to load experiment. Please check the experiment files exist in /experiments/' + slug + '/</div>';
-					console.error('Failed to load experiment:', error);
+					debugLog.error('Failed to load experiment:', error);
 				});
 		})();
 	</script>
