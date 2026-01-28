@@ -26,6 +26,13 @@
 	i {
 		font-size: 1.25rem;
 	}
+
+	&__icon {
+		width: 24px;
+		height: 24px;
+		object-fit: contain;
+		display: block;
+	}
 }
 
 .lab-info-panel {

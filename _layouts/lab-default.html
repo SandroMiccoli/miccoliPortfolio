@@ -65,7 +65,7 @@
 	<!-- Global Info Icon (only on non-experiment pages) -->
 	{% unless page.layout == 'lab-experiment' %}
 	<button class="lab-global-info-toggle" aria-label="About Lab">
-		<i class="fas fa-info-circle"></i>
+		<img src="{{ '/images/favicon/favicon-32x32.png' | relative_url }}" alt="Lab Info" class="lab-global-info-toggle__icon">
 	</button>
 	{% endunless %}
 	
