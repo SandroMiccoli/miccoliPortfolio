@@ -41,7 +41,7 @@ plugins:
 # Lab site configuration
 github_repo: https://github.com/SandroMiccoli/miccoliPortfolio/
 site_title: Lab
-site_description: Creative dev experiments and explorations
+site_description: Creative coding experiments and explorations by Sandro Miccoli
 
 # Default Open Graph image (uses favicon)
-image: /images/favicon.jpg
+image: /images/favicon/favicon.png
