@@ -18,12 +18,14 @@ defaults:
       type: "pages"
     values:
       layout: "lab-home"
+      image: /images/favicon/favicon.png
   -
     scope:
       path: ""
       type: "experiments"
     values:
       layout: "lab-experiment"
+      image: /images/favicon/favicon.png
 
 markdown: kramdown
 
