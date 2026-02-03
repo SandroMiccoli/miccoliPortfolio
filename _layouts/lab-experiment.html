@@ -169,6 +169,7 @@
 					
 					scripts.forEach(script => {
 						const srcAttr = script.getAttribute('src');
+						const typeAttr = script.getAttribute('type');
 						if (srcAttr) {
 							// Get raw src attribute (not resolved URL)
 							// Resolve relative paths
@@ -181,11 +182,11 @@
 							if (src.includes('p5.js') || src.includes('p5.min.js')) {
 								p5jsScript = src;
 							} else {
-								scriptSources.push(src);
+								scriptSources.push({ src: src, type: typeAttr });
 							}
 						} else if (script.textContent.trim()) {
 							// Inline scripts - store to execute later
-							scriptSources.push({ inline: script.textContent });
+							scriptSources.push({ inline: script.textContent, type: typeAttr });
 						}
 					});
 					
@@ -254,12 +255,15 @@
 					}
 					
 					// Function to load a script
-					function loadScript(src, targetElement) {
+					function loadScript(src, targetElement, type) {
 						return new Promise((resolve, reject) => {
 							const script = document.createElement('script');
 							script.src = src;
+							if (type) {
+								script.type = type;
+							}
 							script.onload = () => {
-								debugLog.log('Loaded script:', src);
+								debugLog.log('Loaded script:', src, type ? `(type: ${type})` : '');
 								resolve();
 							};
 							script.onerror = () => {
@@ -271,9 +275,12 @@
 					}
 					
 					// Function to load inline script
-					function loadInlineScript(content, targetElement) {
+					function loadInlineScript(content, targetElement, type) {
 						const script = document.createElement('script');
 						script.textContent = content;
+						if (type) {
+							script.type = type;
+						}
 						targetElement.appendChild(script);
 					}
 					
@@ -289,9 +296,9 @@
 						function loadNextSketchScript() {
 							if (scriptsLoaded < scriptSources.length) {
 								const scriptSrc = scriptSources[scriptsLoaded];
-								if (typeof scriptSrc === 'string') {
+								if (scriptSrc.src) {
 									// External script - load into document.head for global scope
-									loadScript(scriptSrc, document.head)
+									loadScript(scriptSrc.src, document.head, scriptSrc.type)
 										.then(() => {
 											scriptsLoaded++;
 											loadNextSketchScript();
@@ -302,7 +309,7 @@
 										});
 								} else if (scriptSrc.inline) {
 									// Inline script - load into document.head for global scope
-									loadInlineScript(scriptSrc.inline, document.head);
+									loadInlineScript(scriptSrc.inline, document.head, scriptSrc.type);
 									scriptsLoaded++;
 									loadNextSketchScript();
 								}
@@ -359,9 +366,9 @@
 						function loadNextScript() {
 							if (scriptsLoaded < scriptSources.length) {
 								const scriptSrc = scriptSources[scriptsLoaded];
-								if (typeof scriptSrc === 'string') {
+								if (scriptSrc.src) {
 									// External script - load into container
-									loadScript(scriptSrc, container)
+									loadScript(scriptSrc.src, container, scriptSrc.type)
 										.then(() => {
 											scriptsLoaded++;
 											loadNextScript();
@@ -372,7 +379,7 @@
 										});
 								} else if (scriptSrc.inline) {
 									// Inline script - load into container
-									loadInlineScript(scriptSrc.inline, container);
+									loadInlineScript(scriptSrc.inline, container, scriptSrc.type);
 									scriptsLoaded++;
 									loadNextScript();
 								}
