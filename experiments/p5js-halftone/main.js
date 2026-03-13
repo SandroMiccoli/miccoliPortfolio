@@ -30,7 +30,7 @@ const FLOOR_SCROLL_SPEED = 0.0005;      // depth scroll for infinite feel
 const FLOOR_OVERSCAN_X = 0.5;          // horizontal overscan at front (wider floor)
 const FLOOR_DOT_SIZE_NEAR = 2.2;        // dot diameter at front
 const FLOOR_DOT_SIZE_FAR = 0.3;         // dot diameter at horizon
-const FLOOR_DOT_SIZE_SCALE_END = 5;   // final scale multiplier (larger dots)
+const FLOOR_DOT_SIZE_SCALE_END = 2;   // final scale multiplier (larger dots)
 const FLOOR_NOISE_AMOUNT = 2;        // noise variation intensity (0–1)
 const FLOOR_FADE_POWER = 2.2;           // how sharply dots fade with distance
 
@@ -398,7 +398,7 @@ function drawPerspectiveDottedFloor() {
 	floorPerspectiveBuffer.plane(planeWidth, planeHeight);
 	floorPerspectiveBuffer.pop();
 
-	if (animState.halftoneOpacity <= 0.0001) {
+	if (animState.halftoneOpacity <= 0.9) {
 		image(floorPerspectiveBuffer, 0, 0);
 		return;
 	}

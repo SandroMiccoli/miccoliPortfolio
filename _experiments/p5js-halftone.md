@@ -12,7 +12,7 @@ show_on_home: false
 tile_size: "1x1"
 thumbnail: "thumb.svg"
 description: |
-  A p5.js halftone experiment built around image-driven dot rendering, starting with a fullscreen canvas and a visible placeholder composition.
+  A p5.js halftone experiment built around image-driven dot rendering.
 stack:
   - p5.js
   - gsap
