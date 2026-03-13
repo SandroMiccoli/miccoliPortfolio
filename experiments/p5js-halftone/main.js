@@ -36,6 +36,8 @@ const FLOOR_FADE_POWER = 2.2;           // how sharply dots fade with distance
 const DURATION_FLOOR_LERP = 4.5;
 const DURATION_HALFTONE_FADE = 2;
 const DURATION_FLOOR_DOT_SIZE = 3;
+const DURATION_HALFTONE_REVEAL = 3;   // bottom-to-top reveal
+const HALFTONE_REVEAL_FADE_BAND = 0.08;  // smooth fade band (0–1 of height)
 
 let sourceImage;
 let animatedPoints = [];
@@ -50,6 +52,7 @@ let halftoneBounds = { left: 0, top: 0, width: 0, height: 0, bottom: 0 };
 const animState = {
 	floorVanishingYRatio: FLOOR_VANISHING_Y_START,
 	halftoneOpacity: 0,
+	halftoneRevealProgress: 0,  // 0 = none visible, 1 = all visible (bottom-to-top)
 	floorColumnCount: FLOOR_COLUMN_COUNT_START,
 	floorDotSizeScale: 1,
 	floorDotsPerColumn: FLOOR_DOTS_PER_COLUMN_START
@@ -76,6 +79,10 @@ function setup() {
 		halftoneOpacity: 1,
 		duration: DURATION_HALFTONE_FADE,
 		floorColumnCount: FLOOR_COLUMN_COUNT_END,
+		ease: 'power2.inOut'
+	}, '-=1.5').to(animState, {
+		halftoneRevealProgress: 1,
+		duration: DURATION_HALFTONE_REVEAL,
 		ease: 'power2.inOut'
 	}, '-=1.5').to(animState, {
 		floorDotSizeScale: FLOOR_DOT_SIZE_SCALE_END,
@@ -180,6 +187,9 @@ function rebuildHalftoneCache() {
 			);
 			const x = offsetX + col * cachedCellSize + cachedCellSize * 0.5;
 			const y = offsetY + row * cachedCellSize + cachedCellSize * 0.5;
+			const revealT = halftoneBounds.height > 0
+				? (y - halftoneBounds.top) / halftoneBounds.height
+				: 1;  // bottom=1, top=0
 			const patternSeed = ((row * 73856093) ^ (col * 19349663)) >>> 0;
 			const selection = (patternSeed % 1000) / 1000;
 			const phase = ((patternSeed >> 3) % 628) / 100;
@@ -189,6 +199,7 @@ function rebuildHalftoneCache() {
 			const point = {
 				x: x,
 				y: y,
+				revealT: revealT,
 				alpha: alpha,
 				baseDiameter: baseDiameter,
 				accentOffset: cachedCellSize * lerp(0.16, 0.24, tone),
@@ -231,35 +242,67 @@ function isWithinMouseInfluence(dotX, dotY) {
 	return (dx * dx + dy * dy) < MOUSE_INFLUENCE_RADIUS_SQ;
 }
 
-function renderHalftone() {
-	if (staticLayer) {
-		image(staticLayer, 0, 0);
-	} else {
-		background(...BACKGROUND_COLOR);
-	}
+function getDotRevealAlpha(point) {
+	const p = animState.halftoneRevealProgress;
+	const t = point.revealT;
+	return constrain((p + t + HALFTONE_REVEAL_FADE_BAND - 1) / HALFTONE_REVEAL_FADE_BAND, 0, 1);
+}
 
+function renderHalftone() {
 	const minDiameter = cachedCellSize * MIN_DOT_SCALE;
 	const maxDiameter = cachedCellSize * MAX_DOT_SCALE;
 	const time = frameCount * ANIMATION_SPEED;
+	const inReveal = animState.halftoneRevealProgress < 1;
 
-	for (const point of allHalftonePoints) {
-		const needsOverlay = point.isAnimated || isWithinMouseInfluence(point.x, point.y);
-		if (!needsOverlay) continue;
+	if (inReveal) {
+		// During reveal: render all dots with per-dot fade-in from bottom to top
+		for (const point of allHalftonePoints) {
+			const revealAlpha = getDotRevealAlpha(point);
+			if (revealAlpha <= 0.001) continue;
 
-		const mouseScale = getMouseSizeMultiplier(point.x, point.y);
-		let diameter = point.baseDiameter * mouseScale;
+			const mouseScale = getMouseSizeMultiplier(point.x, point.y);
+			let diameter = point.baseDiameter * mouseScale;
 
-		if (point.isAnimated) {
-			const pulse = sin(time * point.speed + point.phase);
-			diameter = point.baseDiameter * mouseScale * (1 + pulse * SIZE_NOISE_INTENSITY);
+			if (point.isAnimated) {
+				const pulse = sin(time * point.speed + point.phase);
+				diameter = point.baseDiameter * mouseScale * (1 + pulse * SIZE_NOISE_INTENSITY);
+			}
+
+			diameter = constrain(diameter, minDiameter, maxDiameter * 1.4);
+			const variation = point.isAnimated
+				? constrain(point.accentVariation + sin(time * point.speed + point.phase) * 0.2, 0, 1)
+				: point.accentVariation;
+
+			const effectiveAlpha = point.alpha * revealAlpha;
+			renderClusterDot(null, point, diameter, variation, effectiveAlpha);
+		}
+	} else {
+		// After reveal: use static layer + overlay for performance
+		if (staticLayer) {
+			image(staticLayer, 0, 0);
+		} else {
+			background(...BACKGROUND_COLOR);
 		}
 
-		diameter = constrain(diameter, minDiameter, maxDiameter * 1.4);
-		const variation = point.isAnimated
-			? constrain(point.accentVariation + sin(time * point.speed + point.phase) * 0.2, 0, 1)
-			: point.accentVariation;
+		for (const point of allHalftonePoints) {
+			const needsOverlay = point.isAnimated || isWithinMouseInfluence(point.x, point.y);
+			if (!needsOverlay) continue;
 
-		renderClusterDot(null, point, diameter, variation);
+			const mouseScale = getMouseSizeMultiplier(point.x, point.y);
+			let diameter = point.baseDiameter * mouseScale;
+
+			if (point.isAnimated) {
+				const pulse = sin(time * point.speed + point.phase);
+				diameter = point.baseDiameter * mouseScale * (1 + pulse * SIZE_NOISE_INTENSITY);
+			}
+
+			diameter = constrain(diameter, minDiameter, maxDiameter * 1.4);
+			const variation = point.isAnimated
+				? constrain(point.accentVariation + sin(time * point.speed + point.phase) * 0.2, 0, 1)
+				: point.accentVariation;
+
+			renderClusterDot(null, point, diameter, variation);
+		}
 	}
 }
 
@@ -350,12 +393,13 @@ function drawPerspectiveDottedFloor() {
 	drawingContext.restore();
 }
 
-function renderClusterDot(target, point, diameter, variation) {
+function renderClusterDot(target, point, diameter, variation, alphaOverride) {
+	const alpha = alphaOverride !== undefined ? alphaOverride : point.alpha;
 	if (target) {
-		target.fill(255, 255, 255, point.alpha);
+		target.fill(255, 255, 255, alpha);
 		target.circle(point.x, point.y, diameter);
 	} else {
-		fill(255, 255, 255, point.alpha);
+		fill(255, 255, 255, alpha);
 		circle(point.x, point.y, diameter);
 	}
 
@@ -368,28 +412,28 @@ function renderClusterDot(target, point, diameter, variation) {
 	const accentBase = point.accentBase * (diameter / point.baseDiameter);
 
 	if (target) {
-		target.fill(92, 92, 92, point.alpha * 0.95);
+		target.fill(92, 92, 92, alpha * 0.95);
 		target.circle(
 			point.x - point.accentOffset * point.orientation,
 			point.y - point.accentOffset,
 			max(1, accentBase * accentScaleA)
 		);
 
-		target.fill(150, 150, 150, point.alpha * 0.85);
+		target.fill(150, 150, 150, alpha * 0.85);
 		target.circle(
 			point.x + point.accentOffset * point.orientation,
 			point.y + point.accentOffset * 1.52,
 			max(1, accentBase * 0.8 * accentScaleB)
 		);
 	} else {
-		fill(92, 92, 92, point.alpha * 0.95);
+		fill(92, 92, 92, alpha * 0.95);
 		circle(
 			point.x - point.accentOffset * point.orientation,
 			point.y - point.accentOffset,
 			max(1, accentBase * accentScaleA)
 		);
 
-		fill(150, 150, 150, point.alpha * 0.85);
+		fill(150, 150, 150, alpha * 0.85);
 		circle(
 			point.x + point.accentOffset * point.orientation,
 			point.y + point.accentOffset * 1.52,
