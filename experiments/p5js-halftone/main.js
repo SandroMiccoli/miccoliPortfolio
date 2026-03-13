@@ -6,15 +6,17 @@ const MIN_DOT_SCALE = 0.1;
 const MAX_DOT_SCALE = 0.62;
 const BRIGHTNESS_GAMMA = 1.2;
 const ACCENT_THRESHOLD = 0.05;
-const ANIMATION_SPEED = 0.125;
-const SIZE_NOISE_INTENSITY = 0.43;
+const ANIMATION_SPEED = 0.05;
+const SIZE_NOISE_INTENSITY = 0.7;
 const TARGET_FRAME_RATE = 30;
 const ANIMATED_POINT_RATIO = 0.05;
 
 // Mouse influence on dot size
-const MOUSE_INFLUENCE_RADIUS = 180;
+const MOUSE_INFLUENCE_RADIUS = 80;
 const MOUSE_INFLUENCE_RADIUS_SQ = MOUSE_INFLUENCE_RADIUS * MOUSE_INFLUENCE_RADIUS;
-const MOUSE_INFLUENCE_STRENGTH = 0.55;  // dots near cursor scale up by this factor
+const MOUSE_INFLUENCE_STRENGTH = 0.75;  // dots near cursor scale up by this factor
+const MOUSE_INFLUENCE_FADE_POWER = 0.5;  // <1 = softer fade (extends influence toward edge), >1 = sharper
+const MOUSE_OVERLAY_RADIUS_SQ = (MOUSE_INFLUENCE_RADIUS * 1.2) ** 2;  // buffer to avoid visible circle edge
 
 // Perspective dotted floor — vertical lines receding to vanishing point
 const FLOOR_VANISHING_Y_START = 0.53;    // start: horizon near top
@@ -90,7 +92,7 @@ function setup() {
 		duration: DURATION_FLOOR_DOT_SIZE,
 		ease: 'power2.inOut'
 	}, '-=1.5').to(animState, {
-		floorDotsPerColumn: FLOOR_DOTS_PER_COLUMN_END,
+		// floorDotsPerColumn: FLOOR_DOTS_PER_COLUMN_END,
 		duration: 10,
 		ease: 'power2.inOut'
 	}, '-=10');
@@ -196,20 +198,36 @@ function rebuildHalftoneCache() {
 			const speed = 0.8 + (((patternSeed >> 5) % 100) / 100) * 0.8;
 			const accentVariation = ((patternSeed >> 7) % 100) / 100;
 			const isAnimated = selection < ANIMATED_POINT_RATIO;
+			const accentOffset = cachedCellSize * lerp(0.16, 0.24, tone);
+			const s = patternSeed;
+			const showAccent1 = ((s % 100) / 100) < 0.25 + tone * 0.45;
+			const showAccent2 = (((s >> 6) % 100) / 100) < 0.2 + tone * 0.4;
+			const angle1 = ((s >> 2) % 360) * (TWO_PI / 360);
+			const angle2 = ((s >> 12) % 360) * (TWO_PI / 360);
+			const mult1 = 0.85 + ((s >> 4) % 30) / 100;
+			const mult2 = 1.2 + ((s >> 10) % 40) / 100;
+			const baseGray = 0.299 * red + 0.587 * green + 0.114 * blue;
 			const point = {
 				x: x,
 				y: y,
 				revealT: revealT,
 				alpha: alpha,
 				baseDiameter: baseDiameter,
-				accentOffset: cachedCellSize * lerp(0.16, 0.24, tone),
+				accentOffset: accentOffset,
 				accentBase: baseDiameter * lerp(0.22, 0.34, tone),
-				orientation: (row + col) % 2 === 0 ? 1 : -1,
 				hasAccent: tone >= ACCENT_THRESHOLD,
 				phase: phase,
 				speed: speed,
 				accentVariation: accentVariation,
-				isAnimated: isAnimated
+				isAnimated: isAnimated,
+				showAccent1: showAccent1,
+				showAccent2: showAccent2,
+				accent1Dx: mult1 * cos(angle1),
+				accent1Dy: mult1 * sin(angle1),
+				accent2Dx: mult2 * cos(angle2),
+				accent2Dy: mult2 * sin(angle2),
+				gray1: constrain(lerp(60, 120, baseGray / 255), 60, 130),
+				gray2: constrain(lerp(100, 180, baseGray / 255), 100, 180)
 			};
 
 			nextAllPoints.push(point);
@@ -232,14 +250,15 @@ function getMouseSizeMultiplier(dotX, dotY) {
 	const distSq = dx * dx + dy * dy;
 	if (distSq >= MOUSE_INFLUENCE_RADIUS_SQ) return 1;
 	const dist = sqrt(distSq);
-	const t = 1 - dist / MOUSE_INFLUENCE_RADIUS;
+	const normalizedDist = dist / MOUSE_INFLUENCE_RADIUS;
+	const t = pow(max(0, 1 - normalizedDist), MOUSE_INFLUENCE_FADE_POWER);
 	return 1 + t * MOUSE_INFLUENCE_STRENGTH;
 }
 
 function isWithinMouseInfluence(dotX, dotY) {
 	const dx = mouseX - dotX;
 	const dy = mouseY - dotY;
-	return (dx * dx + dy * dy) < MOUSE_INFLUENCE_RADIUS_SQ;
+	return (dx * dx + dy * dy) < MOUSE_OVERLAY_RADIUS_SQ;
 }
 
 function getDotRevealAlpha(point) {
@@ -403,42 +422,37 @@ function renderClusterDot(target, point, diameter, variation, alphaOverride) {
 		circle(point.x, point.y, diameter);
 	}
 
-	if (!point.hasAccent) {
-		return;
-	}
+	if (!point.hasAccent || (!point.showAccent1 && !point.showAccent2)) return;
 
-	const accentScaleA = lerp(0.8, 1.15, variation);
-	const accentScaleB = lerp(0.7, 1.05, 1 - variation);
 	const accentBase = point.accentBase * (diameter / point.baseDiameter);
+	const scaleA = lerp(0.8, 1.15, variation);
+	const scaleB = lerp(0.7, 1.05, 1 - variation);
+	const a = alpha * 0.9;
+	const ox = point.accentOffset;
 
-	if (target) {
-		target.fill(92, 92, 92, alpha * 0.95);
-		target.circle(
-			point.x - point.accentOffset * point.orientation,
-			point.y - point.accentOffset,
-			max(1, accentBase * accentScaleA)
-		);
-
-		target.fill(150, 150, 150, alpha * 0.85);
-		target.circle(
-			point.x + point.accentOffset * point.orientation,
-			point.y + point.accentOffset * 1.52,
-			max(1, accentBase * 0.8 * accentScaleB)
-		);
-	} else {
-		fill(92, 92, 92, alpha * 0.95);
-		circle(
-			point.x - point.accentOffset * point.orientation,
-			point.y - point.accentOffset,
-			max(1, accentBase * accentScaleA)
-		);
-
-		fill(150, 150, 150, alpha * 0.85);
-		circle(
-			point.x + point.accentOffset * point.orientation,
-			point.y + point.accentOffset * 1.52,
-			max(1, accentBase * 0.8 * accentScaleB)
-		);
+	if (point.showAccent1) {
+		const ax = point.x + ox * point.accent1Dx;
+		const ay = point.y + ox * point.accent1Dy;
+		const sz = max(1, accentBase * scaleA);
+		if (target) {
+			target.fill(point.gray1, point.gray1, point.gray1, a);
+			target.circle(ax, ay, sz);
+		} else {
+			fill(point.gray1, point.gray1, point.gray1, a);
+			circle(ax, ay, sz);
+		}
+	}
+	if (point.showAccent2) {
+		const ax = point.x + ox * point.accent2Dx;
+		const ay = point.y + ox * point.accent2Dy;
+		const sz = max(1, accentBase * 0.8 * scaleB);
+		if (target) {
+			target.fill(point.gray2, point.gray2, point.gray2, a);
+			target.circle(ax, ay, sz);
+		} else {
+			fill(point.gray2, point.gray2, point.gray2, a);
+			circle(ax, ay, sz);
+		}
 	}
 }
 
