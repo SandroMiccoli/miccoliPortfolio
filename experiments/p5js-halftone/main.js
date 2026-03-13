@@ -1,4 +1,4 @@
-const IMAGE_PATH = '/experiments/p5js-halftone/NYC-Skyline-edit-1080x675.jpg';
+const IMAGE_PATH = '/experiments/p5js-halftone/BX-NYC-Skyline.png';
 const MAX_COLUMNS = 220;
 const MIN_CELL_SIZE = 3;
 const BACKGROUND_COLOR = [0, 0, 0];
