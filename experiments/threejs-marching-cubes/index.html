@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- Favicon -->
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>Three.js Marching Cubes — Futuristic Metaball Cube</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<div id="canvas-container"></div>
+	<div id="info">
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> — marching cubes
+	</div>
+
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+				"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+			}
+		}
+	</script>
+	<script type="module" src="main.js"></script>
+</body>
+</html>

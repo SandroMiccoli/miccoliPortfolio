@@ -1,0 +1,67 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	background: #ffffff;
+	overflow: hidden;
+	font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+#canvas-container {
+	width: 100vw;
+	height: 100vh;
+	position: relative;
+}
+
+#canvas-container canvas {
+	display: block;
+}
+
+#info {
+	position: fixed;
+	bottom: 12px;
+	left: 12px;
+	color: rgba(0, 0, 0, 0.5);
+	font-size: 11px;
+	z-index: 10;
+}
+
+#info a {
+	color: rgba(0, 0, 0, 0.7);
+	text-decoration: none;
+}
+
+#info a:hover {
+	color: rgba(0, 0, 0, 0.9);
+}
+
+/* lil-gui — dark theme for readability on white background */
+.lil-gui {
+	--background-color: rgba(30, 30, 30, 0.95) !important;
+	--text-color: rgba(255, 255, 255, 0.9) !important;
+	--title-background-color: rgba(50, 50, 50, 0.98) !important;
+}
+
+.lil-gui.root {
+	background-color: rgba(30, 30, 30, 0.95) !important;
+}
+
+.lil-gui .title {
+	background-color: rgba(50, 50, 50, 0.98) !important;
+	color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.lil-gui .controller {
+	color: rgba(255, 255, 255, 0.9) !important;
+	border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.lil-gui input,
+.lil-gui select {
+	background-color: rgba(60, 60, 60, 0.9) !important;
+	color: rgba(255, 255, 255, 0.95) !important;
+	border-color: rgba(255, 255, 255, 0.2) !important;
+}
