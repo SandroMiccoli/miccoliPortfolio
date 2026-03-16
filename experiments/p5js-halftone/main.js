@@ -26,9 +26,9 @@ const MOUSE_OVERLAY_RADIUS_SQ = (MOUSE_INFLUENCE_RADIUS * 1.2) ** 2;  // buffer 
 // Click ripple wave
 const RIPPLE_SPEED = 10;           // pixels per frame
 const RIPPLE_WIDTH = 70;           // width of the wave band
-const RIPPLE_BOOST = 0.35;         // scale boost for normal click (pushes dots slightly past MAX_DOT_SCALE)
-const RIPPLE_HOLD_BOOST = 0.65;    // stronger boost for click-and-hold
-const RIPPLE_HOLD_WIDTH = 120;     // wider wave for hold
+const RIPPLE_BOOST = 0.75;         // scale boost for normal click (pushes dots slightly past MAX_DOT_SCALE)
+const RIPPLE_HOLD_BOOST = 0.95;    // stronger boost for click-and-hold
+const RIPPLE_HOLD_WIDTH = 140;     // wider wave for hold
 const HOLD_THRESHOLD_MS = 350;     // ms held to trigger "hold" ripple
 
 // Perspective dotted floor — vertical lines receding to vanishing point
@@ -307,31 +307,72 @@ function isWithinMouseInfluence(dotX, dotY) {
 	return (dx * dx + dy * dy) < MOUSE_OVERLAY_RADIUS_SQ;
 }
 
-function getRippleScaleMultiplier(dotX, dotY) {
-	let maxBoost = 0;
-	const maxRippleDist = sqrt(width * width + height * height) * 1.5;
+// Cached once per frame for ripple pruning and params
+let cachedMaxRippleDistSq = 0;
+let rippleParamsCache = [];  // { x, y, waveFront, halfWidth, boost, minDistSq, maxDistSq }
+let rippleParamsFrame = -1;
+let rippleBbox = null;  // { minX, maxX, minY, maxY } - union of all ripple active zones, for quick skip
 
+function pruneExpiredRipples() {
+	if (ripples.length === 0) return;
+	if (cachedMaxRippleDistSq === 0) {
+		const d = sqrt(width * width + height * height) * 1.5;
+		cachedMaxRippleDistSq = d * d;
+	}
 	for (let i = ripples.length - 1; i >= 0; i--) {
 		const r = ripples[i];
-		const dist = sqrt((dotX - r.x) ** 2 + (dotY - r.y) ** 2);
-		const framesSinceStart = frameCount - r.startFrame;
-		const waveFront = RIPPLE_SPEED * framesSinceStart;
-
-		// Prune ripples that have traveled past the canvas
-		if (waveFront > maxRippleDist) {
+		const waveFront = RIPPLE_SPEED * (frameCount - r.startFrame);
+		if (waveFront * waveFront > cachedMaxRippleDistSq) {
 			ripples.splice(i, 1);
-			continue;
 		}
+	}
+}
 
+function updateRippleParamsCache() {
+	if (rippleParamsFrame === frameCount) return;
+	rippleParamsFrame = frameCount;
+	rippleParamsCache.length = 0;
+	let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+	for (let i = 0; i < ripples.length; i++) {
+		const r = ripples[i];
+		const waveFront = RIPPLE_SPEED * (frameCount - r.startFrame);
 		const waveWidth = r.isHold ? RIPPLE_HOLD_WIDTH : RIPPLE_WIDTH;
-		const boost = r.isHold ? RIPPLE_HOLD_BOOST : RIPPLE_BOOST;
-		const distFromWaveCenter = abs(dist - waveFront);
+		const halfWidth = waveWidth * 0.5;
+		const minDist = max(0, waveFront - halfWidth);
+		const maxDist = waveFront + halfWidth;
+		const radius = maxDist;
+		minX = min(minX, r.x - radius);
+		maxX = max(maxX, r.x + radius);
+		minY = min(minY, r.y - radius);
+		maxY = max(maxY, r.y + radius);
+		rippleParamsCache.push({
+			x: r.x, y: r.y,
+			waveFront, halfWidth,
+			boost: r.isHold ? RIPPLE_HOLD_BOOST : RIPPLE_BOOST,
+			minDistSq: minDist * minDist,
+			maxDistSq: maxDist * maxDist
+		});
+	}
+	rippleBbox = rippleParamsCache.length > 0 ? { minX, maxX, minY, maxY } : null;
+}
 
-		if (distFromWaveCenter < waveWidth * 0.5) {
-			const t = 1 - distFromWaveCenter / (waveWidth * 0.5);
-			const smoothT = t * t * (3 - 2 * t);  // smoothstep
-			maxBoost = max(maxBoost, smoothT * boost);
-		}
+function getRippleScaleMultiplier(dotX, dotY) {
+	if (rippleParamsCache.length === 0) return 1;
+	let maxBoost = 0;
+
+	for (let i = 0; i < rippleParamsCache.length; i++) {
+		const p = rippleParamsCache[i];
+		const rdx = dotX - p.x;
+		const rdy = dotY - p.y;
+		const distSq = rdx * rdx + rdy * rdy;
+
+		if (distSq < p.minDistSq || distSq > p.maxDistSq) continue;
+
+		const dist = sqrt(distSq);
+		const distFromWaveCenter = abs(dist - p.waveFront);
+		const t = 1 - distFromWaveCenter / p.halfWidth;
+		const smoothT = t * t * (3 - 2 * t);
+		maxBoost = max(maxBoost, smoothT * p.boost);
 	}
 
 	return 1 + maxBoost;
@@ -350,6 +391,14 @@ function renderHalftone() {
 	const time = frameCount * ANIMATION_SPEED;
 	const inReveal = animState.halftoneRevealProgress < 1;
 
+	if (ripples.length > 0) {
+		pruneExpiredRipples();
+		updateRippleParamsCache();
+	} else {
+		rippleParamsCache.length = 0;
+		rippleBbox = null;
+	}
+
 	if (inReveal) {
 		// During reveal: render all dots with per-dot fade-in from bottom to top
 		for (const point of allHalftonePoints) {
@@ -357,7 +406,14 @@ function renderHalftone() {
 			if (revealAlpha <= 0.001) continue;
 
 			const mouseScale = getMouseSizeMultiplier(point.x, point.y);
-			const rippleScale = getRippleScaleMultiplier(point.x, point.y);
+			let rippleScale = 1;
+			if (rippleParamsCache.length > 0) {
+				if (rippleBbox && (point.x < rippleBbox.minX || point.x > rippleBbox.maxX || point.y < rippleBbox.minY || point.y > rippleBbox.maxY)) {
+					rippleScale = 1;
+				} else {
+					rippleScale = getRippleScaleMultiplier(point.x, point.y);
+				}
+			}
 			let diameter = point.baseDiameter * mouseScale * rippleScale;
 
 			if (point.isAnimated) {
@@ -375,22 +431,28 @@ function renderHalftone() {
 		}
 	} else {
 		// After reveal: use static layer + overlay for performance
-		// When ripples are active, render all dots so ripple wave is visible
+		// Even with ripples: draw static base, then overlay only dots affected by ripple/mouse/animation
 		const hasActiveRipples = ripples.length > 0;
-		if (hasActiveRipples) {
-			background(...BACKGROUND_COLOR);
-		} else if (staticLayer) {
+		if (staticLayer) {
 			image(staticLayer, 0, 0);
 		} else {
 			background(...BACKGROUND_COLOR);
 		}
 
 		for (const point of allHalftonePoints) {
-			const needsOverlay = hasActiveRipples || point.isAnimated || isWithinMouseInfluence(point.x, point.y);
+			let rippleScale = 1;
+			if (hasActiveRipples) {
+				// Quick bbox skip: dot outside all ripple zones can't be affected
+				if (rippleBbox && (point.x < rippleBbox.minX || point.x > rippleBbox.maxX || point.y < rippleBbox.minY || point.y > rippleBbox.maxY)) {
+					rippleScale = 1;
+				} else {
+					rippleScale = getRippleScaleMultiplier(point.x, point.y);
+				}
+			}
+			const needsOverlay = point.isAnimated || isWithinMouseInfluence(point.x, point.y) || rippleScale > 1.001;
 			if (!needsOverlay) continue;
 
 			const mouseScale = getMouseSizeMultiplier(point.x, point.y);
-			const rippleScale = getRippleScaleMultiplier(point.x, point.y);
 			let diameter = point.baseDiameter * mouseScale * rippleScale;
 
 			if (point.isAnimated) {
@@ -572,5 +634,6 @@ function renderClusterDot(target, point, diameter, variation, alphaOverride) {
 
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight);
+	cachedMaxRippleDistSq = 0;  // force recompute on next prune
 	rebuildHalftoneCache();
 }
