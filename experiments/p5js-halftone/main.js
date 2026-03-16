@@ -1,15 +1,20 @@
+// URL param: ?v=1 = original floor, ?v=2 = floor fades to NYC Dotted Reflex image during reveal
+const urlParams = new URLSearchParams(window.location.search);
+const MODE = parseInt(urlParams.get('v') || '1', 10) === 2 ? 2 : 1;
+
 const IMAGE_PATH = '/experiments/p5js-halftone/BX-NYC-Skyline.png';
+const FLOOR_IMAGE_PATH = '/experiments/p5js-halftone/NYC%20Dotted%20Reflex.jpg';
 const MAX_COLUMNS = 220;
 const MIN_CELL_SIZE = 3;
 const BACKGROUND_COLOR = [0, 0, 0];
 const MIN_DOT_SCALE = 0.1;
 const MAX_DOT_SCALE = 0.62;
 const BRIGHTNESS_GAMMA = 1.2;
-const ACCENT_THRESHOLD = 0.05;
+const ACCENT_THRESHOLD = 0.5;
 const ANIMATION_SPEED = 0.05;
 const SIZE_NOISE_INTENSITY = 0.7;
 const TARGET_FRAME_RATE = 30;
-const ANIMATED_POINT_RATIO = 0.05;
+const ANIMATED_POINT_RATIO = 0.25;
 
 // Mouse influence on dot size
 const MOUSE_INFLUENCE_RADIUS = 80;
@@ -42,6 +47,7 @@ const DURATION_HALFTONE_REVEAL = 3;   // bottom-to-top reveal
 const HALFTONE_REVEAL_FADE_BAND = 0.08;  // smooth fade band (0–1 of height)
 
 let sourceImage;
+let floorImage;  // NYC Dotted Reflex.jpg (mode 2)
 let animatedPoints = [];
 let allHalftonePoints = [];
 let staticLayer;
@@ -57,11 +63,17 @@ const animState = {
 	halftoneRevealProgress: 0,  // 0 = none visible, 1 = all visible (bottom-to-top)
 	floorColumnCount: FLOOR_COLUMN_COUNT_START,
 	floorDotSizeScale: 1,
-	floorDotsPerColumn: FLOOR_DOTS_PER_COLUMN_START
+	floorDotsPerColumn: FLOOR_DOTS_PER_COLUMN_START,
+	// Mode 2: floor fades out, floor image fades in during halftone reveal
+	floorOpacity: 1,
+	floorImageOpacity: 0
 };
 
 function preload() {
 	sourceImage = loadImage(IMAGE_PATH);
+	if (MODE === 2) {
+		floorImage = loadImage(FLOOR_IMAGE_PATH);
+	}
 }
 
 function setup() {
@@ -84,6 +96,7 @@ function setup() {
 		ease: 'power2.inOut'
 	}, '-=1.5').to(animState, {
 		halftoneRevealProgress: 1,
+		...(MODE === 2 && { floorOpacity: 0, floorImageOpacity: 1 }),
 		duration: DURATION_HALFTONE_REVEAL,
 		ease: 'power2.inOut'
 	}, '-=1.5').to(animState, {
@@ -107,7 +120,12 @@ function draw() {
 		drawingContext.globalAlpha = 1;
 	}
 
-	drawPerspectiveDottedFloor();
+	if (!(MODE === 2 && animState.floorOpacity <= 0.001)) {
+		drawPerspectiveDottedFloor();
+	}
+	if (MODE === 2 && floorImage && animState.floorImageOpacity > 0.001) {
+		drawFloorImage();
+	}
 
 	fill(255);
 	push();
@@ -170,15 +188,14 @@ function rebuildHalftoneCache() {
 	for (let row = 0; row < rows; row++) {
 		for (let col = 0; col < cols; col++) {
 			const pixelIndex = (row * cols + col) * 4;
+			const alpha = sampleBuffer.pixels[pixelIndex + 3];
+			if (alpha === 0) continue;
+
 			const red = sampleBuffer.pixels[pixelIndex];
 			const green = sampleBuffer.pixels[pixelIndex + 1];
 			const blue = sampleBuffer.pixels[pixelIndex + 2];
-			const alpha = sampleBuffer.pixels[pixelIndex + 3];
 			const isPureBlack = red === 0 && green === 0 && blue === 0;
-
-			if (isPureBlack || alpha === 0) {
-				continue;
-			}
+			if (isPureBlack) continue;
 
 			const brightnessValue = 0.299 * red + 0.587 * green + 0.114 * blue;
 			const tone = pow(brightnessValue / 255, BRIGHTNESS_GAMMA);
@@ -398,8 +415,13 @@ function drawPerspectiveDottedFloor() {
 	floorPerspectiveBuffer.plane(planeWidth, planeHeight);
 	floorPerspectiveBuffer.pop();
 
+	const floorAlpha = MODE === 2 ? animState.floorOpacity : 1;
+	if (floorAlpha < 0.001) return;
+
 	if (animState.halftoneOpacity <= 0.9) {
+		drawingContext.globalAlpha = floorAlpha;
 		image(floorPerspectiveBuffer, 0, 0);
+		drawingContext.globalAlpha = 1;
 		return;
 	}
 
@@ -408,7 +430,33 @@ function drawPerspectiveDottedFloor() {
 	drawingContext.beginPath();
 	drawingContext.rect(0, floorTopY, width, height - floorTopY);
 	drawingContext.clip();
+	drawingContext.globalAlpha = floorAlpha;
 	image(floorPerspectiveBuffer, 0, 0);
+	drawingContext.globalAlpha = 1;
+	drawingContext.restore();
+}
+
+function drawFloorImage() {
+	const floorTopY = constrain(halftoneBounds.bottom, 0, height);
+	const rectW = width;
+	const rectH = height - floorTopY;
+	if (rectH <= 0) return;
+
+	const imgAspect = floorImage.width / floorImage.height;
+	const scale = max(rectW / floorImage.width, rectH / floorImage.height);
+	const drawW = floorImage.width * scale;
+	const drawH = floorImage.height * scale;
+	const drawX = (width - drawW) / 2;
+
+	drawingContext.save();
+	drawingContext.globalAlpha = animState.floorImageOpacity;
+	drawingContext.beginPath();
+	drawingContext.rect(0, floorTopY, width, rectH);
+	drawingContext.clip();
+	imageMode(CORNER);
+	image(floorImage, drawX, floorTopY, drawW, drawH);
+	imageMode(CORNER);
+	drawingContext.globalAlpha = 1;
 	drawingContext.restore();
 }
 
