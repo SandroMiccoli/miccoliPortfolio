@@ -10,11 +10,11 @@ const BACKGROUND_COLOR = [0, 0, 0];
 const MIN_DOT_SCALE = 0.1;
 const MAX_DOT_SCALE = 0.62;
 const BRIGHTNESS_GAMMA = 1.2;
-const ACCENT_THRESHOLD = 0.5;
-const ANIMATION_SPEED = 0.05;
-const SIZE_NOISE_INTENSITY = 0.7;
+const ACCENT_THRESHOLD = 0.75;
+const ANIMATION_SPEED = 0.075;
+const SIZE_NOISE_INTENSITY = 0.65;
 const TARGET_FRAME_RATE = 30;
-const ANIMATED_POINT_RATIO = 0.25;
+const ANIMATED_POINT_RATIO = 0.5;
 
 // Mouse influence on dot size
 const MOUSE_INFLUENCE_RADIUS = 80;
@@ -22,6 +22,14 @@ const MOUSE_INFLUENCE_RADIUS_SQ = MOUSE_INFLUENCE_RADIUS * MOUSE_INFLUENCE_RADIU
 const MOUSE_INFLUENCE_STRENGTH = 0.75;  // dots near cursor scale up by this factor
 const MOUSE_INFLUENCE_FADE_POWER = 0.5;  // <1 = softer fade (extends influence toward edge), >1 = sharper
 const MOUSE_OVERLAY_RADIUS_SQ = (MOUSE_INFLUENCE_RADIUS * 1.2) ** 2;  // buffer to avoid visible circle edge
+
+// Click ripple wave
+const RIPPLE_SPEED = 10;           // pixels per frame
+const RIPPLE_WIDTH = 70;           // width of the wave band
+const RIPPLE_BOOST = 0.35;         // scale boost for normal click (pushes dots slightly past MAX_DOT_SCALE)
+const RIPPLE_HOLD_BOOST = 0.65;    // stronger boost for click-and-hold
+const RIPPLE_HOLD_WIDTH = 120;     // wider wave for hold
+const HOLD_THRESHOLD_MS = 350;     // ms held to trigger "hold" ripple
 
 // Perspective dotted floor — vertical lines receding to vanishing point
 const FLOOR_VANISHING_Y_START = 0.53;    // start: horizon near top
@@ -55,6 +63,11 @@ let cachedCellSize = MIN_CELL_SIZE;
 let floorPatternBuffer;
 let floorPerspectiveBuffer;
 let halftoneBounds = { left: 0, top: 0, width: 0, height: 0, bottom: 0 };
+
+// Click ripple waves: { x, y, startFrame, isHold }
+let ripples = [];
+let mousePressStartTime = 0;
+let mousePressPos = { x: 0, y: 0 };
 
 // GSAP-animated state
 const animState = {
@@ -109,6 +122,22 @@ function setup() {
 		duration: 10,
 		ease: 'power2.inOut'
 	}, '-=10');
+}
+
+function mousePressed() {
+	mousePressStartTime = millis();
+	mousePressPos = { x: mouseX, y: mouseY };
+}
+
+function mouseReleased() {
+	const holdDuration = millis() - mousePressStartTime;
+	const isHold = holdDuration >= HOLD_THRESHOLD_MS;
+	ripples.push({
+		x: mousePressPos.x,
+		y: mousePressPos.y,
+		startFrame: frameCount,
+		isHold: isHold
+	});
 }
 
 function draw() {
@@ -278,6 +307,36 @@ function isWithinMouseInfluence(dotX, dotY) {
 	return (dx * dx + dy * dy) < MOUSE_OVERLAY_RADIUS_SQ;
 }
 
+function getRippleScaleMultiplier(dotX, dotY) {
+	let maxBoost = 0;
+	const maxRippleDist = sqrt(width * width + height * height) * 1.5;
+
+	for (let i = ripples.length - 1; i >= 0; i--) {
+		const r = ripples[i];
+		const dist = sqrt((dotX - r.x) ** 2 + (dotY - r.y) ** 2);
+		const framesSinceStart = frameCount - r.startFrame;
+		const waveFront = RIPPLE_SPEED * framesSinceStart;
+
+		// Prune ripples that have traveled past the canvas
+		if (waveFront > maxRippleDist) {
+			ripples.splice(i, 1);
+			continue;
+		}
+
+		const waveWidth = r.isHold ? RIPPLE_HOLD_WIDTH : RIPPLE_WIDTH;
+		const boost = r.isHold ? RIPPLE_HOLD_BOOST : RIPPLE_BOOST;
+		const distFromWaveCenter = abs(dist - waveFront);
+
+		if (distFromWaveCenter < waveWidth * 0.5) {
+			const t = 1 - distFromWaveCenter / (waveWidth * 0.5);
+			const smoothT = t * t * (3 - 2 * t);  // smoothstep
+			maxBoost = max(maxBoost, smoothT * boost);
+		}
+	}
+
+	return 1 + maxBoost;
+}
+
 function getDotRevealAlpha(point) {
 	const p = animState.halftoneRevealProgress;
 	const t = point.revealT;
@@ -287,6 +346,7 @@ function getDotRevealAlpha(point) {
 function renderHalftone() {
 	const minDiameter = cachedCellSize * MIN_DOT_SCALE;
 	const maxDiameter = cachedCellSize * MAX_DOT_SCALE;
+	const maxDiameterWithRipple = maxDiameter * 1.7;  // allow ripple to push past MAX_DOT_SCALE
 	const time = frameCount * ANIMATION_SPEED;
 	const inReveal = animState.halftoneRevealProgress < 1;
 
@@ -297,14 +357,15 @@ function renderHalftone() {
 			if (revealAlpha <= 0.001) continue;
 
 			const mouseScale = getMouseSizeMultiplier(point.x, point.y);
-			let diameter = point.baseDiameter * mouseScale;
+			const rippleScale = getRippleScaleMultiplier(point.x, point.y);
+			let diameter = point.baseDiameter * mouseScale * rippleScale;
 
 			if (point.isAnimated) {
 				const pulse = sin(time * point.speed + point.phase);
-				diameter = point.baseDiameter * mouseScale * (1 + pulse * SIZE_NOISE_INTENSITY);
+				diameter = point.baseDiameter * mouseScale * rippleScale * (1 + pulse * SIZE_NOISE_INTENSITY);
 			}
 
-			diameter = constrain(diameter, minDiameter, maxDiameter * 1.4);
+			diameter = constrain(diameter, minDiameter, maxDiameterWithRipple);
 			const variation = point.isAnimated
 				? constrain(point.accentVariation + sin(time * point.speed + point.phase) * 0.2, 0, 1)
 				: point.accentVariation;
@@ -314,25 +375,30 @@ function renderHalftone() {
 		}
 	} else {
 		// After reveal: use static layer + overlay for performance
-		if (staticLayer) {
+		// When ripples are active, render all dots so ripple wave is visible
+		const hasActiveRipples = ripples.length > 0;
+		if (hasActiveRipples) {
+			background(...BACKGROUND_COLOR);
+		} else if (staticLayer) {
 			image(staticLayer, 0, 0);
 		} else {
 			background(...BACKGROUND_COLOR);
 		}
 
 		for (const point of allHalftonePoints) {
-			const needsOverlay = point.isAnimated || isWithinMouseInfluence(point.x, point.y);
+			const needsOverlay = hasActiveRipples || point.isAnimated || isWithinMouseInfluence(point.x, point.y);
 			if (!needsOverlay) continue;
 
 			const mouseScale = getMouseSizeMultiplier(point.x, point.y);
-			let diameter = point.baseDiameter * mouseScale;
+			const rippleScale = getRippleScaleMultiplier(point.x, point.y);
+			let diameter = point.baseDiameter * mouseScale * rippleScale;
 
 			if (point.isAnimated) {
 				const pulse = sin(time * point.speed + point.phase);
-				diameter = point.baseDiameter * mouseScale * (1 + pulse * SIZE_NOISE_INTENSITY);
+				diameter = point.baseDiameter * mouseScale * rippleScale * (1 + pulse * SIZE_NOISE_INTENSITY);
 			}
 
-			diameter = constrain(diameter, minDiameter, maxDiameter * 1.4);
+			diameter = constrain(diameter, minDiameter, maxDiameterWithRipple);
 			const variation = point.isAnimated
 				? constrain(point.accentVariation + sin(time * point.speed + point.phase) * 0.2, 0, 1)
 				: point.accentVariation;
