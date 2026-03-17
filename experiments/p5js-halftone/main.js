@@ -126,12 +126,12 @@ function setup() {
 
 function mousePressed() {
 	mousePressStartTime = millis();
-	mousePressPos = { x: mouseX, y: mouseY };
 }
 
 function mouseReleased() {
 	const holdDuration = millis() - mousePressStartTime;
 	const isHold = holdDuration >= HOLD_THRESHOLD_MS;
+	mousePressPos = { x: mouseX, y: mouseY };
 	ripples.push({
 		x: mousePressPos.x,
 		y: mousePressPos.y,
