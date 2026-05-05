@@ -1,0 +1,128 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+	width: 100%;
+	height: 100%;
+	background: #ffffff;
+	overflow: hidden;
+}
+
+body {
+	position: relative;
+}
+
+canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* lil-gui — high-contrast black & white (panel + controls) */
+.lil-gui {
+	--background-color: #000000 !important;
+	--text-color: #ffffff !important;
+	--title-background-color: #ffffff !important;
+	--widget-color: #ffffff !important;
+	--hover-color: #d0d0d0 !important;
+	--focus-color: #ffffff !important;
+	--number-color: #000000 !important;
+	--string-color: #000000 !important;
+}
+
+.lil-gui.root {
+	background-color: #000000 !important;
+	color: #ffffff !important;
+	z-index: 32000;
+}
+
+.lil-gui .title {
+	font-weight: 700 !important;
+	background-color: #ffffff !important;
+	color: #000000 !important;
+}
+
+.lil-gui .controller {
+	color: #ffffff !important;
+	border-color: #ffffff !important;
+}
+
+/* Folders inherit dark body; keep titles consistent with root title */
+.lil-gui .folder .title {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+}
+
+.lil-gui input,
+.lil-gui select {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+	border: 1px solid #000000 !important;
+}
+
+/* Select inherits white label color from `.controller` — force readable value + list */
+.lil-gui .controller select,
+.lil-gui .controller > .widget > select {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+	caret-color: #000000 !important;
+}
+
+.lil-gui select option,
+.lil-gui select optgroup {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+}
+
+.lil-gui select:focus,
+.lil-gui select:hover {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+}
+
+/*
+ * Option / dropdown rows: the visible control is `.display`, not the hidden `<select>`.
+ * We set --widget-color and --text-color both to white elsewhere, which made label text white on white.
+ */
+.lil-gui .controller.option .display {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+}
+
+.lil-gui .controller.option .display:after {
+	color: #000000 !important;
+}
+
+@media (hover: hover) {
+	.lil-gui .controller.option .widget:hover .display {
+		background-color: #e8e8e8 !important;
+		color: #000000 !important;
+	}
+}
+
+.lil-gui .controller.option .display.focus {
+	background-color: #d8d8d8 !important;
+	color: #000000 !important;
+}
+
+.lil-gui .controller.option .display.active {
+	background-color: #d0d0d0 !important;
+	color: #000000 !important;
+}
+
+.lil-gui .btn,
+.lil-gui button {
+	background-color: #ffffff !important;
+	color: #000000 !important;
+	border: 1px solid #000000 !important;
+}
+
+.lil-gui .btn:hover,
+.lil-gui button:hover {
+	background-color: #e8e8e8 !important;
+}
