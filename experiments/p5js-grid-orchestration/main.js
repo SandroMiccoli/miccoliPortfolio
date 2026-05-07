@@ -1,6 +1,7 @@
 /**
  * p5.js — Grid orchestration
- * Grid of line segments with procedural angles and mouse-driven alignment.
+ * Grid of line segments or closed shapes with procedural angles, mouse-driven alignment (lines),
+ * and hover-driven morph between two shapes (shapes mode).
  */
 
 // ─── Pattern mode keys (also used by GUI dropdown) ─────────────────────────
@@ -16,6 +17,12 @@ const PATTERN_MODES = [
 	'cursorField',
 	'randomSeeded',
 ];
+
+/** Shape kinds for morphed grid cells (perimeter-resampled for smooth hover morph). */
+const SHAPE_TYPES = ['line', 'square', 'triangle', 'hexagon', 'circle'];
+
+/** Vertices sampled around each closed contour for lerping from → to. */
+const SHAPE_CONTOUR_SAMPLES = 48;
 
 /** Keys copied when using "Save preset to clipboard" (matches `PRESETS` patch shape). */
 const PRESET_EXPORT_KEYS = [
@@ -37,12 +44,121 @@ const PRESET_EXPORT_KEYS = [
 	'mouseFalloff',
 	'crossLinesOnHover',
 	'patternMode',
+	'renderMode',
+	'shapeFillMode',
+	'shapeFrom',
+	'shapeTo',
 	'bgColor',
 	'lineColor',
 	'randomSeed',
 ];
 
 const PRESETS = {
+	'Cursor Orchestra Fullscreen': {
+		cols: 48,
+		rows: 48,
+		spacing: 43,
+		lineLength: 41,
+		lineThickness: 1.6,
+		lineOpacity: 0.52,
+		animationSpeed: 2.5,
+		rotationAmount: 0,
+		noiseScale: 1.2,
+		noiseStrength: 0.5,
+		mathFrequency: 1.1,
+		interactionRadius: 340,
+		interactionStrength: 1.15,
+		alignmentStrength: 0.6,
+		easingAmount: 0.2,
+		mouseFalloff: 1.6,
+		crossLinesOnHover: false,
+		patternMode: 'cursorField',
+		renderMode: 'lines',
+		shapeFillMode: 'stroke',
+		shapeFrom: 'circle',
+		shapeTo: 'square',
+		bgColor: '#ffffff',
+		lineColor: '#080808',
+		randomSeed: 606,
+	},
+	'Cursor Orchestra Full Minimal': {
+		cols: 48,
+		rows: 48,
+		spacing: 43,
+		lineLength: 13,
+		lineThickness: 2.65,
+		lineOpacity: 0.24,
+		animationSpeed: 2.5,
+		rotationAmount: 0,
+		noiseScale: 1.2,
+		noiseStrength: 0.5,
+		mathFrequency: 1.1,
+		interactionRadius: 340,
+		interactionStrength: 1.15,
+		alignmentStrength: 0.6,
+		easingAmount: 0.2,
+		mouseFalloff: 1.6,
+		crossLinesOnHover: false,
+		patternMode: "cursorField",
+		bgColor: "#ffffff",
+		lineColor: "#080808",
+		randomSeed: 606,
+	},
+	'Line to Hexagon': {
+		cols: 48,
+		rows: 48,
+		spacing: 43,
+		lineLength: 41,
+		lineThickness: 0.95,
+		lineOpacity: 0.52,
+		animationSpeed: 2.5,
+		rotationAmount: 0,
+		noiseScale: 1.2,
+		noiseStrength: 0.5,
+		mathFrequency: 1.1,
+		interactionRadius: 340,
+		interactionStrength: 1.15,
+		alignmentStrength: 0.6,
+		easingAmount: 0.2,
+		mouseFalloff: 1.6,
+		crossLinesOnHover: false,
+		patternMode: "cursorField",
+		renderMode: "shapes",
+		shapeFillMode: "stroke",
+		shapeFrom: "line",
+		shapeTo: "hexagon",
+		bgColor: "#ffffff",
+		lineColor: "#080808",
+		randomSeed: 606,
+	},
+	'Hexagon to Square': {
+		cols: 48,
+		rows: 48,
+		spacing: 55,
+		lineLength: 25,
+		lineThickness: 0.95,
+		lineOpacity: 0.52,
+		animationSpeed: 2.5,
+		rotationAmount: 0,
+		noiseScale: 1.2,
+		noiseStrength: 0.5,
+		mathFrequency: 1.1,
+		interactionRadius: 340,
+		interactionStrength: 1.15,
+		alignmentStrength: 0.6,
+		easingAmount: 0.2,
+		mouseFalloff: 1.6,
+		crossLinesOnHover: false,
+		patternMode: "cursorField",
+		renderMode: "shapes",
+		shapeFillMode: "stroke",
+		shapeFrom: "hexagon",
+		shapeTo: "square",
+		bgColor: "#ffffff",
+		lineColor: "#080808",
+		randomSeed: 606,
+	},
+
 	'Minimal Grid': {
 		cols: 15,
 		rows: 15,
@@ -151,6 +267,7 @@ const PRESETS = {
 		alignmentStrength: 0.82,
 		easingAmount: 0.15,
 		mouseFalloff: 1.4,
+		crossLinesOnHover: false,
 		patternMode: 'vortex',
 		bgColor: '#ffffff',
 		lineColor: '#101010',
@@ -205,6 +322,10 @@ const DEFAULT_PARAMS = {
 	mouseFalloff: 1.65,
 	crossLinesOnHover: false,
 	patternMode: 'noiseXY',
+	renderMode: 'lines',
+	shapeFillMode: 'stroke',
+	shapeFrom: 'circle',
+	shapeTo: 'square',
 	bgColor: '#ffffff',
 	lineColor: '#111111',
 	debugGrid: false,
@@ -216,10 +337,20 @@ const DEFAULT_PARAMS = {
 // ─── Mutable runtime state ─────────────────────────────────────────────────
 const params = { ...DEFAULT_PARAMS, ...PRESETS[PRESET_NAMES[0]] };
 params.preset = PRESET_NAMES[0];
-/** @type {{ ix: number, iy: number, cx: number, cy: number, randAngle: number, smoothAngle: number, crossBlend: number }[]} */
+/** @type {{ ix: number, iy: number, cx: number, cy: number, randAngle: number, smoothAngle: number, crossBlend: number, shapeMorph: number }[]} */
 let lines = [];
 let gui = null;
 let timeMs = 0;
+
+/** Cached resampled contours for shape morph (rebuilt when size / from / to changes). */
+let shapeContourCache = {
+	key: '',
+	fromPts: /** @type {{ x: number, y: number }[]} */ ([]),
+	toPts: /** @type {{ x: number, y: number }[]} */ ([]),
+};
+
+/** Preset patches may omit newer keys; these fall back to `DEFAULT_PARAMS` in `applyPreset`. */
+const PRESET_OPTIONAL_KEYS = ['renderMode', 'shapeFillMode', 'shapeFrom', 'shapeTo'];
 
 // ─── Grid / pattern ─────────────────────────────────────────────────────────
 function buildLines() {
@@ -238,7 +369,7 @@ function buildLines() {
 			const cx = ox + ix * spacing;
 			const cy = oy + iy * spacing;
 			const randAngle = random(TWO_PI);
-			const line = { ix, iy, cx, cy, randAngle, smoothAngle: 0, crossBlend: 0 };
+			const line = { ix, iy, cx, cy, randAngle, smoothAngle: 0, crossBlend: 0, shapeMorph: 0 };
 			line.smoothAngle = computeBaseAngle(line, timeMs);
 			arr.push(line);
 		}
@@ -338,6 +469,164 @@ function interactionWeight(line) {
 	return pow(edge, fo) * params.interactionStrength;
 }
 
+/**
+ * Closed polygon vertices (order = perimeter walk). Not used for `circle` (sampled by angle).
+ * @param {string} kind
+ * @param {number} half Same half-extent as line mode (`lineLength * 0.5`).
+ */
+function getShapePolygonVertices(kind, half) {
+	const h = max(half, 1e-4);
+	const stripT = max(h * 0.02, 0.35);
+	switch (kind) {
+		case 'line':
+			return [
+				{ x: -h, y: -stripT },
+				{ x: h, y: -stripT },
+				{ x: h, y: stripT },
+				{ x: -h, y: stripT },
+			];
+		case 'square':
+			return [
+				{ x: -h, y: -h },
+				{ x: h, y: -h },
+				{ x: h, y: h },
+				{ x: -h, y: h },
+			];
+		case 'triangle': {
+			const r = h;
+			return [
+				{ x: 0, y: -r },
+				{ x: r * cos(PI / 6), y: r * sin(PI / 6) },
+				{ x: r * cos((5 * PI) / 6), y: r * sin((5 * PI) / 6) },
+			];
+		}
+		case 'hexagon': {
+			const pts = [];
+			const R = h;
+			for (let k = 0; k < 6; k++) {
+				const a = -HALF_PI + k * (PI / 3);
+				pts.push({ x: R * cos(a), y: R * sin(a) });
+			}
+			return pts;
+		}
+		default:
+			return [
+				{ x: -h, y: -h },
+				{ x: h, y: -h },
+				{ x: h, y: h },
+				{ x: -h, y: h },
+			];
+	}
+}
+
+/**
+ * `n` points placed by arc length along a closed polygon or circle.
+ * @param {string} kind
+ * @param {number} half
+ * @param {number} n
+ */
+function sampleShapeContour(kind, half, n) {
+	const h = max(half, 1e-4);
+	if (kind === 'circle') {
+		const pts = [];
+		for (let i = 0; i < n; i++) {
+			const a = TWO_PI * (i / n);
+			pts.push({ x: cos(a) * h, y: sin(a) * h });
+		}
+		return pts;
+	}
+
+	const verts = getShapePolygonVertices(kind, h);
+	const m = verts.length;
+	const segLens = [];
+	let total = 0;
+	for (let i = 0; i < m; i++) {
+		const a = verts[i];
+		const b = verts[(i + 1) % m];
+		const len = dist(a.x, a.y, b.x, b.y);
+		segLens.push(len);
+		total += len;
+	}
+	if (total < 1e-6) {
+		return Array.from({ length: n }, () => ({ x: 0, y: 0 }));
+	}
+
+	const pts = [];
+	for (let i = 0; i < n; i++) {
+		let d = (i / n) * total;
+		let cum = 0;
+		let placed = false;
+		for (let s = 0; s < m; s++) {
+			const L = segLens[s];
+			if (d <= cum + L + 1e-9) {
+				const t = L > 1e-6 ? constrain((d - cum) / L, 0, 1) : 0;
+				const a = verts[s];
+				const b = verts[(s + 1) % m];
+				pts.push({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) });
+				placed = true;
+				break;
+			}
+			cum += L;
+		}
+		if (!placed) {
+			const a = verts[m - 1];
+			const b = verts[0];
+			pts.push({ x: b.x, y: b.y });
+		}
+	}
+	return pts;
+}
+
+function ensureShapeContourCache() {
+	const half = params.lineLength * 0.5;
+	const key = `${params.shapeFrom}|${params.shapeTo}|${half}|${SHAPE_CONTOUR_SAMPLES}`;
+	if (shapeContourCache.key === key) return;
+	shapeContourCache.key = key;
+	shapeContourCache.fromPts = sampleShapeContour(params.shapeFrom, half, SHAPE_CONTOUR_SAMPLES);
+	shapeContourCache.toPts = sampleShapeContour(params.shapeTo, half, SHAPE_CONTOUR_SAMPLES);
+}
+
+/**
+ * @param {{ x: number, y: number }[]} fromPts
+ * @param {{ x: number, y: number }[]} toPts
+ */
+function drawMorphedShapeCell(seg, morphT, fromPts, toPts) {
+	const t = constrain(morphT, 0, 1);
+	const ca = cos(seg.smoothAngle);
+	const sa = sin(seg.smoothAngle);
+	const ox = seg.cx;
+	const oy = seg.cy;
+
+	const c = color(params.lineColor);
+	c.setAlpha(constrain(params.lineOpacity, 0, 1) * 255);
+
+	const mode = params.shapeFillMode;
+	if (mode === 'fill') {
+		noStroke();
+		fill(c);
+	} else if (mode === 'stroke') {
+		noFill();
+		stroke(c);
+		strokeWeight(params.lineThickness);
+		strokeJoin(ROUND);
+	} else {
+		fill(c);
+		stroke(c);
+		strokeWeight(params.lineThickness);
+		strokeJoin(ROUND);
+	}
+
+	beginShape();
+	for (let i = 0; i < fromPts.length; i++) {
+		const x = lerp(fromPts[i].x, toPts[i].x, t);
+		const y = lerp(fromPts[i].y, toPts[i].y, t);
+		const rx = x * ca - y * sa;
+		const ry = x * sa + y * ca;
+		vertex(ox + rx, oy + ry);
+	}
+	endShape(CLOSE);
+}
+
 function getCurrentPresetPatch() {
 	const o = {};
 	for (let i = 0; i < PRESET_EXPORT_KEYS.length; i++) {
@@ -385,6 +674,13 @@ function applyPreset(name) {
 	if (!patch) return;
 	Object.assign(params, patch);
 	params.preset = name;
+	for (let i = 0; i < PRESET_OPTIONAL_KEYS.length; i++) {
+		const k = PRESET_OPTIONAL_KEYS[i];
+		if (!Object.prototype.hasOwnProperty.call(patch, k)) {
+			params[k] = DEFAULT_PARAMS[k];
+		}
+	}
+	shapeContourCache.key = '';
 	regenerate();
 	if (gui) {
 		gui.controllersRecursive().forEach((c) => c.updateDisplay());
@@ -398,12 +694,38 @@ function setupGui() {
 	gui = new GUICtor({ title: 'Grid orchestration' });
 
 	const gGrid = gui.addFolder('Grid');
-	gGrid.add(params, 'cols', 4, 48, 1).onFinishChange(regenerate);
-	gGrid.add(params, 'rows', 4, 48, 1).onFinishChange(regenerate);
+	gGrid.add(params, 'cols', 4, 60, 1).onFinishChange(regenerate);
+	gGrid.add(params, 'rows', 4, 60, 1).onFinishChange(regenerate);
 	gGrid.add(params, 'spacing', 8, 80, 1).onFinishChange(regenerate);
 
+	const gRender = gui.addFolder('Render');
+	gRender
+		.add(params, 'renderMode', ['lines', 'shapes'])
+		.name('mode')
+		.onFinishChange(() => {
+			shapeContourCache.key = '';
+			regenerate();
+		});
+
+	const gShapes = gui.addFolder('Shapes');
+	gShapes.add(params, 'shapeFillMode', ['stroke', 'fill', 'both']).name('fill / stroke');
+	gShapes
+		.add(params, 'shapeFrom', SHAPE_TYPES)
+		.name('from shape')
+		.onFinishChange(() => {
+			shapeContourCache.key = '';
+		});
+	gShapes
+		.add(params, 'shapeTo', SHAPE_TYPES)
+		.name('to shape (hover)')
+		.onFinishChange(() => {
+			shapeContourCache.key = '';
+		});
+
 	const gLine = gui.addFolder('Line');
-	gLine.add(params, 'lineLength', 4, 80, 1);
+	gLine.add(params, 'lineLength', 4, 80, 1).onFinishChange(() => {
+		shapeContourCache.key = '';
+	});
 	gLine.add(params, 'lineThickness', 0.5, 4, 0.05);
 	gLine.add(params, 'lineOpacity', 0.05, 1, 0.01);
 
@@ -459,6 +781,13 @@ function draw() {
 
 	background(params.bgColor);
 
+	if (params.renderMode === 'shapes') {
+		ensureShapeContourCache();
+	}
+
+	const fromPts = shapeContourCache.fromPts;
+	const toPts = shapeContourCache.toPts;
+
 	for (let i = 0; i < lines.length; i++) {
 		const seg = lines[i];
 		const infl = constrain(interactionWeight(seg), 0, 1);
@@ -467,10 +796,20 @@ function draw() {
 		if (!params.paused) {
 			const base = computeBaseAngle(seg, timeMs);
 			const target = orchestrationTarget(seg);
-			const ideal = lerpAngle(base, target, infl);
+			const alignInfl = params.renderMode === 'shapes' ? 0 : infl;
+			const ideal = lerpAngle(base, target, alignInfl);
 			seg.smoothAngle = lerpAngle(seg.smoothAngle, ideal, ease);
-			const crossTarget = params.crossLinesOnHover ? infl : 0;
-			seg.crossBlend = lerp(seg.crossBlend, crossTarget, ease);
+			if (params.renderMode === 'shapes') {
+				seg.shapeMorph = lerp(seg.shapeMorph, infl, ease);
+			} else {
+				const crossTarget = params.crossLinesOnHover ? infl : 0;
+				seg.crossBlend = lerp(seg.crossBlend, crossTarget, ease);
+			}
+		}
+
+		if (params.renderMode === 'shapes') {
+			drawMorphedShapeCell(seg, seg.shapeMorph, fromPts, toPts);
+			continue;
 		}
 
 		const half = params.lineLength * 0.5;
