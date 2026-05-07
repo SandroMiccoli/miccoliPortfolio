@@ -1,0 +1,110 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+	width: 100%;
+	height: 100%;
+	background: #ffffff;
+	overflow: hidden;
+}
+
+body {
+	position: relative;
+	font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+#app canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* lil-gui — refined light theme matching the soft blue/purple aesthetic */
+.lil-gui {
+	--background-color: rgba(255, 255, 255, 0.92) !important;
+	--text-color: #2a2540 !important;
+	--title-background-color: rgba(245, 243, 255, 0.96) !important;
+	--title-text-color: #2a2540 !important;
+	--widget-color: rgba(232, 228, 250, 0.85) !important;
+	--hover-color: rgba(214, 207, 244, 0.95) !important;
+	--focus-color: rgba(196, 186, 240, 1) !important;
+	--number-color: #5a48c8 !important;
+	--string-color: #5a48c8 !important;
+	--font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace !important;
+	--font-size: 11px !important;
+	z-index: 32000;
+	border: 1px solid rgba(90, 72, 200, 0.12);
+	box-shadow: 0 8px 32px rgba(90, 72, 200, 0.08);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+.lil-gui.root {
+	background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.lil-gui .title {
+	font-weight: 600 !important;
+	letter-spacing: 0.04em !important;
+	border-bottom: 1px solid rgba(90, 72, 200, 0.1) !important;
+}
+
+.lil-gui .controller {
+	border-color: rgba(90, 72, 200, 0.06) !important;
+}
+
+.lil-gui input,
+.lil-gui select {
+	background-color: rgba(245, 243, 255, 0.9) !important;
+	color: #2a2540 !important;
+	border: 1px solid rgba(90, 72, 200, 0.12) !important;
+}
+
+.lil-gui input:focus,
+.lil-gui select:focus {
+	border-color: rgba(90, 72, 200, 0.4) !important;
+	outline: none !important;
+}
+
+.lil-gui .controller.option .display {
+	background-color: rgba(245, 243, 255, 0.9) !important;
+	color: #2a2540 !important;
+}
+
+.lil-gui .btn,
+.lil-gui button {
+	background-color: rgba(232, 228, 250, 0.9) !important;
+	color: #2a2540 !important;
+	border: 1px solid rgba(90, 72, 200, 0.15) !important;
+}
+
+.lil-gui .btn:hover,
+.lil-gui button:hover {
+	background-color: rgba(214, 207, 244, 0.95) !important;
+}
+
+.lil-gui .controller .slider {
+	background-color: rgba(232, 228, 250, 0.85) !important;
+}
+
+.lil-gui .controller .slider .fill {
+	background-color: rgba(90, 72, 200, 0.55) !important;
+}
+
+#info {
+	position: fixed;
+	bottom: 14px;
+	left: 16px;
+	color: rgba(42, 37, 64, 0.45);
+	font-size: 10px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	z-index: 10;
+	pointer-events: none;
+	user-select: none;
+}
