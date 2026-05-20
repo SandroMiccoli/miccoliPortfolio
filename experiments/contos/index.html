@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CONTOS - Mapa de Composição Coreográfica</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+	<header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between z-10 shrink-0">
+		<div class="flex items-center space-x-4">
+			<div class="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center glow-purple">
+				<i class="fa-solid fa-masks-theater text-white text-lg"></i>
+			</div>
+			<div>
+				<h1 class="text-xl font-bold tracking-wider font-serif bg-gradient-to-r from-purple-200 to-slate-100 bg-clip-text text-transparent">CONTOS</h1>
+				<p class="text-xs text-slate-400">Espetáculo de Dança • Mapa Conceitual Interativo</p>
+			</div>
+		</div>
+
+		<div class="flex items-center space-x-3">
+			<button id="btnInfoGeral" class="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs hover:bg-slate-800 transition flex items-center gap-1.5 text-slate-300">
+				<i class="fa-solid fa-circle-info"></i> Conceito Geral
+			</button>
+
+		</div>
+	</header>
+
+	<div class="flex flex-1 overflow-hidden relative">
+
+		<aside id="leftSidebar" class="w-80 bg-slate-950/90 border-r border-slate-800 flex flex-col shrink-0 transition-transform duration-300 z-10 relative">
+			<div class="p-4 border-b border-slate-800 space-y-3">
+				<div class="relative">
+					<input type="text" id="searchInput" placeholder="Buscar conceito, cena, tema..." class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-purple-500 text-slate-100 placeholder-slate-500">
+					<i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-slate-500 text-xs"></i>
+				</div>
+
+			</div>
+
+			<div class="flex-1 overflow-y-auto p-4 space-y-4">
+				<div class="flex justify-between items-center">
+					<span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Lista de Cenas</span>
+					<button id="btnAddScene" class="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium">
+						<i class="fa-solid fa-plus"></i> Nova Cena
+					</button>
+				</div>
+				<div id="scenesList" class="space-y-1"></div>
+			</div>
+
+
+		</aside>
+
+		<main class="flex-1 relative bg-gradient-to-b from-[#080b11] to-[#0f172a] h-full overflow-hidden">
+			<div id="graphLoader" class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center z-20 pointer-events-none transition-opacity duration-300">
+				<div class="text-center">
+					<div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-2"></div>
+					<p class="text-xs text-slate-400">Carregando mapa conceitual...</p>
+				</div>
+			</div>
+
+			<div class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-lg p-3 text-xs max-w-xs pointer-events-none z-10 space-y-1">
+				<div class="font-semibold text-slate-300"><i class="fa-solid fa-circle-nodes text-purple-400 mr-1.5"></i>Navegação no Grafo</div>
+				<ul class="text-[11px] text-slate-400 list-disc list-inside space-y-0.5">
+					<li>Arraste os nós para reorganizar</li>
+					<li>Use a roda do mouse para dar zoom</li>
+					<li>Clique em um nó para abrir detalhes</li>
+					<li>Nós maiores têm mais conexões</li>
+				</ul>
+			</div>
+
+			<div class="absolute bottom-4 left-4 flex gap-1.5 z-10 flex-wrap max-w-lg">
+				<span class="text-[11px] text-slate-500 self-center mr-1">Eixos do Espetáculo:</span>
+				<button type="button" data-group="infancia" class="axis-btn px-2.5 py-1 text-[11px] rounded bg-amber-950/30 border border-amber-800/40 hover:bg-amber-900/30 text-amber-300 transition">🧸 Infância</button>
+				<button type="button" data-group="sonho" class="axis-btn px-2.5 py-1 text-[11px] rounded bg-indigo-950/30 border border-indigo-800/40 hover:bg-indigo-900/30 text-indigo-300 transition">✨ Sonho</button>
+				<button type="button" data-group="sombra" class="axis-btn px-2.5 py-1 text-[11px] rounded bg-red-950/30 border border-red-800/40 hover:bg-red-900/30 text-red-300 transition">💀 Sombra</button>
+				<button type="button" data-group="tempo" class="axis-btn px-2.5 py-1 text-[11px] rounded bg-blue-950/30 border border-blue-800/40 hover:bg-blue-900/30 text-blue-300 transition">⏱️ Tempo</button>
+				<button type="button" data-group="corpo" class="axis-btn px-2.5 py-1 text-[11px] rounded bg-emerald-950/30 border border-emerald-800/40 hover:bg-emerald-900/30 text-emerald-300 transition">👥 Corpo Coletivo</button>
+			</div>
+
+			<div id="graphControlsPanel" class="graph-controls-panel absolute top-4 right-4 z-10 w-72 max-h-[min(520px,calc(100%-6rem))] flex flex-col bg-slate-900/90 backdrop-blur border border-slate-800/80 rounded-lg shadow-xl text-xs overflow-hidden">
+				<button type="button" id="graphControlsToggle" class="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-slate-800/80 text-slate-200 hover:bg-slate-800/40 transition shrink-0 w-full text-left">
+					<span class="font-semibold"><i class="fa-solid fa-sliders text-purple-400 mr-1.5"></i>Filtros do grafo</span>
+					<i class="fa-solid fa-chevron-up text-slate-500 text-[10px]"></i>
+				</button>
+				<div id="graphControlsBody" class="overflow-y-auto p-3 space-y-4">
+					<section class="space-y-2">
+						<h4 class="graph-controls-section-title">Forças da simulação</h4>
+						<label class="graph-control-row">
+							<span>Distância dos vínculos <strong id="gcLinkDistanceVal" class="text-purple-300">50</strong></span>
+							<input type="range" id="gcLinkDistance" min="20" max="200" value="50" class="accent-purple-500">
+						</label>
+						<label class="graph-control-row">
+							<span>Força dos vínculos <strong id="gcLinkStrengthVal" class="text-purple-300">0.85</strong></span>
+							<input type="range" id="gcLinkStrength" min="0.1" max="1" step="0.05" value="0.85" class="accent-purple-500">
+						</label>
+						<label class="graph-control-row">
+							<span>Repulsão entre nós <strong id="gcChargeStrengthVal" class="text-purple-300">-140</strong></span>
+							<input type="range" id="gcChargeStrength" min="-400" max="-20" value="-140" class="accent-purple-500">
+						</label>
+						<label class="graph-control-row">
+							<span>Colisão (padding) <strong id="gcCollisionPaddingVal" class="text-purple-300">8</strong></span>
+							<input type="range" id="gcCollisionPadding" min="0" max="30" value="8" class="accent-purple-500">
+						</label>
+						<label class="graph-control-row">
+							<span>Centralização <strong id="gcCenterStrengthVal" class="text-purple-300">0.08</strong></span>
+							<input type="range" id="gcCenterStrength" min="0" max="0.5" step="0.01" value="0.08" class="accent-purple-500">
+						</label>
+					</section>
+					<section class="space-y-2">
+						<h4 class="graph-controls-section-title">Exibição</h4>
+						<label class="graph-control-check"><input type="checkbox" id="gcShowLabels" checked class="rounded border-slate-700 text-purple-600 focus:ring-0"> Mostrar rótulos</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcShowLinks" checked class="rounded border-slate-700 text-purple-600 focus:ring-0"> Mostrar conexões</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcHighlightNeighbors" checked class="rounded border-slate-700 text-purple-600 focus:ring-0"> Destacar vizinhos ao passar o mouse</label>
+					</section>
+					<section class="space-y-2">
+						<h4 class="graph-controls-section-title">Tipos de nó</h4>
+						<label class="graph-control-check"><input type="checkbox" id="gcShowChoreography" checked class="rounded border-slate-700 text-purple-600 focus:ring-0"><span class="h-2 w-2 rounded-full bg-purple-500 shrink-0"></span> Cenas / coreografias</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcShowTema" checked class="rounded border-slate-700 text-emerald-600 focus:ring-0"><span class="h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span> Temas</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcShowImaginario" checked class="rounded border-slate-700 text-sky-600 focus:ring-0"><span class="h-2 w-2 rounded-full bg-sky-500 shrink-0"></span> Imaginário</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcShowVisual" checked class="rounded border-slate-700 text-pink-600 focus:ring-0"><span class="h-2 w-2 rounded-full bg-pink-500 shrink-0"></span> Direção visual</label>
+					</section>
+					<section class="space-y-2">
+						<h4 class="graph-controls-section-title">Eixos (cenas)</h4>
+						<label class="graph-control-check"><input type="checkbox" id="gcEixoInfancia" checked class="rounded border-slate-700 text-amber-600 focus:ring-0"> 🧸 Infância</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcEixoSonho" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0"> ✨ Sonho</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcEixoSombra" checked class="rounded border-slate-700 text-red-600 focus:ring-0"> 💀 Sombra</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcEixoTempo" checked class="rounded border-slate-700 text-blue-600 focus:ring-0"> ⏱️ Tempo</label>
+						<label class="graph-control-check"><input type="checkbox" id="gcEixoCorpo" checked class="rounded border-slate-700 text-emerald-600 focus:ring-0"> 👥 Corpo coletivo</label>
+					</section>
+					<section class="flex flex-col gap-1.5 pt-1 border-t border-slate-800/60">
+						<button type="button" id="gcResetGraph" class="w-full py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-200 transition">
+							<i class="fa-solid fa-arrows-spin mr-1"></i> Reiniciar posicionamento
+						</button>
+						<button type="button" id="gcResetSettings" class="w-full py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-400 transition">
+							Restaurar controles padrão
+						</button>
+					</section>
+				</div>
+			</div>
+
+			<svg id="graphSvg" class="w-full h-full cursor-grab active:cursor-grabbing"></svg>
+		</main>
+
+		<aside id="rightPanel" class="w-96 bg-slate-950/95 border-l border-slate-800 flex flex-col shrink-0 z-10 transition-all duration-300 transform translate-x-0">
+			<div id="panelWelcomeState" class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+				<div class="h-16 w-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+					<i class="fa-solid fa-fingerprint text-2xl animate-pulse"></i>
+				</div>
+				<div>
+					<h3 class="font-serif font-semibold text-lg text-slate-200">Explorar o mapa</h3>
+					<p class="text-xs text-slate-500 mt-1 max-w-xs">Clique em qualquer nó ou palavra-chave no grafo para ver conceitos, temas, imaginário e direção visual ligados a cada cena.</p>
+				</div>
+				<div class="pt-4 w-full">
+					<div class="bg-slate-900/50 rounded-lg p-3 text-left border border-slate-800/50">
+						<div class="text-[10px] uppercase font-bold text-slate-500 mb-1">Dica Rápida</div>
+						<p class="text-[11px] text-slate-400">Use os filtros flutuantes no canto superior direito do grafo para ajustar forças, distâncias e quais tipos de nó aparecem.</p>
+					</div>
+				</div>
+			</div>
+
+			<div id="panelDetailState" class="hidden flex-1 flex flex-col overflow-hidden">
+				<div class="p-4 border-b border-slate-800 bg-slate-900/40">
+					<div class="flex items-start justify-between">
+						<div>
+							<span id="nodeCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">TEMA</span>
+							<h2 id="nodeTitle" class="font-serif text-xl font-bold text-slate-100 mt-1.5">Nome do Nó</h2>
+						</div>
+						<button id="btnClosePanel" class="text-slate-500 hover:text-slate-300 p-1">
+							<i class="fa-solid fa-xmark text-lg"></i>
+						</button>
+					</div>
+				</div>
+
+				<div class="flex-1 overflow-y-auto p-4 space-y-4">
+					<div id="choreographyMetadata" class="space-y-3">
+						<div>
+							<span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Conceito e Dramaturgia</span>
+							<p id="sceneConcept" class="text-xs text-slate-300 leading-relaxed mt-1">Conceito detalhado...</p>
+						</div>
+						<div class="space-y-2 pt-2 border-t border-slate-800/60">
+							<span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Conexões desta Cena:</span>
+							<div class="space-y-1">
+								<span class="text-[11px] text-slate-400 font-medium">Temas:</span>
+								<div id="sceneThemes" class="flex flex-wrap gap-1"></div>
+							</div>
+							<div class="space-y-1 pt-1">
+								<span class="text-[11px] text-slate-400 font-medium">Imaginário:</span>
+								<div id="sceneImagery" class="flex flex-wrap gap-1"></div>
+							</div>
+							<div class="space-y-1 pt-1">
+								<span class="text-[11px] text-slate-400 font-medium">Direção Visual:</span>
+								<div id="sceneVisual" class="flex flex-wrap gap-1"></div>
+							</div>
+						</div>
+					</div>
+
+					<div id="generalNodeMetadata" class="hidden">
+						<p class="text-xs text-slate-400 leading-relaxed mb-3">Este é um termo conceitual associado à atmosfera do espetáculo. Veja abaixo os elementos e as cenas conectadas a ele:</p>
+						<div class="space-y-2">
+							<span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Cenas Conectadas:</span>
+							<div id="connectedScenesList" class="flex flex-wrap gap-1.5"></div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</aside>
+	</div>
+
+	<!-- Modals: add scene, general info -->
+	<div id="addSceneModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-200">
+		<div class="bg-slate-950 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
+			<button id="btnCancelAdd" type="button" class="absolute right-4 top-4 text-slate-400 hover:text-slate-200">
+				<i class="fa-solid fa-xmark text-lg"></i>
+			</button>
+			<h3 class="font-serif text-lg font-bold text-slate-100 mb-1"><i class="fa-solid fa-circle-plus text-purple-400 mr-2"></i>Adicionar Nova Cena no Espetáculo</h3>
+			<p class="text-xs text-slate-400 mb-4">Adicione uma cena para que o sistema gere as conexões e atualize o mapa interativo instantaneamente.</p>
+			<form id="addSceneForm" class="space-y-4">
+				<div>
+					<label class="block text-xs font-bold text-slate-400 mb-1">Título da Coreografia/Cena *</label>
+					<input type="text" id="newSceneTitle" required placeholder="Ex: Sombra da Infância" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+				</div>
+				<div>
+					<label class="block text-xs font-bold text-slate-400 mb-1">Resumo do Conceito/Dramaturgia *</label>
+					<textarea id="newSceneConcept" required rows="3" placeholder="Do que se trata a coreografia..." class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"></textarea>
+				</div>
+				<div class="grid grid-cols-3 gap-2">
+					<div>
+						<label class="block text-xs font-bold text-emerald-400 mb-1">Temas (vírgulas)</label>
+						<input type="text" id="newSceneThemes" placeholder="ex: rito, medo" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+					</div>
+					<div>
+						<label class="block text-xs font-bold text-sky-400 mb-1">Imaginário (vírgulas)</label>
+						<input type="text" id="newSceneImagery" placeholder="ex: quarto, marionete" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500">
+					</div>
+					<div>
+						<label class="block text-xs font-bold text-pink-400 mb-1">Dir. Visual (vírgulas)</label>
+						<input type="text" id="newSceneVisual" placeholder="ex: sombria, fumaça" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500">
+					</div>
+				</div>
+				<div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+					<button type="button" id="btnDiscardAdd" class="px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs hover:bg-slate-850 text-slate-300">Cancelar</button>
+					<button type="submit" class="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-semibold text-white">Criar e Conectar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div id="generalInfoModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-200">
+		<div class="bg-slate-950 border border-slate-800 rounded-xl max-w-xl w-full p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+			<button id="btnCloseGeneralInfo" type="button" class="absolute right-4 top-4 text-slate-400 hover:text-slate-200">
+				<i class="fa-solid fa-xmark text-lg"></i>
+			</button>
+			<h3 class="font-serif text-2xl font-bold text-slate-100 mb-2">CONTOS (Direção de Arte & Conceito)</h3>
+			<div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+				<p class="font-light text-slate-400 text-sm">
+					Espetáculo de dança de linguagem fragmentada, onírica e imagética, que transita entre brincadeiras da infância, contos simbólicos, memórias, fantasia e pesadelo.
+				</p>
+				<div class="bg-slate-900/50 p-3 rounded-lg border border-slate-800 space-y-2">
+					<div class="font-semibold text-slate-200 text-[11px] uppercase tracking-wider text-purple-400">Atmosfera Visual Recomentada:</div>
+					<p>Onírica, abstrata, colorida mas não necessariamente alegre, misteriosa, simbólica, surreal, com momentos de humor e estranhamento, oscilando continuamente entre o lúdico e o sombrio.</p>
+				</div>
+				<div>
+					<h4 class="font-bold text-slate-200 mb-1.5 uppercase tracking-wider text-[11px]">Eixos de Composição Dominantes:</h4>
+					<div class="grid grid-cols-2 gap-3">
+						<div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/60">
+							<span class="font-semibold text-slate-200 text-[11px]">🧸 INFÂNCIA</span>
+							<p class="text-[10px] text-slate-400 mt-1">Brincadeira, playground, carrossel, amarelinha, casinha, bonecas.</p>
+						</div>
+						<div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/60">
+							<span class="font-semibold text-slate-200 text-[11px]">✨ SONHO / CONTO</span>
+							<p class="text-[10px] text-slate-400 mt-1">Cavalo, janelas, jabuticabas, imaginários mitológicos, contos de fadas.</p>
+						</div>
+						<div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/60">
+							<span class="font-semibold text-slate-200 text-[11px]">💀 SOMBRA / PESADELO</span>
+							<p class="text-[10px] text-slate-400 mt-1">Deus, Mulheres Mortas, Travessia, Marco Polo, repressão, morte, vigilância.</p>
+						</div>
+						<div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800/60">
+							<span class="font-semibold text-slate-200 text-[11px]">👥 CORPO COLETIVO</span>
+							<p class="text-[10px] text-slate-400 mt-1">Saturação coletiva, rito de passagem, jogo espacial de ameaça.</p>
+						</div>
+					</div>
+				</div>
+				<div class="text-[10px] text-slate-500 pt-2 text-center border-t border-slate-800/60">
+					Use o grafo interativo e os filtros para explorar conexões entre cenas, temas e direção visual.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://d3js.org/d3.v7.min.js"></script>
+	<script src="main.js"></script>
+</body>
+</html>
