@@ -8,6 +8,12 @@
 
 const PILL_BORDER_RADIUS = 0.5;
 
+/** Gap (ms) without movement that starts a fresh interaction (guarantees one "i"). */
+const I_INTERACTION_IDLE_MS = 220;
+/** Spacing between "i" shapes within a continuous stroke, in cell-size multiples. */
+const I_SPACING_CELLS_MIN = 4;
+const I_SPACING_CELLS_MAX = 7;
+
 const INCREDIBLE_BANK = ['#EA6F24', '#0E8E86', '#424856', '#EEEEEE'];
 const ORANGE_B = ['#EA6F24', '#000000'];
 
@@ -58,15 +64,73 @@ const PRESET_EXPORT_KEYS = [
 	'scaleInAmount',
 	'scaleOutAmount',
 	'opacityFadeAmount',
-	'palettePreset',
-	'colorMode',
+	'baseColor',
+	'baseOpacity',
+	'baseStrokeOnly',
+	'baseStrokeWeight',
+	'accentColor',
+	'accentOpacity',
+	'accentStrokeOnly',
+	'accentStrokeWeight',
 	'bgColor',
 	'opacityMultiplier',
 	'randomSeed',
 ];
 
+/** Shared motion/grid settings for the Accent Pill preset family. */
+const ACCENT_PILL_BASE = {
+	cellSize: 42,
+	debugGrid: false,
+	trailLength: 14,
+	trailFadeAway: false,
+	activationRadius: 27,
+	trailDecaySpeed: 1,
+	lingerDuration: 420,
+	shapeType: 'mixed',
+	shapeSize: 0.62,
+	shapeOpacity: 1,
+	easingIn: 'easeOutCubic',
+	easingOut: 'easeInCubic',
+	animInDuration: 800,
+	animOutDuration: 520,
+	scaleInAmount: 1,
+	scaleOutAmount: 0.15,
+	opacityFadeAmount: 1,
+	baseColor: '#EA6F24',
+	baseOpacity: 1,
+	baseStrokeOnly: false,
+	baseStrokeWeight: 2,
+	accentStrokeWeight: 2,
+	bgColor: '#ffffff',
+	opacityMultiplier: 1,
+};
+
 const PRESETS = {
-	'Dots and Pills': {
+	'Accent Pill 01': {
+		...ACCENT_PILL_BASE,
+		accentColor: '#000000',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		randomSeed: 49606,
+	},
+	'Accent Pill 02': {
+		...ACCENT_PILL_BASE,
+		accentColor: '#EA6F24',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		baseStrokeOnly: true,
+		baseStrokeWeight: 1.25,
+		randomSeed: 502,
+	},
+	'Accent Pill 03': {
+		...ACCENT_PILL_BASE,
+		baseOpacity: 0.25,
+		accentColor: '#EA6F24',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		randomSeed: 503,
+	},
+	'Accent Pill 04': {
 		cellSize: 42,
 		debugGrid: false,
 		trailLength: 14,
@@ -84,10 +148,55 @@ const PRESETS = {
 		scaleInAmount: 1,
 		scaleOutAmount: 0.15,
 		opacityFadeAmount: 1,
-		palettePreset: "OrangeB",
-		colorMode: "random",
+		baseColor: "#00645d",
+		baseOpacity: 1,
+		baseStrokeOnly: true,
+		baseStrokeWeight: 1,
+		accentColor: "#ea6f24",
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 1.25,
 		bgColor: "#ffffff",
 		opacityMultiplier: 1,
+		randomSeed: 504,
+	},
+
+	'Accent Pill 05': {
+		cellSize: 42,
+		debugGrid: false,
+		trailLength: 14,
+		trailFadeAway: false,
+		activationRadius: 27,
+		trailDecaySpeed: 1,
+		lingerDuration: 420,
+		shapeType: "mixed",
+		shapeSize: 0.62,
+		shapeOpacity: 1,
+		easingIn: "easeOutCubic",
+		easingOut: "easeInCubic",
+		animInDuration: 800,
+		animOutDuration: 520,
+		scaleInAmount: 1,
+		scaleOutAmount: 0.15,
+		opacityFadeAmount: 1,
+		baseColor: "#00645d",
+		baseOpacity: 0.15,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: "#ea6f24",
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
+		bgColor: "#ffffff",
+		opacityMultiplier: 1,
+		randomSeed: 505,
+	},
+
+	'Dots and Pills': {
+		...ACCENT_PILL_BASE,
+		accentColor: '#000000',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
 		randomSeed: 49606,
 	},
 	'Soft Pills': {
@@ -98,19 +207,25 @@ const PRESETS = {
 		activationRadius: 16,
 		trailDecaySpeed: 0.2,
 		lingerDuration: 100,
-		shapeType: "verticalPill",
+		shapeType: 'verticalPill',
 		shapeSize: 0.5,
 		shapeOpacity: 0.82,
-		easingIn: "easeOutSine",
-		easingOut: "easeInOutSine",
+		easingIn: 'easeOutSine',
+		easingOut: 'easeInOutSine',
 		animInDuration: 420,
 		animOutDuration: 640,
 		scaleInAmount: 1,
 		scaleOutAmount: 0.2,
 		opacityFadeAmount: 1,
-		palettePreset: "IncredibleBank",
-		colorMode: "random",
-		bgColor: "#ffffff",
+		baseColor: '#EA6F24',
+		baseOpacity: 1,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: '#0E8E86',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
+		bgColor: '#ffffff',
 		opacityMultiplier: 0.95,
 		randomSeed: 108,
 	},
@@ -122,19 +237,25 @@ const PRESETS = {
 		activationRadius: 71,
 		trailDecaySpeed: 0.55,
 		lingerDuration: 900,
-		shapeType: "mixed",
+		shapeType: 'mixed',
 		shapeSize: 0.62,
 		shapeOpacity: 0.72,
-		easingIn: "easeOutExpo",
-		easingOut: "easeInOutQuad",
+		easingIn: 'easeOutExpo',
+		easingOut: 'easeInOutQuad',
 		animInDuration: 380,
 		animOutDuration: 880,
 		scaleInAmount: 1,
 		scaleOutAmount: 0.1,
 		opacityFadeAmount: 1,
-		palettePreset: "IncredibleBank",
-		colorMode: "noise",
-		bgColor: "#ffffff",
+		baseColor: '#EA6F24',
+		baseOpacity: 1,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: '#0E8E86',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
+		bgColor: '#ffffff',
 		opacityMultiplier: 0.88,
 		randomSeed: 303,
 	},
@@ -156,8 +277,14 @@ const PRESETS = {
 		scaleInAmount: 1.05,
 		scaleOutAmount: 0.25,
 		opacityFadeAmount: 1,
-		palettePreset: 'OrangeB',
-		colorMode: 'random',
+		baseColor: '#EA6F24',
+		baseOpacity: 1,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: '#000000',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
 		bgColor: '#ffffff',
 		opacityMultiplier: 1,
 		randomSeed: 777,
@@ -180,8 +307,14 @@ const PRESETS = {
 		scaleInAmount: 0.95,
 		scaleOutAmount: 0.12,
 		opacityFadeAmount: 1,
-		palettePreset: 'OrangeB',
-		colorMode: 'distance',
+		baseColor: '#424856',
+		baseOpacity: 1,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: '#000000',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
 		bgColor: '#ffffff',
 		opacityMultiplier: 0.82,
 		randomSeed: 19,
@@ -194,23 +327,28 @@ const PRESETS = {
 		activationRadius: 46,
 		trailDecaySpeed: 0.45,
 		lingerDuration: 1400,
-		shapeType: "mixed",
+		shapeType: 'mixed',
 		shapeSize: 0.61,
 		shapeOpacity: 0.75,
-		easingIn: "easeOutSine",
-		easingOut: "easeInOutSine",
+		easingIn: 'easeOutSine',
+		easingOut: 'easeInOutSine',
 		animInDuration: 520,
 		animOutDuration: 1200,
 		scaleInAmount: 1,
 		scaleOutAmount: 0.08,
 		opacityFadeAmount: 1,
-		palettePreset: "IncredibleBank",
-		colorMode: "random",
-		bgColor: "#ffffff",
+		baseColor: '#EA6F24',
+		baseOpacity: 1,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: '#424856',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
+		bgColor: '#ffffff',
 		opacityMultiplier: 0.78,
 		randomSeed: 512,
 	},
-
 	'Fast Cursor Trace': {
 		cellSize: 22,
 		debugGrid: false,
@@ -219,21 +357,57 @@ const PRESETS = {
 		activationRadius: 34,
 		trailDecaySpeed: 1.7,
 		lingerDuration: 100,
-		shapeType: "mixed",
+		shapeType: 'mixed',
 		shapeSize: 0.6,
 		shapeOpacity: 0.95,
-		easingIn: "easeOutExpo",
-		easingOut: "easeInExpo",
+		easingIn: 'easeOutExpo',
+		easingOut: 'easeInExpo',
 		animInDuration: 120,
 		animOutDuration: 220,
 		scaleInAmount: 1.08,
 		scaleOutAmount: 0.3,
 		opacityFadeAmount: 1,
-		palettePreset: "IncredibleBank",
-		colorMode: "random",
-		bgColor: "#ffffff",
+		baseColor: '#EA6F24',
+		baseOpacity: 1,
+		baseStrokeOnly: false,
+		baseStrokeWeight: 2,
+		accentColor: '#000000',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
+		bgColor: '#ffffff',
 		opacityMultiplier: 1,
 		randomSeed: 909,
+	},
+	'Stroke Trail': {
+		cellSize: 40,
+		debugGrid: false,
+		trailLength: 20,
+		trailFadeAway: true,
+		activationRadius: 32,
+		trailDecaySpeed: 0.85,
+		lingerDuration: 680,
+		shapeType: 'mixed',
+		shapeSize: 0.58,
+		shapeOpacity: 1,
+		easingIn: 'easeOutCubic',
+		easingOut: 'easeInOutCubic',
+		animInDuration: 420,
+		animOutDuration: 720,
+		scaleInAmount: 1,
+		scaleOutAmount: 0.12,
+		opacityFadeAmount: 1,
+		baseColor: '#EA6F24',
+		baseOpacity: 1,
+		baseStrokeOnly: true,
+		baseStrokeWeight: 1.5,
+		accentColor: '#EA6F24',
+		accentOpacity: 1,
+		accentStrokeOnly: false,
+		accentStrokeWeight: 2,
+		bgColor: '#ffffff',
+		opacityMultiplier: 1,
+		randomSeed: 314,
 	},
 
 };
@@ -259,8 +433,14 @@ const DEFAULT_PARAMS = {
 	scaleInAmount: 1,
 	scaleOutAmount: 0.15,
 	opacityFadeAmount: 1,
-	palettePreset: 'OrangeB',
-	colorMode: 'random',
+	baseColor: '#EA6F24',
+	accentColor: '#000000',
+	accentOpacity: 1,
+	accentStrokeOnly: false,
+	accentStrokeWeight: 2,
+	baseOpacity: 1,
+	baseStrokeOnly: false,
+	baseStrokeWeight: 2,
 	bgColor: '#ffffff',
 	opacityMultiplier: 1,
 	randomSeed: 2026,
@@ -633,6 +813,11 @@ class TrailManager {
 		this.queue = [];
 		/** @type {Set<Cell>} */
 		this.underCursor = new Set();
+		/** When true, the next spawned cell becomes an "i" shape. */
+		this.pendingI = false;
+		this.distSinceI = 0;
+		this.nextIDist = this.pickNextIDist();
+		this.lastMoveMs = 0;
 	}
 
 	clear() {
@@ -646,6 +831,46 @@ class TrailManager {
 		}
 		this.queue = [];
 		this.underCursor = new Set();
+		this.pendingI = false;
+		this.distSinceI = 0;
+		this.nextIDist = this.pickNextIDist();
+		this.lastMoveMs = 0;
+	}
+
+	pickNextIDist() {
+		return random(I_SPACING_CELLS_MIN, I_SPACING_CELLS_MAX) * params.cellSize;
+	}
+
+	/**
+	 * Track cursor movement so an "i" is guaranteed at the start of each fresh
+	 * interaction and then spaced out along long, continuous strokes — no pause
+	 * required, but never on every cell.
+	 */
+	registerMovement(segLen, now) {
+		const newInteraction = this.lastMoveMs === 0 || now - this.lastMoveMs > I_INTERACTION_IDLE_MS;
+		this.lastMoveMs = now;
+
+		if (newInteraction) {
+			this.pendingI = true;
+			this.distSinceI = 0;
+			this.nextIDist = this.pickNextIDist();
+			return;
+		}
+
+		this.distSinceI += segLen;
+		if (this.distSinceI >= this.nextIDist) {
+			this.pendingI = true;
+			this.distSinceI = 0;
+			this.nextIDist = this.pickNextIDist();
+		}
+	}
+
+	nextShapeKind(col, row) {
+		if (this.pendingI) {
+			this.pendingI = false;
+			return 'i';
+		}
+		return this.resolveShapeKind(col, row);
 	}
 
 	resolveShapeKind(col, row) {
@@ -683,7 +908,7 @@ class TrailManager {
 
 	addToTrailFade(cell, mx, my, now) {
 		if (cell.state === 'inactive') {
-			const shapeKind = this.resolveShapeKind(cell.col, cell.row);
+			const shapeKind = this.nextShapeKind(cell.col, cell.row);
 			cell.spawn(this.queue.length, shapeKind, mx, my);
 			this.queue.push(cell);
 			cell.lingerStart = now;
@@ -718,7 +943,7 @@ class TrailManager {
 		if (cell === tail) return;
 
 		if (cell.state === 'inactive') {
-			const shapeKind = this.resolveShapeKind(cell.col, cell.row);
+			const shapeKind = this.nextShapeKind(cell.col, cell.row);
 			cell.spawn(this.queue.length, shapeKind, mx, my);
 			this.queue.push(cell);
 			cell.lingerStart = now;
@@ -754,6 +979,10 @@ class TrailManager {
 	}
 
 	processMouse(x0, y0, x1, y1, now) {
+		const segLen = dist(x0, y0, x1, y1);
+		if (segLen >= 0.5) {
+			this.registerMovement(segLen, now);
+		}
 		if (!params.trailFadeAway) {
 			this.processMouseSnake(x1, y1, now);
 			return;
@@ -778,63 +1007,103 @@ class TrailManager {
 
 // ─── Drawing ─────────────────────────────────────────────────────────────────
 
-function drawCircleShape(ox, oy, diameter, fillCol) {
-	noStroke();
-	fill(fillCol);
-	circle(ox, oy, max(0.001, diameter));
+function getShapeStrokeWeight(weight) {
+	return max(0.5, weight);
 }
 
-function drawPillShape(ox, oy, width, height, fillCol) {
-	const br = min(width, height) * PILL_BORDER_RADIUS;
-	noStroke();
-	fill(fillCol);
-	rect(ox, oy, max(0.001, width), max(0.001, height), br);
-}
-
-function drawPillEntrance(cell, ox, oy, fillCol) {
-	const baseD = cell.getBaseDiameter();
-	const ease = cell.getInEase();
-	const d = baseD * ease;
-	if (d <= 0.001) return;
-
-	const splitAt = 0.55;
-	const p = cell.animProgress;
-
-	if (p < splitAt) {
-		const phase = applyEasing(p / splitAt, params.easingIn);
-		const sep = lerp(0, baseD * 0.38, phase);
-		drawCircleShape(ox, oy - sep, d, fillCol);
-		drawCircleShape(ox, oy + sep, d, fillCol);
+function drawCircleShape(ox, oy, diameter, col, outlineOnly = false, lineWeight = 2) {
+	const d = max(0.001, diameter);
+	if (outlineOnly) {
+		noFill();
+		stroke(col);
+		strokeWeight(getShapeStrokeWeight(lineWeight));
+		circle(ox, oy, d);
 		return;
 	}
+	noStroke();
+	fill(col);
+	circle(ox, oy, d);
+}
 
-	const phase = applyEasing((p - splitAt) / (1 - splitAt), params.easingIn);
-	const w = baseD * ease;
-	const h = lerp(baseD, baseD * 2, phase) * ease;
-	drawPillShape(ox, oy, w, h, fillCol);
+function drawPillShape(ox, oy, width, height, col, outlineOnly = false, lineWeight = 2) {
+	const br = min(width, height) * PILL_BORDER_RADIUS;
+	const w = max(0.001, width);
+	const h = max(0.001, height);
+	if (outlineOnly) {
+		noFill();
+		stroke(col);
+		strokeWeight(getShapeStrokeWeight(lineWeight));
+		rect(ox, oy, w, h, br);
+		return;
+	}
+	noStroke();
+	fill(col);
+	rect(ox, oy, w, h, br);
+}
+
+/** Draws the letter "i": a vertical pill stem with a separate dot above it. */
+function drawIShape(ox, oy, unit, col, outlineOnly = false, lineWeight = 2) {
+	if (unit <= 0.001) return;
+
+	const dotD = unit * 0.95;
+	const gap = unit * 0.42;
+	const stemW = unit;
+	const stemH = unit * 1.7;
+
+	const totalH = dotD + gap + stemH;
+	const topY = oy - totalH / 2;
+	const dotCy = topY + dotD / 2;
+	const stemCy = topY + dotD + gap + stemH / 2;
+
+	drawCircleShape(ox, dotCy, dotD, col, outlineOnly, lineWeight);
+	drawPillShape(ox, stemCy, stemW, stemH, col, outlineOnly, lineWeight);
+}
+
+/**
+ * True when a vertical neighbour is a currently-visible "i". The "i" is taller
+ * than one cell, so its dot/stem reaches into the cells above and below; those
+ * neighbours must yield so nothing overlaps the "i".
+ */
+function hasAdjacentActiveI(cell) {
+	if (!grid) return false;
+	const above = grid.cellMap.get(grid.key(cell.col, cell.row - 1));
+	if (above && above.shapeKind === 'i' && above.isActiveOrAnimating()) return true;
+	const below = grid.cellMap.get(grid.key(cell.col, cell.row + 1));
+	if (below && below.shapeKind === 'i' && below.isActiveOrAnimating()) return true;
+	return false;
 }
 
 function drawCellShape(cell) {
 	const opacity = cell.getOpacity();
 	if (opacity <= 0.001) return;
 
-	const fillCol = color(getCellColorHex(cell));
-	fillCol.setAlpha(constrain(opacity, 0, 1) * 255);
+	const isI = cell.shapeKind === 'i';
+	if (!isI && hasAdjacentActiveI(cell)) return;
+
+	const hex = isI ? params.accentColor : params.baseColor;
+	const col = color(hex);
+	const colorOpacity = isI ? params.accentOpacity : params.baseOpacity;
+	const alpha = constrain(opacity, 0, 1) * colorOpacity;
+	col.setAlpha(alpha * 255);
 
 	const ox = cell.cx;
 	const oy = cell.cy;
 	const d = cell.getDrawDiameter();
+	const outlineOnly = isI ? params.accentStrokeOnly : params.baseStrokeOnly;
+	const lineWeight = isI ? params.accentStrokeWeight : params.baseStrokeWeight;
 
-	if (cell.usesPill()) {
-		if (cell.state === 'in') {
-			drawPillEntrance(cell, ox, oy, fillCol);
-		} else {
-			drawPillShape(ox, oy, d, d * 2, fillCol);
-		}
+	if (isI) {
+		drawIShape(ox, oy, d, col, outlineOnly, lineWeight);
 		return;
 	}
 
-	drawCircleShape(ox, oy, d, fillCol);
+	if (cell.usesPill()) {
+		const pillH = min(d * 2, params.cellSize * 0.9);
+		drawPillShape(ox, oy, d, pillH, col, outlineOnly, lineWeight);
+		return;
+	}
+
+	drawCircleShape(ox, oy, d, col, outlineOnly, lineWeight);
 }
 
 function drawTrail() {
@@ -904,6 +1173,13 @@ function applyPreset(name) {
 	const patch = PRESETS[name];
 	if (!patch) return;
 	Object.assign(params, patch);
+	params.baseOpacity = patch.baseOpacity ?? DEFAULT_PARAMS.baseOpacity;
+	params.baseStrokeOnly = patch.baseStrokeOnly ?? patch.strokeOnlyTrail ?? false;
+	params.baseStrokeWeight = patch.baseStrokeWeight ?? patch.strokeWeight ?? DEFAULT_PARAMS.baseStrokeWeight;
+	params.accentOpacity = patch.accentOpacity ?? DEFAULT_PARAMS.accentOpacity;
+	params.accentStrokeOnly = patch.accentStrokeOnly ?? false;
+	params.accentStrokeWeight =
+		patch.accentStrokeWeight ?? patch.strokeWeight ?? DEFAULT_PARAMS.accentStrokeWeight;
 	params.preset = name;
 	grid.rebuild();
 	trail.clear();
@@ -941,7 +1217,6 @@ function setupGui() {
 	gShapes.add(params, 'shapeType', SHAPE_TYPES).name('shape type');
 	gShapes.add(params, 'shapeSize', 0.2, 1.2, 0.01);
 	gShapes.add(params, 'shapeOpacity', 0.1, 1, 0.01);
-
 	const gAnim = gui.addFolder('Animation');
 	gAnim.add(params, 'easingIn', EASING_TYPES).name('easing in');
 	gAnim.add(params, 'animInDuration', 60, 800, 10);
@@ -952,19 +1227,20 @@ function setupGui() {
 	gAnim.add(params, 'opacityFadeAmount', 0.2, 1, 0.01);
 
 	const gColor = gui.addFolder('Color');
-	gColor
-		.add(params, 'palettePreset', PALETTE_NAMES)
-		.name('palette preset')
-		.onChange(() => recolorActiveCells(mouseX, mouseY));
-	gColor
-		.add(params, 'colorMode', COLOR_MODES)
-		.name('color mode')
-		.onChange(() => recolorActiveCells(mouseX, mouseY));
+	const gBase = gColor.addFolder('Base (trail)');
+	gBase.addColor(params, 'baseColor').name('color');
+	gBase.add(params, 'baseOpacity', 0.05, 1, 0.05).name('opacity');
+	gBase.add(params, 'baseStrokeOnly').name('stroke only');
+	gBase.add(params, 'baseStrokeWeight', 0.5, 6, 0.25).name('stroke weight');
+	const gAccent = gColor.addFolder('Accent (i)');
+	gAccent.addColor(params, 'accentColor').name('color');
+	gAccent.add(params, 'accentOpacity', 0.05, 1, 0.05).name('opacity');
+	gAccent.add(params, 'accentStrokeOnly').name('stroke only');
+	gAccent.add(params, 'accentStrokeWeight', 0.5, 6, 0.25).name('stroke weight');
 	gColor.addColor(params, 'bgColor').name('background');
 	gColor.add(params, 'opacityMultiplier', 0.2, 1, 0.01);
 	gColor.add(params, 'randomSeed', 0, 99999, 1).onFinishChange(() => {
 		grid.rebuild();
-		recolorActiveCells(mouseX, mouseY);
 	});
 
 	const gPresets = gui.addFolder('Presets');
