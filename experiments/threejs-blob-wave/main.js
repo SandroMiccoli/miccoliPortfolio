@@ -11,17 +11,21 @@ const HEIGHT_SEGMENTS  = 128;
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const params = {
-	noiseAmplitude:   0.7,
-	noiseSpeed:       0.14,  // scrolls fast-flow Y input (horizontal wave along length)
-	noiseSpeedX:      0.3,  // oscillates x-input of each noise layer (bounded, no drift)
-	noiseSpeedY:      1.47,  // scrolls slow-flow Y input (large-scale axial drift)
+	noiseAmplitude:   0.4,
+	noiseSpeed:       1,  // scrolls fast-flow Y input (horizontal wave along length)
+	noiseSpeedX:      0.6,  // oscillates x-input of each noise layer (bounded, no drift)
+	noiseSpeedY:      2,  // scrolls slow-flow Y input (large-scale axial drift)
 	noiseFloor:      -1,
 	// Mouse interaction — 2D Gaussian centred on the hovered point
 	mouseAmplitude:   0.45,  // peak displacement added at hover point
-	mouseAxialFalloff: 1.0,  // how quickly it fades along the cylinder length (higher = tighter)
-	mouseAngleFalloff: 4.0,  // how quickly it fades around the ring (higher = tighter spotlight)
+	mouseAxialFalloff: 0.5,  // how quickly it fades along the cylinder length (higher = tighter)
+	mouseAngleFalloff: 0.1,  // how quickly it fades around the ring (higher = tighter spotlight)
 	noiseFreqAngle:   0.5,
 	noiseFreqFlow:    0.9,
+	noiseFreqAngleFine:  1.0,
+	noiseFreqAngleBroad: 2.0,
+	noiseFreqFlowFine:   1.7,
+	noiseFreqFlowBroad:  4.0,
 	cylinderResolution: 128,
 	meshRotationX:    0,
 	wireframe:        false,
@@ -30,11 +34,11 @@ const params = {
 };
 
 const lightParams = {
-	ambient: 0.12,
+	ambient: 0.35,
 	// Extra shading terms — NOT tied to the 4 point lights; disable both to get
 	// pure Lambert (geometry goes fully black when ambient + lights are all 0)
 	rimLight: true,
-	rimStrength: 1,
+	rimStrength: 2,
 	specHighlight: true,
 	specStrength: 0.15,
 	l1X: -2.2, l1Y:  0.85, l1Z: -0.3, l1Color: '#ffffff', l1Intensity: 1.5,
@@ -92,6 +96,10 @@ const vertexShader = `
   uniform float uNoiseFloor;
   uniform float uNoiseFreqAngle;
   uniform float uNoiseFreqFlow;
+  uniform float uNoiseFreqAngleFine;
+  uniform float uNoiseFreqAngleBroad;
+  uniform float uNoiseFreqFlowFine;
+  uniform float uNoiseFreqFlowBroad;
   varying float vProgress;
   varying float vDisplace;
   varying vec3  vWorldNormal;
@@ -168,23 +176,27 @@ const vertexShader = `
     float tX   = uTime * uNoiseSpeedX;
     float tY   = uTime * uNoiseSpeedY;
 
-    float fa = uNoiseFreqAngle;
-    float ff = uNoiseFreqFlow;
+    float faFine  = uNoiseFreqAngle * uNoiseFreqAngleFine;
+    float faBroad = uNoiseFreqAngle * uNoiseFreqAngleBroad;
+    float ffFine  = uNoiseFreqFlow  * uNoiseFreqFlowFine;
+    float ffBroad = uNoiseFreqFlow  * uNoiseFreqFlowBroad;
 
     // Continuous circular coordinates — no ±π branch-cut discontinuity
-    float cA = cos(ang) * fa;
-    float sA = sin(ang) * fa;
+    float cAFine  = cos(ang) * faFine;
+    float sAFine  = sin(ang) * faFine;
+    float cABroad = cos(ang) * faBroad;
+    float sABroad = sin(ang) * faBroad;
 
-    float fl  = posY * 0.55 * ff + tLen * 0.38;
-    float sfl = posY * 0.18 * ff + tY   * 0.10;
+    float fl  = posY * 0.55 * ffFine  + tLen * 0.38;
+    float sfl = posY * 0.18 * ffBroad + tY   * 0.10;
 
     // Per-layer oscillating x offsets — different phases keep layers out of sync.
     // cA drives the noise x-axis, sA drives z so both circular components are used.
-    float n1 = snoise(vec3(cA*1.10 + sin(tX         )*0.40, fl *1.02, sA*1.10 + tLen*0.05      )) * 0.157;
-    float n2 = snoise(vec3(cA*2.18 + sin(tX + 1.571 )*0.32, fl *1.57, sA*2.18 + tLen*0.05+ 5.0 )) * 0.075;
-    float n3 = snoise(vec3(cA*0.53 + cos(tX + 0.785 )*0.28, fl *0.60, sA*0.53 + tLen*0.05+12.0 )) * 0.048;
-    float s1 = snoise(vec3(cA*0.24 + sin(tX + 3.141 )*0.50, sfl*0.68, sA*0.24 + tY  *0.04      )) * 0.629;
-    float s2 = snoise(vec3(cA*0.48 + cos(tX + 2.356 )*0.50, sfl*0.38, sA*0.48 + tY  *0.06+20.0 )) * 0.387;
+    float n1 = snoise(vec3(cAFine*1.10 + sin(tX         )*0.40, fl *1.02, sAFine*1.10 + tLen*0.05      )) * 0.157;
+    float n2 = snoise(vec3(cAFine*2.18 + sin(tX + 1.571 )*0.32, fl *1.57, sAFine*2.18 + tLen*0.05+ 5.0 )) * 0.075;
+    float n3 = snoise(vec3(cAFine*0.53 + cos(tX + 0.785 )*0.28, fl *0.60, sAFine*0.53 + tLen*0.05+12.0 )) * 0.048;
+    float s1 = snoise(vec3(cABroad*0.24 + sin(tX + 3.141 )*0.50, sfl*0.68, sABroad*0.24 + tY  *0.04      )) * 0.629;
+    float s2 = snoise(vec3(cABroad*0.48 + cos(tX + 2.356 )*0.50, sfl*0.38, sABroad*0.48 + tY  *0.06+20.0 )) * 0.387;
     return (n1+n2+n3+s1+s2) * uNoiseAmplitude;
   }
 
@@ -430,20 +442,25 @@ function computeDispJs(angle, posY, elapsed) {
 	const tX   = elapsed * params.noiseSpeedX;
 	const tY   = elapsed * params.noiseSpeedY;
 
-	const fa = params.noiseFreqAngle, ff = params.noiseFreqFlow;
+	const faFine  = params.noiseFreqAngle * params.noiseFreqAngleFine;
+	const faBroad = params.noiseFreqAngle * params.noiseFreqAngleBroad;
+	const ffFine  = params.noiseFreqFlow  * params.noiseFreqFlowFine;
+	const ffBroad = params.noiseFreqFlow  * params.noiseFreqFlowBroad;
 
 	// Continuous circular coordinates — mirrors the GLSL fix (no ±π seam)
-	const cA = Math.cos(angle) * fa;
-	const sA = Math.sin(angle) * fa;
+	const cAFine  = Math.cos(angle) * faFine;
+	const sAFine  = Math.sin(angle) * faFine;
+	const cABroad = Math.cos(angle) * faBroad;
+	const sABroad = Math.sin(angle) * faBroad;
 
-	const fl  = posY * 0.55 * ff + tLen * 0.38;
-	const sfl = posY * 0.18 * ff + tY   * 0.10;
+	const fl  = posY * 0.55 * ffFine  + tLen * 0.38;
+	const sfl = posY * 0.18 * ffBroad + tY   * 0.10;
 
-	const n1 = snoise3js(cA*1.10 + Math.sin(tX         )*0.40, fl *1.02, sA*1.10 + tLen*0.05      ) * 0.157;
-	const n2 = snoise3js(cA*2.18 + Math.sin(tX + 1.571 )*0.32, fl *1.57, sA*2.18 + tLen*0.05+ 5.0 ) * 0.075;
-	const n3 = snoise3js(cA*0.53 + Math.cos(tX + 0.785 )*0.28, fl *0.60, sA*0.53 + tLen*0.05+12.0 ) * 0.048;
-	const s1 = snoise3js(cA*0.24 + Math.sin(tX + 3.141 )*0.50, sfl*0.68, sA*0.24 + tY  *0.04      ) * 0.629;
-	const s2 = snoise3js(cA*0.48 + Math.cos(tX + 2.356 )*0.50, sfl*0.38, sA*0.48 + tY  *0.06+20.0 ) * 0.387;
+	const n1 = snoise3js(cAFine*1.10 + Math.sin(tX         )*0.40, fl *1.02, sAFine*1.10 + tLen*0.05      ) * 0.157;
+	const n2 = snoise3js(cAFine*2.18 + Math.sin(tX + 1.571 )*0.32, fl *1.57, sAFine*2.18 + tLen*0.05+ 5.0 ) * 0.075;
+	const n3 = snoise3js(cAFine*0.53 + Math.cos(tX + 0.785 )*0.28, fl *0.60, sAFine*0.53 + tLen*0.05+12.0 ) * 0.048;
+	const s1 = snoise3js(cABroad*0.24 + Math.sin(tX + 3.141 )*0.50, sfl*0.68, sABroad*0.24 + tY  *0.04      ) * 0.629;
+	const s2 = snoise3js(cABroad*0.48 + Math.cos(tX + 2.356 )*0.50, sfl*0.38, sABroad*0.48 + tY  *0.06+20.0 ) * 0.387;
 	return (n1+n2+n3+s1+s2) * params.noiseAmplitude;
 }
 
@@ -669,6 +686,10 @@ function createMaterial() {
 			uNoiseFloor:        { value: params.noiseFloor },
 			uNoiseFreqAngle:    { value: params.noiseFreqAngle },
 			uNoiseFreqFlow:     { value: params.noiseFreqFlow },
+			uNoiseFreqAngleFine:{ value: params.noiseFreqAngleFine },
+			uNoiseFreqAngleBroad:{ value: params.noiseFreqAngleBroad },
+			uNoiseFreqFlowFine: { value: params.noiseFreqFlowFine },
+			uNoiseFreqFlowBroad:{ value: params.noiseFreqFlowBroad },
 			uDebugView:         { value: 0.0 },
 			uAmbient:           { value: lightParams.ambient },
 			uRimStrength:       { value: lightParams.rimLight ? lightParams.rimStrength : 0 },
@@ -736,6 +757,10 @@ function setupGui() {
 	noiseFolder.add(params, 'noiseFloor',      -1,   0, 0.01).name('Floor').onChange((v)     => { material.uniforms.uNoiseFloor.value    = v; });
 	noiseFolder.add(params, 'noiseFreqAngle', 0.1,   6, 0.05).name('Freq — Angle (X)').onChange((v) => { material.uniforms.uNoiseFreqAngle.value = v; });
 	noiseFolder.add(params, 'noiseFreqFlow',  0.1,   6, 0.05).name('Freq — Flow (Y)').onChange((v)  => { material.uniforms.uNoiseFreqFlow.value  = v; });
+	noiseFolder.add(params, 'noiseFreqAngleFine', 0.1, 4, 0.01).name('X Fine Freq Mult').onChange((v) => { material.uniforms.uNoiseFreqAngleFine.value = v; });
+	noiseFolder.add(params, 'noiseFreqAngleBroad', 0.1, 4, 0.01).name('X Broad Freq Mult').onChange((v) => { material.uniforms.uNoiseFreqAngleBroad.value = v; });
+	noiseFolder.add(params, 'noiseFreqFlowFine', 0.1, 4, 0.01).name('Y Fine Freq Mult').onChange((v) => { material.uniforms.uNoiseFreqFlowFine.value = v; });
+	noiseFolder.add(params, 'noiseFreqFlowBroad', 0.1, 4, 0.01).name('Y Broad Freq Mult').onChange((v) => { material.uniforms.uNoiseFreqFlowBroad.value = v; });
 	noiseFolder.open();
 
 	const mouseFolder = gui.addFolder('Mouse Interaction');
