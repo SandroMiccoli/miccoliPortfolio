@@ -24,7 +24,7 @@ const params = {
 	noiseFreqFlow:    0.9,
 	noiseFreqAngleFine:  1.0,
 	noiseFreqAngleBroad: 2.0,
-	noiseFreqFlowFine:   1.7,
+	noiseFreqFlowFine:   0.6,
 	noiseFreqFlowBroad:  4.0,
 	cylinderResolution: 128,
 	meshRotationX:    0,
