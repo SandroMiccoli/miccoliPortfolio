@@ -1,0 +1,36 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	background: #000824;
+	overflow: hidden;
+	font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+#canvas-container {
+	width: 100vw;
+	height: 100vh;
+	position: relative;
+}
+
+#canvas-container canvas {
+	display: block;
+}
+
+.lil-gui {
+	--background-color: rgba(0, 8, 36, 0.92) !important;
+	--text-color: rgba(200, 220, 255, 0.92) !important;
+	--title-background-color: rgba(10, 20, 60, 0.98) !important;
+	--widget-color: rgba(30, 50, 100, 0.9) !important;
+	--hover-color: rgba(50, 80, 140, 0.9) !important;
+	--focus-color: rgba(70, 110, 180, 0.9) !important;
+	--number-color: rgba(120, 180, 255, 0.95) !important;
+	--string-color: rgba(180, 200, 255, 0.95) !important;
+}
+
+.lil-gui.root {
+	background-color: rgba(0, 8, 36, 0.92) !important;
+}
