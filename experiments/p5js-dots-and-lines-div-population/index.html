@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>p5.js — Dots and Lines · Div Population</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+	<!-- ─── Top bar ───────────────────────────────────────────────────────── -->
+	<header class="topbar">
+		<div class="wrap topbar__inner">
+			<a class="brand" href="#top">LOREM</a>
+			<nav class="nav">
+				<a href="#s-intro">Lorem</a>
+				<a href="#s-features">Ipsum</a>
+				<a href="#s-process">Dolor</a>
+				<a href="#s-faq">Amet</a>
+			</nav>
+			<a class="btn btn--outline" href="#s-cta">Lorem ipsum</a>
+		</div>
+	</header>
+
+	<main id="top">
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 1 · HERO — dark, full-width headline. No module.
+		─────────────────────────────────────────────────────────────────── -->
+		<section class="s-hero">
+			<div class="wrap">
+				<span class="eyebrow">Lorem ipsum dolor sit amet</span>
+				<h1>Consectetur adipiscing elit,<br>sed do eiusmod tempor.</h1>
+				<p class="lede">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat duis aute irure dolor.</p>
+				<div class="cta-row">
+					<a class="btn btn--solid" href="#s-cta">Lorem ipsum</a>
+					<a class="btn btn--outline" href="#s-intro">Dolor sit amet →</a>
+				</div>
+			</div>
+			<p class="scroll-hint">↓ Scroll — the tracer responds to your movement</p>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 2 · INTRO — light, centered statement + TR corner module
+		─────────────────────────────────────────────────────────────────── -->
+		<section id="s-intro" class="s-intro">
+			<div class="dl dl--corner-tr"
+				data-dots-lines
+				data-dl-spacing="22"
+				data-dl-speed="0.8"
+				data-dl-idle-speed="1.5"
+				data-dl-trail-cells="6">
+			</div>
+			<div class="wrap s-intro__inner">
+				<p class="overline">Lorem ipsum dolor</p>
+				<h2>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque.</h2>
+				<div class="intro-stats">
+					<div class="intro-stat">
+						<strong>12K+</strong>
+						<span>lorem ipsum</span>
+					</div>
+					<div class="intro-stat">
+						<strong>98%</strong>
+						<span>dolor sit amet</span>
+					</div>
+					<div class="intro-stat">
+						<strong>4.9</strong>
+						<span>consectetur</span>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 3 · STATS — dark, 3 cards + module as right column in the grid
+		─────────────────────────────────────────────────────────────────── -->
+		<section class="s-stats">
+			<div class="wrap">
+				<p class="section-label">Lorem ipsum dolor sit amet consectetur.</p>
+				<div class="stats-grid">
+					<article class="stat-card">
+						<span class="stat-num">820+</span>
+						<span class="stat-desc">lorem ipsum dolor sit amet consectetur adipiscing</span>
+					</article>
+					<article class="stat-card">
+						<span class="stat-num">61K</span>
+						<span class="stat-desc">sed do eiusmod tempor incididunt ut labore</span>
+					</article>
+					<article class="stat-card">
+						<span class="stat-num">99.99%</span>
+						<span class="stat-desc">et dolore magna aliqua ut enim ad minim</span>
+					</article>
+					<!-- Module as the 4th column — white bg, light dots -->
+					<div class="dl dl--stats-module"
+						data-dots-lines
+						data-dl-spacing="20"
+						data-dl-speed="1.2"
+						data-dl-idle-speed="2.5"
+						data-dl-trail-cells="7"
+						data-dl-density="0.65">
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 4 · USE CASES — light, 3-col layout: nav / card / module column
+		─────────────────────────────────────────────────────────────────── -->
+		<section id="s-usecases" class="s-usecases">
+			<div class="wrap">
+				<p class="overline">Lorem ipsum dolor sit</p>
+				<h2>Nemo enim ipsam voluptatem quia voluptas sit aspernatur.</h2>
+				<div class="usecases-grid">
+					<nav class="usecases-nav">
+						<button class="uc-btn uc-btn--active">Lorem ipsum</button>
+						<button class="uc-btn">Dolor sit amet</button>
+						<button class="uc-btn">Consectetur</button>
+						<button class="uc-btn">Adipiscing elit</button>
+						<button class="uc-btn">Sed do eiusmod</button>
+					</nav>
+					<div class="usecases-card">
+						<div class="uc-card-badge">Lorem</div>
+						<h3>Ipsum dolor sit<br>amet consectetur</h3>
+						<p>Adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam quis nostrud exercitation.</p>
+						<a class="btn btn--dark" href="#">Lorem ipsum →</a>
+					</div>
+					<!-- Module column: right side, fills height. White bg. -->
+					<div class="dl dl--usecases-module"
+						data-dots-lines
+						data-dl-spacing="24"
+						data-dl-speed="1"
+						data-dl-idle-speed="2"
+						data-dl-trail-cells="8">
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 5 · FEATURES — light grey, 3 cards + BL corner module
+		─────────────────────────────────────────────────────────────────── -->
+		<section id="s-features" class="s-features">
+			<div class="dl dl--corner-bl"
+				data-dots-lines
+				data-dl-spacing="20"
+				data-dl-speed="1"
+				data-dl-idle-speed="2"
+				data-dl-trail-cells="6">
+			</div>
+			<div class="wrap">
+				<p class="overline overline--dark">Consectetur adipiscing</p>
+				<h2 class="h2--dark">At vero eos et accusamus et iusto odio dignissimos.</h2>
+				<div class="features-grid">
+					<article class="feature-card">
+						<div class="feature-icon">01</div>
+						<h3>Lorem ipsum dolor</h3>
+						<p>Sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna.</p>
+					</article>
+					<article class="feature-card">
+						<div class="feature-icon">02</div>
+						<h3>Consectetur adipiscing</h3>
+						<p>Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.</p>
+					</article>
+					<article class="feature-card">
+						<div class="feature-icon">03</div>
+						<h3>Sed do eiusmod</h3>
+						<p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla.</p>
+					</article>
+				</div>
+			</div>
+		</section>
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 7 · PROCESS — dark, numbered steps + module as TR corner
+		─────────────────────────────────────────────────────────────────── -->
+		<section id="s-process" class="s-process">
+			<div class="dl dl--corner-tr"
+				data-dots-lines
+				data-dl-spacing="26"
+				data-dl-speed="1.1"
+				data-dl-idle-speed="2.2"
+				data-dl-trail-cells="8"
+				data-dl-density="0.55">
+			</div>
+			<div class="wrap">
+				<p class="section-label">Lorem ipsum dolor</p>
+				<h2 class="h2--light">Quis autem vel eum iure reprehenderit qui in ea voluptate.</h2>
+				<div class="process-grid">
+					<article class="process-step">
+						<span class="step-num">01</span>
+						<h3>Lorem ipsum dolor</h3>
+						<p>Sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+					</article>
+					<article class="process-step">
+						<span class="step-num">02</span>
+						<h3>Consectetur adipiscing</h3>
+						<p>Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+					</article>
+					<article class="process-step">
+						<span class="step-num">03</span>
+						<h3>Sed do eiusmod</h3>
+						<p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+					</article>
+				</div>
+			</div>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 8 · QUOTE — dark, full-cover module behind quote text
+		─────────────────────────────────────────────────────────────────── -->
+		<section class="s-quote">
+			<div class="dl dl--cover"
+				data-dots-lines
+				data-dl-spacing="34"
+				data-dl-speed="0.7"
+				data-dl-idle-speed="1.2"
+				data-dl-trail-cells="11"
+				data-dl-density="0.5">
+			</div>
+			<div class="wrap s-quote__inner">
+				<blockquote>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam."</blockquote>
+				<cite>— Lorem Ipsum, Dolor Sit Amet</cite>
+			</div>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 9 · FAQ — light, two-column: [heading + small module] / [accordion]
+		    Module has an explicit height so p5 can measure it at setup.
+		─────────────────────────────────────────────────────────────────── -->
+		<section id="s-faq" class="s-faq">
+			<div class="wrap">
+				<div class="faq-grid">
+					<div class="faq-left">
+						<p class="overline overline--dark">Lorem ipsum</p>
+						<h2 class="h2--dark">Frequently<br>asked</h2>
+						<a class="btn btn--dark" href="#">View all →</a>
+						<!-- Fixed-height module — explicit dimensions prevent 0px collapse -->
+						<div class="dl dl--faq-module"
+							data-dots-lines
+							data-dl-spacing="22"
+							data-dl-speed="0.9"
+							data-dl-idle-speed="1.8"
+							data-dl-trail-cells="7">
+						</div>
+					</div>
+					<div class="faq-right">
+						<details open>
+							<summary>Lorem ipsum dolor sit amet consectetur adipiscing?</summary>
+							<p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam nostrud exercitation.</p>
+						</details>
+						<details>
+							<summary>Adipiscing elit sed do eiusmod tempor incididunt?</summary>
+							<p>Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat duis aute irure dolor.</p>
+						</details>
+						<details>
+							<summary>Ullamco laboris nisi ut aliquip ex ea commodo?</summary>
+							<p>Irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint.</p>
+						</details>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ──────────────────────────────────────────────────────────────────
+		  § 10 · CTA + FOOTER — dark, module in top-right corner
+		─────────────────────────────────────────────────────────────────── -->
+		<section id="s-cta" class="s-cta">
+			<div class="dl dl--corner-tr"
+				data-dots-lines
+				data-dl-spacing="28"
+				data-dl-speed="1"
+				data-dl-idle-speed="2"
+				data-dl-trail-cells="9">
+			</div>
+			<div class="wrap s-cta__inner">
+				<h2>Lorem ipsum dolor sit amet consectetur adipiscing elit?</h2>
+				<p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam.</p>
+				<div class="cta-row">
+					<a class="btn btn--solid" href="#">Lorem ipsum</a>
+					<a class="btn btn--outline" href="#">Dolor sit amet</a>
+				</div>
+			</div>
+			<footer class="footer">
+				<div class="wrap footer__inner">
+					<span class="brand">LOREM</span>
+					<span class="footer-note">Demo — all copy is placeholder Lorem Ipsum, for showcasing the scroll-driven dots &amp; lines modules.</span>
+				</div>
+			</footer>
+		</section>
+
+	</main>
+
+	<!-- ─── Scripts ───────────────────────────────────────────────────────── -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+	<script src="dots-lines.js"></script>
+
+</body>
+</html>
