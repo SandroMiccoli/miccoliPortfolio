@@ -1,0 +1,45 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+	width: 100%;
+	height: 100%;
+	background: #FFC608;
+	overflow: hidden;
+}
+
+body {
+	position: relative;
+}
+
+canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* lil-gui — dark panel that reads well over the yellow background */
+.lil-gui {
+	--background-color: #1a1a1a !important;
+	--text-color: #f5f5f5 !important;
+	--title-background-color: #6E6BFF !important;
+	--title-text-color: #ffffff !important;
+	--widget-color: #2e2e2e !important;
+	--hover-color: #3a3a3a !important;
+	--focus-color: #444444 !important;
+	--number-color: #6E6BFF !important;
+	--string-color: #FFC608 !important;
+}
+
+.lil-gui.root {
+	z-index: 32000;
+}
+
+.lil-gui .title {
+	font-weight: 700 !important;
+}
