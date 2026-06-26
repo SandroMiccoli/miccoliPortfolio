@@ -1,12 +1,10 @@
 /**
  * p5.js — Dots and Lines
  *
- * A circuit-board style background animation. A noise field lays out a grid of
- * gently pulsing dots (with organic blank patches), while "tracers" travel
- * through the grid drawing mostly-straight blue lines. Every dot a tracer
- * touches lights up and slowly bleeds back to its resting colour, with a small
- * spread to nearby dots. Tracers run off the edge of the screen and respawn
- * elsewhere, forever. A central rectangle is kept clear for overlay text.
+ * Chaotic grid of drifting dots (noise-displaced from their homes) with tracers
+ * that magnetize dots into order as they pass. Hover organizes a local grid;
+ * lines gather speed near dense clusters. Dots relax back to chaos over time.
+ * A central rectangle is kept clear for overlay text.
  */
 
 // ─── Palette ─────────────────────────────────────────────────────────────────
@@ -41,12 +39,27 @@ const DEFAULT_PARAMS = {
 
 	// Tracers (the growing lines)
 	maxTracers: 7,
-	spawnIntervalMs: 650,
-	tracerStepMs: 150,
-	turnChance: 0.05,
+	spawnIntervalMs: 480,
+	spawnIntervalJitter: 0.45,
+	tracerStepMs: 100,
+	tracerStepJitter: 0.35,
+	maxWallTurns: 3,
 	lineWeight: 2.5,
 	trailLingerMs: 900,
 	trailFadeMs: 1400,
+
+	// Energy — lines speed up near dense dot clusters (smoothed, clamped)
+	energyEnabled: true,
+	energyRadius: 85,
+	energyStepMultMin: 0.8,
+	energyStepMultMax: 1.18,
+	energyInfluence: 0.6,
+	energyEaseMs: 480,
+
+	// Intro (dots first, then lines)
+	tracerIntroDelayMs: 1800,
+	introDotStaggerMs: 1400,
+	introDotRiseMs: 380,
 
 	// Spread to nearby dots
 	spreadRadius: 1,
@@ -61,9 +74,21 @@ const DEFAULT_PARAMS = {
 	targetExitAfterGoal: true,
 
 	// Mouse interaction
-	hoverRadius: 90,
-	hoverScaleBoost: 1,
+	hoverRadius: 120,
+	hoverSettleScale: 1,
 	hoverEaseMs: 520,
+	hoverParkMs: 380,
+
+	// Chaos / order (dots drift off-grid; lines magnetize them home)
+	chaosAmplitude: 0.55,
+	chaosNoiseScale: 0.18,
+	chaosTimeScale: 0.00012,
+	chaosEaseMs: 600,
+	magnetRadius: 70,
+	magnetStrength: 1.0,
+	magnetSettleScale: 1,
+	magnetSettleEaseMs: 520,
+	orderDecayMs: 2600,
 
 	// Debug / overlays
 	showFps: false,
@@ -88,9 +113,14 @@ const PRESETS = {
 		blankThreshold: 0.42,
 		dotVisibleFrac: 0.82,
 		maxTracers: 3,
-		spawnIntervalMs: 650,
-		tracerStepMs: 150,
-		turnChance: 0.05,
+		spawnIntervalMs: 480,
+		spawnIntervalJitter: 0.45,
+		tracerStepMs: 100,
+		tracerStepJitter: 0.35,
+		maxWallTurns: 3,
+		tracerIntroDelayMs: 2500,
+		introDotStaggerMs: 2000,
+		introDotRiseMs: 380,
 		spreadRadius: 1,
 		spreadChance: 0.15,
 		targetFlowEnabled: true,
@@ -98,6 +128,24 @@ const PRESETS = {
 		targetSeekStrength: 0.88,
 		trailLingerMs: 900,
 		trailFadeMs: 1400,
+		energyEnabled: true,
+		energyRadius: 85,
+		energyStepMultMin: 0.8,
+		energyStepMultMax: 1.18,
+		energyInfluence: 0.6,
+		hoverRadius: 130,
+		hoverSettleScale: 1,
+		hoverEaseMs: 520,
+		hoverParkMs: 380,
+		chaosAmplitude: 1.2,
+		chaosNoiseScale: 0.18,
+		chaosTimeScale: 0.00012,
+		chaosEaseMs: 80,
+		magnetRadius: 100,
+		magnetStrength: 3.0,
+		magnetSettleScale: 1,
+		magnetSettleEaseMs: 1200,
+		orderDecayMs: 5000,
 		randomSeed: 7,
 	},
 	'Dense Circuit': {
@@ -108,8 +156,12 @@ const PRESETS = {
 		dotVisibleFrac: 0.88,
 		maxTracers: 11,
 		spawnIntervalMs: 420,
+		spawnIntervalJitter: 0.4,
 		tracerStepMs: 110,
-		turnChance: 0.16,
+		tracerStepJitter: 0.3,
+		maxWallTurns: 4,
+		tracerIntroDelayMs: 1200,
+		introDotStaggerMs: 900,
 		spreadRadius: 1,
 		spreadChance: 0.55,
 		targetFlowEnabled: true,
@@ -117,6 +169,13 @@ const PRESETS = {
 		targetSeekStrength: 0.82,
 		trailLingerMs: 700,
 		trailFadeMs: 1100,
+		energyEnabled: true,
+		energyInfluence: 0.75,
+		chaosAmplitude: 0.45,
+		chaosNoiseScale: 0.22,
+		magnetRadius: 60,
+		magnetStrength: 1.2,
+		orderDecayMs: 2000,
 		randomSeed: 21,
 	},
 	'Calm & Sparse': {
@@ -127,8 +186,12 @@ const PRESETS = {
 		dotVisibleFrac: 0.72,
 		maxTracers: 4,
 		spawnIntervalMs: 1100,
+		spawnIntervalJitter: 0.35,
 		tracerStepMs: 220,
-		turnChance: 0.08,
+		tracerStepJitter: 0.25,
+		maxWallTurns: 2,
+		tracerIntroDelayMs: 2400,
+		introDotStaggerMs: 2000,
 		spreadRadius: 1,
 		spreadChance: 0.3,
 		targetFlowEnabled: true,
@@ -136,6 +199,13 @@ const PRESETS = {
 		targetSeekStrength: 0.92,
 		trailLingerMs: 1200,
 		trailFadeMs: 2000,
+		energyEnabled: true,
+		energyInfluence: 0.4,
+		chaosAmplitude: 0.65,
+		chaosTimeScale: 0.00008,
+		magnetStrength: 0.85,
+		orderDecayMs: 4000,
+		hoverRadius: 100,
 		randomSeed: 42,
 	},
 };
@@ -150,6 +220,7 @@ let gui = null;
 let grid = null;
 let tracers = null;
 let timeMs = 0;
+let prefersReducedMotion = false;
 
 // Cached RGB channels for fast per-dot colour blending.
 let bgRGB = { r: 255, g: 198, b: 8 };
@@ -196,6 +267,24 @@ function isPerpendicular(a, b) {
 	return a.dx * b.dx + a.dy * b.dy === 0;
 }
 
+function detectReducedMotion() {
+	if (typeof window === 'undefined' || !window.matchMedia) return;
+	const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+	const apply = () => {
+		prefersReducedMotion = mq.matches;
+	};
+	apply();
+	if (typeof mq.addEventListener === 'function') {
+		mq.addEventListener('change', apply);
+	} else if (typeof mq.addListener === 'function') {
+		mq.addListener(apply);
+	}
+}
+
+function effectiveChaosTimeScale() {
+	return prefersReducedMotion ? 0 : params.chaosTimeScale;
+}
+
 // ─── Cell ────────────────────────────────────────────────────────────────────
 
 class Cell {
@@ -204,6 +293,10 @@ class Cell {
 		this.row = row;
 		this.cx = cx;
 		this.cy = cy;
+		this.homeX = cx;
+		this.homeY = cy;
+		this.px = cx;
+		this.py = cy;
 		this.hasDot = hasDot;
 		this.inClearRect = inClearRect;
 
@@ -212,7 +305,12 @@ class Cell {
 
 		this.activation = 0;
 		this.activeUntil = 0;
-		this.hoverBoost = 0;
+		this.hoverPull = 0;
+		this.settleBlend = 0;
+		this.magnetBlend = 0;
+		this.order = 0;
+		this.phase = random(1000);
+		this.introStagger = noise(col * 0.31 + 17, row * 0.29 + 41);
 	}
 
 	activate(now, lingerMs) {
@@ -220,14 +318,57 @@ class Cell {
 		this.activeUntil = Math.max(this.activeUntil, now + lingerMs);
 	}
 
-	update(now, dt, hoverTarget) {
+	/** Animated noise offset from the grid home position. */
+	chaosTarget(now) {
+		const pitch = params.gridSpacing;
+		const amp = params.chaosAmplitude * pitch;
+		const s = params.chaosNoiseScale;
+		const t = now * effectiveChaosTimeScale();
+		const n1 = noise(this.homeX * s + this.phase, this.homeY * s, t);
+		const n2 = noise(this.homeX * s, this.homeY * s + this.phase + 100, t + 50);
+		const dx = (n1 - 0.5) * 2 * amp;
+		const dy = (n2 - 0.5) * 2 * amp;
+		return { x: this.homeX + dx, y: this.homeY + dy };
+	}
+
+	bumpOrder(amount) {
+		this.order = min(1, this.order + amount);
+	}
+
+	update(now, dt, hoverPullTarget = 0) {
 		const actTarget = now < this.activeUntil ? 1 : 0;
 		const actDurMs = actTarget > this.activation ? params.activeFadeInMs : params.activeFadeOutMs;
 		const actStep = dt / Math.max(1, actDurMs);
 		this.activation = moveToward(this.activation, actTarget, actStep);
 
 		const hoverStep = dt / Math.max(1, params.hoverEaseMs);
-		this.hoverBoost = moveToward(this.hoverBoost, hoverTarget, hoverStep);
+		const magnetStep = dt / Math.max(1, params.magnetSettleEaseMs);
+		this.hoverPull = moveToward(this.hoverPull, hoverPullTarget, hoverStep);
+		this.settleBlend = moveToward(this.settleBlend, this.hoverPull, hoverStep);
+
+		if (this.hoverPull > 0.001) {
+			this.order = moveToward(this.order, 1, hoverStep);
+			this.magnetBlend = moveToward(this.magnetBlend, this.order, magnetStep);
+			const parkStep = params.gridSpacing * (dt / Math.max(1, params.hoverParkMs)) * this.hoverPull;
+			this.px = moveToward(this.px, this.homeX, parkStep);
+			this.py = moveToward(this.py, this.homeY, parkStep);
+			if (abs(this.px - this.homeX) < 0.01 && abs(this.py - this.homeY) < 0.01) {
+				this.px = this.homeX;
+				this.py = this.homeY;
+			}
+			return;
+		}
+
+		const decayStep = dt / Math.max(1, params.orderDecayMs);
+		this.order = moveToward(this.order, 0, decayStep);
+
+		const chaos = this.chaosTarget(now);
+		const targetX = lerp(chaos.x, this.homeX, this.order);
+		const targetY = lerp(chaos.y, this.homeY, this.order);
+		const posEase = min(1, dt / Math.max(1, params.chaosEaseMs));
+		this.px = lerp(this.px, targetX, posEase);
+		this.py = lerp(this.py, targetY, posEase);
+		this.magnetBlend = moveToward(this.magnetBlend, this.order, magnetStep);
 	}
 
 	lifeScale(now) {
@@ -235,7 +376,16 @@ class Cell {
 		const phase = ((now / Math.max(1, this.lifeDuration)) + this.lifeOffset) % 1;
 		const vis = params.dotVisibleFrac;
 		if (phase > vis) return 0;
-		return bell(phase / vis);
+		return bell(phase / vis) * this.introFactor(now);
+	}
+
+	/** Staggered fade-in at scene start so dots populate before lines arrive. */
+	introFactor(now) {
+		if (prefersReducedMotion || params.introDotStaggerMs <= 0) return 1;
+		const delay = this.introStagger * params.introDotStaggerMs;
+		const rise = Math.max(1, params.introDotRiseMs);
+		if (now < delay) return 0;
+		return min(1, (now - delay) / rise);
 	}
 }
 
@@ -343,28 +493,83 @@ class GridSystem {
 		}
 	}
 
+	magnetize(x, y, radius, amount) {
+		const pitch = params.gridSpacing;
+		const col = round((x - this.ox) / pitch);
+		const row = round((y - this.oy) / pitch);
+		const cellRadius = ceil(radius / pitch) + 1;
+		const r2 = radius * radius;
+
+		for (let dr = -cellRadius; dr <= cellRadius; dr++) {
+			for (let dc = -cellRadius; dc <= cellRadius; dc++) {
+				const c = this.getCell(col + dc, row + dr);
+				if (!c || c.inClearRect) continue;
+				const dx = c.homeX - x;
+				const dy = c.homeY - y;
+				const d2 = dx * dx + dy * dy;
+				if (d2 > r2) continue;
+				const falloff = 1 - sqrt(d2) / radius;
+				c.bumpOrder(amount * falloff);
+			}
+		}
+	}
+
+	/** Normalized 0–1 dot presence around a point (visible dots weighted by distance). */
+	dotEnergyAt(x, y, radius, now) {
+		const pitch = params.gridSpacing;
+		const col = round((x - this.ox) / pitch);
+		const row = round((y - this.oy) / pitch);
+		const cellRadius = ceil(radius / pitch) + 1;
+		const r2 = radius * radius;
+		let weighted = 0;
+		let capacity = 0;
+
+		for (let dr = -cellRadius; dr <= cellRadius; dr++) {
+			for (let dc = -cellRadius; dc <= cellRadius; dc++) {
+				const c = this.getCell(col + dc, row + dr);
+				if (!c || c.inClearRect || !c.hasDot) continue;
+				const dx = c.homeX - x;
+				const dy = c.homeY - y;
+				const d2 = dx * dx + dy * dy;
+				if (d2 > r2) continue;
+				const falloff = 1 - sqrt(d2) / radius;
+				capacity += falloff;
+				const vis = c.lifeScale(now);
+				if (vis <= 0.004) continue;
+				weighted += falloff * vis;
+			}
+		}
+
+		if (capacity <= 0) return 0;
+		return constrain(weighted / capacity, 0, 1);
+	}
+
 	update(now, dt, mx, my) {
 		const hoverR = params.hoverRadius;
 		const hoverR2 = hoverR * hoverR;
 
 		for (let i = 0; i < this.cells.length; i++) {
 			const c = this.cells[i];
-			let hoverTarget = 0;
+			let hoverPullTarget = 0;
 			if (!c.inClearRect) {
-				const dx = c.cx - mx;
-				const dy = c.cy - my;
+				const dx = c.homeX - mx;
+				const dy = c.homeY - my;
 				const d2 = dx * dx + dy * dy;
 				if (d2 <= hoverR2) {
-					hoverTarget = (1 - sqrt(d2) / hoverR) * params.hoverScaleBoost;
+					hoverPullTarget = 1 - sqrt(d2) / hoverR;
 				}
 			}
 
 			const needsUpdate =
+				c.hasDot ||
 				c.activation > 0.001 ||
 				now < c.activeUntil ||
-				c.hoverBoost > 0.001 ||
-				hoverTarget > 0.001;
-			if (needsUpdate) c.update(now, dt, hoverTarget);
+				c.hoverPull > 0.001 ||
+				c.settleBlend > 0.001 ||
+				c.magnetBlend > 0.001 ||
+				c.order > 0.001 ||
+				hoverPullTarget > 0.001;
+			if (needsUpdate) c.update(now, dt, hoverPullTarget);
 		}
 	}
 
@@ -377,15 +582,16 @@ class GridSystem {
 
 			const act = c.activation;
 			const life = c.lifeScale(now);
-			const hover = c.hoverBoost;
-			const scale = max(life + (1 - life) * act, hover);
+			const baseScale = life + (1 - life) * act;
+			let scale = lerp(baseScale, params.magnetSettleScale, c.magnetBlend);
+			scale = lerp(scale, params.hoverSettleScale, c.settleBlend);
 			if (scale <= 0.004) continue;
 
 			const r = lerp(inactiveRGB.r, activeRGB.r, act);
 			const g = lerp(inactiveRGB.g, activeRGB.g, act);
 			const b = lerp(inactiveRGB.b, activeRGB.b, act);
 			fill(r, g, b);
-			circle(c.cx, c.cy, params.dotSize * pitch * scale);
+			circle(c.px, c.py, params.dotSize * pitch * scale);
 		}
 
 		if (params.showClearRect) {
@@ -405,7 +611,7 @@ class GridSystem {
 /**
  * A travelling line head that moves along the grid in cardinal steps, drawing
  * a fading trail and activating the dots it passes. Mostly keeps its heading;
- * occasionally turns 90°. Finishes once it leaves the canvas.
+ * occasionally turns 90°. Dies only when it moves into a wall or is boxed in on all sides.
  */
 class Tracer {
 	constructor(col, row, dir, mode = 'random', goalCol = null, goalRow = null) {
@@ -417,6 +623,7 @@ class Tracer {
 		this.goalCol = goalCol;
 		this.goalRow = goalRow;
 		this.reachedGoal = false;
+		this.wallHits = 0;
 
 		const start = this.cellCenter(col, row);
 		this.fromX = start.x;
@@ -427,7 +634,22 @@ class Tracer {
 
 		this.points = [{ x: start.x, y: start.y, born: timeMs }];
 
+		this.energy = 0.5;
+		this.baseStepMs = this.sampleBaseStepMs();
+		this.stepMs = this.baseStepMs;
 		this.touchCell(col, row, timeMs);
+	}
+
+	sampleBaseStepMs() {
+		const j = params.tracerStepJitter;
+		return params.tracerStepMs * random(1 - j, 1 + j);
+	}
+
+	stepMsFromEnergy() {
+		if (prefersReducedMotion || !params.energyEnabled) return this.baseStepMs;
+		const densityMult = lerp(params.energyStepMultMax, params.energyStepMultMin, this.energy);
+		const mult = lerp(1, densityMult, params.energyInfluence);
+		return this.baseStepMs * mult;
 	}
 
 	cellCenter(col, row) {
@@ -464,9 +686,77 @@ class Tracer {
 
 	directionBlocked(dir) {
 		const t = this.nextTarget(this.col, this.row, dir);
-		if (!grid.inBounds(t.col, t.row)) return true;
-		const cen = this.cellCenter(t.col, t.row);
+		return this.isWallCell(t.col, t.row);
+	}
+
+	isWallCell(col, row) {
+		if (!grid.inBounds(col, row)) return true;
+		const cen = this.cellCenter(col, row);
 		return grid.pointInClearRect(cen.x, cen.y);
+	}
+
+	directionBlockedForExit(dir) {
+		const t = this.nextTarget(this.col, this.row, dir);
+		const cen = this.cellCenter(t.col, t.row);
+		if (grid.pointInClearRect(cen.x, cen.y)) return true;
+		return this.offCanvas(cen.x, cen.y);
+	}
+
+	/**
+	 * Forward blocked — turn if budget remains, otherwise die.
+	 * Returns a new direction or null.
+	 */
+	resolveWallTurn(straight, turnOptions) {
+		if (turnOptions.length === 0) return null;
+		if (this.wallHits >= params.maxWallTurns) return null;
+		this.wallHits++;
+		return random(turnOptions);
+	}
+
+	/** Go straight until a wall; only turn at walls (up to maxWallTurns). */
+	resolveRandomDirection() {
+		const straight = this.dir;
+		if (!this.directionBlocked(straight)) return straight;
+
+		const perp = CARDINALS.filter((d) => isPerpendicular(d, straight) && !this.directionBlocked(d));
+		return this.resolveWallTurn(straight, perp);
+	}
+
+	/** Target seek: straight when open; at walls pick the best open direction toward the goal. */
+	resolveTargetDirection() {
+		const straight = this.dir;
+		if (!this.directionBlocked(straight)) return straight;
+
+		const open = CARDINALS.filter((d) => !this.directionBlocked(d));
+		if (open.length === 0) return null;
+
+		const ranked = open
+			.map((d) => ({ dir: d, score: this.goalScore(d) }))
+			.sort((a, b) => b.score - a.score);
+		const bestScore = ranked[0].score;
+		const best = ranked.filter((r) => r.score === bestScore).map((r) => r.dir);
+
+		return this.resolveWallTurn(straight, best);
+	}
+
+	/** After reaching the goal, drive straight down until the canvas edge. */
+	resolveExitDirection() {
+		if (!params.targetExitAfterGoal) return null;
+		const down = { dx: 0, dy: 1 };
+		if (this.directionBlockedForExit(down)) return null;
+		return down;
+	}
+
+	resolveNextDirection() {
+		if (this.mode === 'target' && this.goalCol != null && this.goalRow != null) {
+			if (this.reachedGoal) return this.resolveExitDirection();
+			if (this.atGoal()) {
+				this.reachedGoal = true;
+				return this.resolveExitDirection();
+			}
+			return this.resolveTargetDirection();
+		}
+		return this.resolveRandomDirection();
 	}
 
 	/** Score how much a direction reduces Manhattan distance to the goal. */
@@ -481,66 +771,16 @@ class Tracer {
 		return this.col === this.goalCol && this.row === this.goalRow;
 	}
 
-	chooseDirectionTowardGoal() {
-		if (this.atGoal()) {
-			this.reachedGoal = true;
-			return this.chooseExitDirection();
-		}
-
-		const options = CARDINALS.filter((d) => !this.directionBlocked(d));
-		if (options.length === 0) return null;
-
-		const ranked = options
-			.map((d) => ({ dir: d, score: this.goalScore(d) }))
-			.sort((a, b) => b.score - a.score);
-
-		const bestScore = ranked[0].score;
-		const best = ranked.filter((r) => r.score === bestScore).map((r) => r.dir);
-
-		if (random() >= params.targetTurnChance && best.some((d) => d.dx === this.dir.dx && d.dy === this.dir.dy)) {
-			return this.dir;
-		}
-
-		if (random() < params.targetSeekStrength) {
-			return random(best);
-		}
-
-		return random(options);
-	}
-
-	/** After reaching the goal, drive straight down off-screen ignoring grid bounds. */
-	chooseExitDirection() {
-		if (!params.targetExitAfterGoal) return null;
-		// Always go down — offCanvas() in arriveAtTarget kills the tracer once it's
-		// truly outside the viewport, so there is no need to check grid bounds here.
-		return { dx: 0, dy: 1 };
-	}
-
-	/** Pick the next heading once a cell has been reached. */
-	chooseDirection() {
-		if (this.mode === 'target' && this.goalCol != null && this.goalRow != null) {
-			if (this.reachedGoal) return this.chooseExitDirection();
-			return this.chooseDirectionTowardGoal();
-		}
-
-		const straight = this.dir;
-		const straightBlocked = this.directionBlocked(straight);
-		const wantTurn = random() < params.turnChance;
-		if (!wantTurn && !straightBlocked) return straight;
-
-		const perp = CARDINALS.filter((d) => isPerpendicular(d, straight));
-		const options = perp.filter((d) => !this.directionBlocked(d));
-
-		if (options.length === 0) {
-			return straightBlocked ? null : straight;
-		}
-		return random(options);
-	}
-
 	update(now, dt) {
 		if (!this.alive) return;
 
-		const step = dt / Math.max(1, params.tracerStepMs);
+		const head = this.headPosition();
+		const targetEnergy = grid.dotEnergyAt(head.x, head.y, params.energyRadius, now);
+		const energyEase = min(1, dt / Math.max(1, params.energyEaseMs));
+		this.energy = lerp(this.energy, targetEnergy, energyEase);
+		this.stepMs = this.stepMsFromEnergy();
+
+		const step = dt / Math.max(1, this.stepMs);
 		this.segProgress += step;
 
 		while (this.segProgress >= 1 && this.alive) {
@@ -557,20 +797,16 @@ class Tracer {
 		this.fromY = reached.y;
 		this.points.push({ x: reached.x, y: reached.y, born: now });
 
-		if (this.offCanvas(reached.x, reached.y)) {
-			this.alive = false;
-			return;
-		}
-
 		this.touchCell(this.col, this.row, now);
 
-		const nextDir = this.chooseDirection();
+		const nextDir = this.resolveNextDirection();
 		if (!nextDir) {
 			this.alive = false;
 			return;
 		}
 		this.dir = nextDir;
 		this.target = this.nextTarget(this.col, this.row, this.dir);
+		this.baseStepMs = this.sampleBaseStepMs();
 	}
 
 	headPosition() {
@@ -621,12 +857,33 @@ class Tracer {
 class TracerManager {
 	constructor() {
 		this.list = [];
-		this.lastSpawn = 0;
+		this.nextSpawnAt = 0;
+		this.introHandled = false;
 	}
 
 	clear() {
 		this.list = [];
-		this.lastSpawn = 0;
+		this.nextSpawnAt = params.tracerIntroDelayMs;
+		this.introHandled = false;
+	}
+
+	tracersActive(now) {
+		if (prefersReducedMotion) return true;
+		return now >= params.tracerIntroDelayMs;
+	}
+
+	scheduleNextSpawn(now) {
+		const base = params.spawnIntervalMs;
+		const span = base * params.spawnIntervalJitter;
+		this.nextSpawnAt = now + base + random(-span, span);
+	}
+
+	aliveCount() {
+		let n = 0;
+		for (let i = 0; i < this.list.length; i++) {
+			if (this.list[i].alive) n++;
+		}
+		return n;
 	}
 
 	hasTargetTracer() {
@@ -643,19 +900,15 @@ class TracerManager {
 		return null;
 	}
 
-	/** Kill and remove the oldest non-target (or oldest of any) tracer. */
-	evictOldest() {
+	/** Kill the oldest live tracer (first in the list). */
+	killOldestAlive() {
 		for (let i = 0; i < this.list.length; i++) {
-			if (this.list[i].mode !== 'target') {
+			if (this.list[i].alive) {
 				this.list[i].alive = false;
-				this.list.splice(i, 1);
-				return;
+				return true;
 			}
 		}
-		if (this.list.length > 0) {
-			this.list[0].alive = false;
-			this.list.splice(0, 1);
-		}
+		return false;
 	}
 
 	initialDirection(col, row, goalCol, goalRow) {
@@ -710,6 +963,16 @@ class TracerManager {
 		return new Tracer(col, row, random(validDirs), 'random');
 	}
 
+	/** User click — kills the oldest live tracer, then spawns one at the click cell. */
+	spawnFromClick(col, row) {
+		if (!this.tracersActive(millis())) return false;
+		const tracer = this.spawnAt(col, row);
+		if (!tracer) return false;
+		if (this.aliveCount() > 0) this.killOldestAlive();
+		this.list.push(tracer);
+		return true;
+	}
+
 	spawnOne(forceTarget = false) {
 		let tracer = null;
 		if (forceTarget || (params.targetFlowEnabled && !this.hasTargetTracer())) {
@@ -722,23 +985,53 @@ class TracerManager {
 	ensureTargetTracer() {
 		if (!params.targetFlowEnabled) return;
 		if (this.hasTargetTracer()) return;
-		if (this.list.length >= params.maxTracers) return;
+		if (this.aliveCount() >= params.maxTracers) return;
+
 		const tracer = this.spawnTargetTracer();
 		if (tracer) this.list.push(tracer);
 	}
 
+	handleIntro(now) {
+		if (this.introHandled || !this.tracersActive(now)) return;
+		this.introHandled = true;
+		this.ensureTargetTracer();
+		this.scheduleNextSpawn(now);
+	}
+
 	update(now, dt) {
 		for (let i = 0; i < this.list.length; i++) {
-			this.list[i].update(now, dt);
+			const t = this.list[i];
+			if (t.alive) {
+				const head = t.headPosition();
+				grid.magnetize(head.x, head.y, params.magnetRadius, params.magnetStrength);
+			}
+			t.update(now, dt);
 		}
 		this.list = this.list.filter((t) => !t.isFinished(now));
 
+		if (!this.tracersActive(now)) return;
+
+		this.handleIntro(now);
 		this.ensureTargetTracer();
 
-		if (now - this.lastSpawn >= params.spawnIntervalMs && this.list.length < params.maxTracers) {
+		if (now >= this.nextSpawnAt && this.canSpawnRandom()) {
 			this.spawnOne(false);
-			this.lastSpawn = now;
+			this.scheduleNextSpawn(now);
 		}
+	}
+
+	/**
+	 * True when a non-target tracer may spawn. Reserves one slot for the target
+	 * tracer when target flow is on and no target is currently alive, so random
+	 * tracers can never starve the target out of the population.
+	 */
+	canSpawnRandom() {
+		const alive = this.aliveCount();
+		if (alive >= params.maxTracers) return false;
+		if (params.targetFlowEnabled && !this.hasTargetTracer()) {
+			return alive < params.maxTracers - 1;
+		}
+		return true;
 	}
 
 	draw(now) {
@@ -940,12 +1233,26 @@ function setupGui() {
 	const gLines = gui.addFolder('Lines / Tracers');
 	gLines.add(params, 'maxTracers', 1, 20, 1).name('max tracers');
 	gLines.add(params, 'spawnIntervalMs', 150, 2500, 50).name('spawn every (ms)');
+	gLines.add(params, 'spawnIntervalJitter', 0, 1, 0.05).name('spawn jitter');
 	gLines.add(params, 'tracerStepMs', 50, 400, 5).name('step time (ms)');
-	gLines.add(params, 'turnChance', 0, 0.5, 0.01).name('turn chance');
+	gLines.add(params, 'tracerStepJitter', 0, 0.8, 0.05).name('step jitter');
+	gLines.add(params, 'maxWallTurns', 0, 8, 1).name('wall turns before death');
 	gLines.add(params, 'lineWeight', 0.5, 6, 0.25).name('line weight');
 	gLines.add(params, 'trailLingerMs', 100, 3000, 50).name('trail linger (ms)');
 	gLines.add(params, 'trailFadeMs', 200, 4000, 50).name('trail fade (ms)');
+	gLines.add(params, 'energyEnabled').name('energy speed');
+	gLines.add(params, 'energyRadius', 30, 200, 5).name('energy radius');
+	gLines.add(params, 'energyStepMultMin', 0.4, 1, 0.02).name('fastest mult');
+	gLines.add(params, 'energyStepMultMax', 1, 1.8, 0.02).name('slowest mult');
+	gLines.add(params, 'energyInfluence', 0, 1, 0.05).name('energy influence');
+	gLines.add(params, 'energyEaseMs', 80, 2000, 20).name('energy ease (ms)');
 	gLines.close();
+
+	const gIntro = gui.addFolder('Intro / Pacing');
+	gIntro.add(params, 'tracerIntroDelayMs', 0, 5000, 50).name('line delay (ms)');
+	gIntro.add(params, 'introDotStaggerMs', 0, 4000, 50).name('dot stagger (ms)');
+	gIntro.add(params, 'introDotRiseMs', 80, 1200, 20).name('dot rise (ms)');
+	gIntro.close();
 
 	const gSpread = gui.addFolder('Spread');
 	gSpread.add(params, 'spreadRadius', 0, 3, 1).name('spread radius');
@@ -963,10 +1270,23 @@ function setupGui() {
 	gTarget.close();
 
 	const gMouse = gui.addFolder('Mouse');
-	gMouse.add(params, 'hoverRadius', 20, 200, 5).name('hover radius');
-	gMouse.add(params, 'hoverScaleBoost', 0.2, 1.5, 0.05).name('hover scale');
-	gMouse.add(params, 'hoverEaseMs', 100, 2000, 20).name('hover ease (ms)');
+	gMouse.add(params, 'hoverRadius', 20, 300, 5).name('hover radius');
+	gMouse.add(params, 'hoverSettleScale', 0.2, 1.5, 0.05).name('settle size');
+	gMouse.add(params, 'hoverEaseMs', 100, 2000, 20).name('settle ease (ms)');
+	gMouse.add(params, 'hoverParkMs', 80, 1200, 20).name('park speed (ms)');
 	gMouse.close();
+
+	const gChaos = gui.addFolder('Chaos / Magnet');
+	gChaos.add(params, 'chaosAmplitude', 0, 1.2, 0.01).name('chaos amplitude');
+	gChaos.add(params, 'chaosNoiseScale', 0.02, 0.5, 0.01).name('noise scale');
+	gChaos.add(params, 'chaosTimeScale', 0, 0.001, 0.00001).name('drift speed');
+	gChaos.add(params, 'chaosEaseMs', 80, 2000, 20).name('position ease (ms)');
+	gChaos.add(params, 'magnetRadius', 20, 200, 5).name('magnet radius');
+	gChaos.add(params, 'magnetStrength', 0.05, 2, 0.05).name('magnet strength');
+	gChaos.add(params, 'magnetSettleScale', 0.2, 1.5, 0.05).name('settle size');
+	gChaos.add(params, 'magnetSettleEaseMs', 80, 2000, 20).name('settle ease (ms)');
+	gChaos.add(params, 'orderDecayMs', 400, 8000, 50).name('order decay (ms)');
+	gChaos.close();
 
 	const gRect = gui.addFolder('Clear Text Area');
 	gRect.add(params, 'clearRectWidthFrac', 0, 0.8, 0.02).name('width %').onFinishChange(() => grid.rebuild());
@@ -1005,9 +1325,11 @@ function setup() {
 	colorMode(RGB, 255);
 
 	cacheColors();
+	detectReducedMotion();
 	grid = new GridSystem();
 	tracers = new TracerManager();
 	grid.rebuild();
+	tracers.clear();
 	setupGui();
 }
 
@@ -1030,10 +1352,7 @@ function mousePressed() {
 	if (!grid || !tracers) return;
 	const cell = grid.nearestCell(mouseX, mouseY);
 	if (!cell || cell.inClearRect) return;
-	const tracer = tracers.spawnAt(cell.col, cell.row);
-	if (!tracer) return;
-	if (tracers.list.length >= params.maxTracers) tracers.evictOldest();
-	tracers.list.push(tracer);
+	tracers.spawnFromClick(cell.col, cell.row);
 }
 
 function windowResized() {
