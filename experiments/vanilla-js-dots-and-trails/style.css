@@ -1,0 +1,199 @@
+:root {
+	--bg: #ffffff;
+	--main: #ffc608;
+	--blue: #00aeef;
+	--purple: #5e30eb;
+	--gray: #9a9ca6;
+	--coral: #ff7052;
+	--periwinkle: #3f4bf5;
+	--teal: #61cdb5;
+	--ink: #14140f;
+	--font: 'Open Sauce Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--cursor: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj4KICA8ZWxsaXBzZSBjeD0iMTIiIGN5PSIxOSIgcng9IjUuNSIgcnk9IjQiIGZpbGw9InJnYmEoMCwwLDAsMC4xNSkiLz4KICA8ZWxsaXBzZSBjeD0iMjEiIGN5PSIxOSIgcng9IjUuNSIgcnk9IjQiIGZpbGw9InJnYmEoMCwwLDAsMC4xNSkiLz4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIyMCIgcng9IjkiIHJ5PSI3LjUiIGZpbGw9IiNmZmM2MDgiLz4KICA8cGF0aCBkPSJNNy4yIDE3LjVhOSA3LjUgMCAwMTE3LjYgMHoiIGZpbGw9IiMxNDE0MGYiLz4KICA8cmVjdCB4PSI3IiB5PSIyMC4zIiB3aWR0aD0iMTgiIGhlaWdodD0iMyIgZmlsbD0iIzE0MTQwZiIvPgogIDxyZWN0IHg9IjguMiIgeT0iMjUiIHdpZHRoPSIxNS42IiBoZWlnaHQ9IjIuNiIgcng9IjEuMyIgZmlsbD0iIzE0MTQwZiIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTQuMywyNi44IDE3LjcsMjYuOCAxNiwzMSIgZmlsbD0iIzE0MTQwZiIvPgogIDxjaXJjbGUgY3g9IjE2IiBjeT0iOS41IiByPSI1IiBmaWxsPSIjMTQxNDBmIi8+CiAgPGxpbmUgeDE9IjEzLjUiIHkxPSI1LjUiIHgyPSIxMS41IiB5Mj0iMi41IiBzdHJva2U9IiMxNDE0MGYiIHN0cm9rZS13aWR0aD0iMS4zIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8bGluZSB4MT0iMTguNSIgeTE9IjUuNSIgeDI9IjIwLjUiIHkyPSIyLjUiIHN0cm9rZT0iIzE0MTQwZiIgc3Ryb2tlLXdpZHRoPSIxLjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjExLjUiIGN5PSIyLjUiIHI9IjEiIGZpbGw9IiMxNDE0MGYiLz4KICA8Y2lyY2xlIGN4PSIyMC41IiBjeT0iMi41IiByPSIxIiBmaWxsPSIjMTQxNDBmIi8+Cjwvc3ZnPgo=) 16 16, crosshair;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	background: var(--bg);
+	overflow: hidden;
+	font-family: var(--font);
+}
+
+.app {
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	cursor: var(--cursor);
+}
+
+canvas {
+	display: block;
+	width: 100vw;
+	height: 100vh;
+}
+
+#staticDots {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 1;
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+	background-color: var(--bg);
+	transition: opacity 0.918s ease;
+}
+
+#staticDots.hidden {
+	opacity: 0;
+}
+
+.app.is-mobile {
+	cursor: auto;
+}
+
+.app.is-mobile canvas {
+	display: none;
+}
+
+.app.is-mobile #staticDots,
+.app.is-mobile #staticDots.hidden {
+	opacity: 1;
+}
+
+.hero-stage {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	pointer-events: none;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.hero-stage.is-visible {
+	opacity: 1;
+	visibility: visible;
+}
+
+.card {
+	pointer-events: none;
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.eyebrow {
+	display: inline-flex;
+	align-items: center;
+	background: var(--main);
+	border-radius: 14px;
+	padding: 9px 22px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ink);
+	margin-bottom: 28px;
+	white-space: nowrap;
+}
+
+.card h1 {
+	margin: 0 0 14px;
+	font-family: var(--font);
+	font-weight: 700;
+	font-size: clamp(32px, 4.4vw, 56px);
+	line-height: 1.06;
+	letter-spacing: -0.015em;
+	color: var(--ink);
+	max-width: 30ch;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: 18px;
+	padding: 12px 26px;
+}
+
+.sub {
+	margin: 0 0 20px;
+	font-size: clamp(15px, 1.4vw, 18px);
+	line-height: 1.55;
+	color: #4b4b46;
+	max-width: 56ch;
+	font-weight: 400;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: 14px;
+	padding: 10px 20px;
+}
+
+.ctas {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.btn {
+	pointer-events: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	font-family: var(--font);
+	font-size: 15px;
+	font-weight: 600;
+	padding: 14px 26px;
+	border-radius: 14px;
+	text-decoration: none;
+	cursor: pointer;
+	transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:hover {
+	transform: translateY(-1px);
+	opacity: 0.92;
+}
+
+.btn-solid {
+	background: var(--ink);
+	color: #ffffff;
+	border: 1.5px solid var(--ink);
+}
+
+.btn-outline {
+	background: #ffffff;
+	color: var(--ink);
+	border: 1.5px solid var(--ink);
+}
+
+.btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+@media (max-width: 640px) {
+	.card h1 {
+		max-width: 16ch;
+		padding: 10px 18px;
+	}
+
+	.sub {
+		padding: 8px 16px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hero-stage,
+	#staticDots {
+		transition: none;
+	}
+}

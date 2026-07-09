@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<link rel="preconnect" href="https://api.fontshare.com">
+	<link href="https://api.fontshare.com/v2/css?f[]=open-sauce-sans@400,500,600,700,800&display=swap" rel="stylesheet">
+	<title>Vanilla JS — Dots and Trails</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+	<!--
+	  ─── Embed on another page ───────────────────────────────────────────
+	  Copy grid-trail.js + the CSS rules for .app, canvas, #staticDots.
+	  Minimum markup:
+
+	    <div class="app">
+	      <canvas id="c"></canvas>
+	      <div id="staticDots"></div>
+	      <main style="position:relative; z-index:2;">…your content…</main>
+	    </div>
+	    <script src="grid-trail.js"></script>
+	    <script src="main.js"></script>
+
+	  Optional hero overlay: add class "is-visible" to #heroStage to show it.
+	  Configure mobile layout in main.js → STATIC_LAYOUT ('grid'|'gesture'|'random').
+	  See README.md for the full API and customization guide.
+	-->
+
+	<div class="app">
+		<canvas id="c" aria-hidden="true"></canvas>
+		<div id="staticDots" aria-hidden="true"></div>
+
+		<div id="heroStage" class="hero-stage" aria-hidden="true">
+			<div class="card">
+				<span class="eyebrow">One Partner. One Platform. Enterprise Data Management.</span>
+				<h1>The Infrastructure Behind<br>Healthcare's Leading Organizations.</h1>
+				<p class="sub">ELLKAY delivers the data infrastructure for healthcare - unifying interfaces, network, and data across 750+ EHRs and 58,000+ practices.</p>
+				<div class="ctas">
+					<a href="#" class="btn btn-solid">Let's Talk
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+					</a>
+					<a href="#" class="btn btn-outline">Explore Our Solutions
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="grid-trail.js"></script>
+	<script src="main.js"></script>
+</body>
+</html>
