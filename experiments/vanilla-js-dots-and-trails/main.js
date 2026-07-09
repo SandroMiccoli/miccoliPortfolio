@@ -3,7 +3,7 @@
 	'use strict';
 
 	const MOBILE_QUERY = '(max-width: 768px)';
-	const STATIC_LAYOUT = 'random'; // 'grid' | 'gesture' | 'random'
+	const STATIC_LAYOUT = 'random-dense'; // 'grid' | 'gesture' | 'random' | 'random-large' | 'random-dense'
 
 	const app = document.querySelector('.app');
 	const canvas = document.getElementById('c');

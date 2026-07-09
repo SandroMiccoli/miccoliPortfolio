@@ -111,7 +111,7 @@ so clicks reach your content.
     trail.destroy();
     GridTrail.renderStaticPreview({
       staticDots,
-      layout: 'grid',   // 'grid' | 'gesture' | 'random'
+      layout: 'grid',   // 'grid' | 'gesture' | 'random' | 'random-large' | 'random-dense'
       blended: true,
     });
   }
@@ -126,13 +126,13 @@ so clicks reach your content.
 
 | Constant | Default | What it does |
 | -------- | ------- | ------------ |
-| **`STATIC_LAYOUT`** | `'random'` | Mobile static background style. Options: `'grid'`, `'gesture'`, `'random'`. |
+| **`STATIC_LAYOUT`** | `'random'` | Mobile static background style. See layout table below. |
 | **`MOBILE_QUERY`** | `'(max-width: 768px)'` | Breakpoint where live canvas is swapped for the static image. |
 
 ```js
 // main.js — change these two lines to tune the demo
 const MOBILE_QUERY = '(max-width: 768px)';
-const STATIC_LAYOUT = 'grid';   // 'grid' | 'gesture' | 'random'
+const STATIC_LAYOUT = 'grid';   // see layout table below
 ```
 
 **Static layout modes**
@@ -141,7 +141,9 @@ const STATIC_LAYOUT = 'grid';   // 'grid' | 'gesture' | 'random'
 | ----- | ---- |
 | `grid` | Nine short strokes spread across the canvas (3×3-style distribution) |
 | `gesture` | One large diagonal bezier crossing the full screen |
-| `random` | 8–13 small strokes at random positions; **new layout on every reload** |
+| `random` | 8–13 small strokes at random positions; new layout on every reload |
+| `random-large` | 3–5 bigger strokes; wider spans and larger activation radius |
+| `random-dense` | 14–20 strokes filling more of the canvas; fewer, lighter gray resting dots |
 
 ### `grid-trail.js` — brand & motion
 
@@ -197,7 +199,7 @@ Renders a non-interactive background into `staticDots` via `background-image`.
 | `staticDots` | — | Target `<div>` (required) |
 | `width` | `window.innerWidth` | Render width in px |
 | `height` | `window.innerHeight` | Render height in px |
-| `layout` | `'grid'` | `'grid'` \| `'gesture'` \| `'random'` |
+| `layout` | `'grid'` | `'grid'` \| `'gesture'` \| `'random'` \| `'random-large'` \| `'random-dense'` |
 | `blended` | `true` | `true` = resting dots + trail strokes; `false` = resting dots only |
 
 ```js
@@ -216,7 +218,7 @@ texture yourself instead of using `renderStaticPreview`.
 
 ### `GridTrail.STATIC_LAYOUTS`
 
-`['grid', 'gesture', 'random']` — valid `layout` values.
+`['grid', 'gesture', 'random', 'random-large', 'random-dense']` — valid `layout` values.
 
 ---
 
@@ -237,4 +239,4 @@ texture yourself instead of using `renderStaticPreview`.
 - Connection drawing uses row/column bucketing to avoid O(n²) pairwise checks.
 - On mobile the animation loop never starts — only a single offscreen canvas
   render is used for the static background.
-- Resize on mobile regenerates the static image (and re-randomizes `random` layout).
+- Resize on mobile regenerates the static image (and re-randomizes `random*` layouts).

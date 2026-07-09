@@ -16,7 +16,7 @@
  *
  *   GridTrail.generateStaticPreviewTexture(w, h, layout)
  *   GridTrail.generateRestingDotsTexture(w, h)
- *   GridTrail.STATIC_LAYOUTS  // ['grid', 'gesture', 'random']
+ *   GridTrail.STATIC_LAYOUTS  // ['grid', 'gesture', 'random', 'random-large', 'random-dense']
  *
  * ─── Embed example ───────────────────────────────────────────────────────
  *
@@ -80,7 +80,7 @@
 	const FALL_EASE = 0.065;
 	const TARGET_DECAY = 0.94;
 
-	const STATIC_LAYOUTS = ['grid', 'gesture', 'random'];
+	const STATIC_LAYOUTS = ['grid', 'gesture', 'random', 'random-large', 'random-dense'];
 
 	/** Static preview: nine localized strokes (see README — layout: 'grid'). */
 	const TRAIL_PATHS_GRID = [
@@ -117,15 +117,39 @@
 		},
 	];
 
-	function buildRandomTrailPaths() {
-		// layout: 'random' — positions change on every call / page reload
-		const count = 8 + ((Math.random() * 6) | 0);
+	const RANDOM_TRAIL_PRESETS = {
+		random: {
+			countMin: 8, countMax: 13,
+			spanMin: 0.05, spanMax: 0.16,
+			stepsMin: 26, stepsMax: 47,
+			strengthMin: 0.52, strengthMax: 0.90,
+			radiusCells: () => (Math.random() < 0.28 ? 2 : 1),
+		},
+		'random-large': {
+			countMin: 5, countMax: 9,
+			spanMin: 0.22, spanMax: 0.44,
+			stepsMin: 44, stepsMax: 62,
+			strengthMin: 0.78, strengthMax: 1,
+			radiusCells: () => (Math.random() < 0.55 ? 3 : 2),
+		},
+		'random-dense': {
+			countMin: 14, countMax: 20,
+			spanMin: 0.24, spanMax: 0.31,
+			stepsMin: 28, stepsMax: 48,
+			strengthMin: 0.62, strengthMax: 0.95,
+			radiusCells: () => (Math.random() < 0.42 ? 2 : 1),
+		},
+	};
+
+	function buildRandomTrailPaths(presetKey) {
+		const preset = RANDOM_TRAIL_PRESETS[presetKey] || RANDOM_TRAIL_PRESETS.random;
+		const count = preset.countMin + ((Math.random() * (preset.countMax - preset.countMin + 1)) | 0);
 		const paths = [];
 
 		for (let i = 0; i < count; i++) {
 			const cx = 0.10 + Math.random() * 0.80;
 			const cy = 0.10 + Math.random() * 0.80;
-			const span = 0.05 + Math.random() * 0.11;
+			const span = preset.spanMin + Math.random() * (preset.spanMax - preset.spanMin);
 			const angle = Math.random() * Math.PI * 2;
 			const c1 = angle + (Math.random() - 0.5) * 1.4;
 			const c2 = angle + (Math.random() - 0.5) * 1.4;
@@ -136,18 +160,27 @@
 				p1: [cx + Math.cos(c1) * span, cy + Math.sin(c1) * span],
 				p2: [cx + Math.cos(c2) * span * 1.35, cy + Math.sin(c2) * span * 1.35],
 				p3: [cx + Math.cos(end) * span * 0.85, cy + Math.sin(end) * span * 0.85],
-				steps: 26 + ((Math.random() * 22) | 0),
-				radiusCells: Math.random() < 0.28 ? 2 : 1,
-				strength: 0.52 + Math.random() * 0.38,
+				steps: preset.stepsMin + ((Math.random() * (preset.stepsMax - preset.stepsMin + 1)) | 0),
+				radiusCells: preset.radiusCells(),
+				strength: preset.strengthMin + Math.random() * (preset.strengthMax - preset.strengthMin),
 			});
 		}
 
 		return paths;
 	}
 
+	function restingDotsOptionsForLayout(layout) {
+		if (layout === 'random-dense') {
+			return { density: 0.28, alphaMin: 0.08, alphaRange: 0.22 };
+		}
+		return { density: 0.58, alphaMin: 0.12, alphaRange: 0.4 };
+	}
+
 	function resolveTrailPaths(layout) {
 		if (layout === 'gesture') return TRAIL_PATHS_GESTURE;
-		if (layout === 'random') return buildRandomTrailPaths();
+		if (layout === 'random' || layout === 'random-large' || layout === 'random-dense') {
+			return buildRandomTrailPaths(layout);
+		}
 		return TRAIL_PATHS_GRID;
 	}
 
@@ -399,15 +432,18 @@
 		}
 	}
 
-	function drawRestingDots(ctx, width, height, seed) {
+	function drawRestingDots(ctx, width, height, seed, options) {
 		const rng = mulberry32(seed);
 		const spacing = 18;
+		const density = options && options.density != null ? options.density : 0.58;
+		const alphaMin = options && options.alphaMin != null ? options.alphaMin : 0.12;
+		const alphaRange = options && options.alphaRange != null ? options.alphaRange : 0.4;
 
 		for (let y = -spacing; y < height + spacing; y += spacing) {
 			for (let x = -spacing; x < width + spacing; x += spacing) {
-				if (rng() < 0.58) {
+				if (rng() < density) {
 					const r = [1.7, 2.2, 2.8, 3.4][(rng() * 4) | 0];
-					const alpha = 0.12 + rng() * 0.4;
+					const alpha = alphaMin + rng() * alphaRange;
 					ctx.fillStyle = `rgba(180,181,188,${alpha})`;
 					ctx.beginPath();
 					ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -516,6 +552,7 @@
 
 	function generateStaticPreviewTexture(width, height, layout) {
 		const cellSize = cellSizeForWidth(width);
+		const normalizedLayout = normalizeStaticLayout(layout);
 		const off = document.createElement('canvas');
 		off.width = Math.max(1, Math.round(width));
 		off.height = Math.max(1, Math.round(height));
@@ -523,9 +560,9 @@
 
 		octx.fillStyle = COLORS.bg;
 		octx.fillRect(0, 0, width, height);
-		drawRestingDots(octx, width, height, 0x51a7f3);
+		drawRestingDots(octx, width, height, 0x51a7f3, restingDotsOptionsForLayout(normalizedLayout));
 
-		const trailCells = buildSyntheticTrail(width, height, cellSize, layout);
+		const trailCells = buildSyntheticTrail(width, height, cellSize, normalizedLayout);
 		drawConnections(octx, trailCells, cellSize);
 		for (const cell of trailCells) {
 			drawShape(octx, cell, cellSize);
@@ -538,7 +575,7 @@
 	 * Paints a static background into `staticDots` (used on mobile).
 	 * @param {object} options
 	 * @param {HTMLElement} options.staticDots — target overlay div
-	 * @param {string} [options.layout='grid'] — 'grid' | 'gesture' | 'random'
+	 * @param {string} [options.layout='grid'] — 'grid' | 'gesture' | 'random' | 'random-large' | 'random-dense'
 	 * @param {number} [options.width] — defaults to window.innerWidth
 	 * @param {number} [options.height] — defaults to window.innerHeight
 	 * @param {boolean} [options.blended=true] — resting dots + trail vs resting only
