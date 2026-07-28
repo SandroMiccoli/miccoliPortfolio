@@ -2,7 +2,34 @@
  * p5.js — Grid Trail
  * Mouse-driven grid trail with easing-based cell animations, geometric shapes,
  * palette modes, and lil.gui presets.
+ *
+ * Demo mode (perfect-loop export):
+ *   ?demo=1  simulated mouse gesture
+ *   ?demo=2  noise-staggered full-grid appear / fade
+ *   ?demo=3  vertical wave fill from bottom, then fade
+ * Uses Accent Pill 04. Loops continuously; use Record in the GUI to export one loop.
  */
+
+// ─── Demo export config (easy to tweak) ──────────────────────────────────────
+
+const DEMO_CONFIG = {
+	width: 1080,
+	height: 1920,
+	durationMs: 10000,
+	fps: 30,
+	preset: 'Accent Pill 04',
+	/** Min Chebyshev distance (cells) between "i" letters in demos 2 & 3. */
+	iMinSpacing: 3,
+};
+
+/** @returns {1|2|3|null} */
+function parseDemoMode() {
+	const raw = new URLSearchParams(window.location.search).get('demo');
+	if (raw === '1' || raw === '2' || raw === '3') return Number(raw);
+	return null;
+}
+
+const DEMO_MODE = parseDemoMode();
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -461,6 +488,9 @@ let timeMs = 0;
 let toastTimer = null;
 /** @type {import('lil-gui').Controller[]} */
 let tailFadeControllers = [];
+
+/** @type {DemoDirector|null} */
+let demoDirector = null;
 
 // ─── Easing utilities ────────────────────────────────────────────────────────
 
@@ -1191,6 +1221,432 @@ function applyPreset(name) {
 
 function applyCurrentPreset() {
 	applyPreset(params.preset);
+	restartDemoLoop();
+}
+
+// ─── Demo mode (perfect loops + .webm export) ────────────────────────────────
+
+/**
+ * Catmull-Rom sample through normalized waypoints. Points may sit outside 0–1
+ * so the cursor can enter / leave the frame cleanly.
+ */
+function sampleCatmullRom(points, u) {
+	const n = points.length;
+	if (n === 0) return { x: 0.5, y: 0.5 };
+	if (n === 1) return { x: points[0][0], y: points[0][1] };
+
+	const maxSeg = n - 1;
+	const t = constrain(u, 0, 1) * maxSeg;
+	const i = min(floor(t), maxSeg - 1);
+	const local = t - i;
+
+	const p0 = points[max(0, i - 1)];
+	const p1 = points[i];
+	const p2 = points[min(n - 1, i + 1)];
+	const p3 = points[min(n - 1, i + 2)];
+
+	const t2 = local * local;
+	const t3 = t2 * local;
+
+	const x =
+		0.5 *
+		(2 * p1[0] +
+			(-p0[0] + p2[0]) * local +
+			(2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
+			(-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
+	const y =
+		0.5 *
+		(2 * p1[1] +
+			(-p0[1] + p2[1]) * local +
+			(2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
+			(-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
+
+	return { x, y };
+}
+
+class DemoDirector {
+	constructor(mode) {
+		this.mode = mode;
+		this.startMs = 0;
+		this.lastPhase = 0;
+		this.prevCursor = { x: 0, y: 0 };
+		this.cursorReady = false;
+		this.fadeStarted = false;
+		this.spawned = new Set();
+		/** @type {Set<string>} planned "i" cell keys for the current cycle */
+		this.iKeys = new Set();
+		this.isRecording = false;
+		this.mediaRecorder = null;
+		this.recordedChunks = [];
+		this.recordStopTimer = null;
+		/** @type {number[][]} regenerated each Demo 1 cycle */
+		this.mouseWaypoints = [];
+	}
+
+	begin() {
+		this.startMs = -1;
+		requestAnimationFrame(() => this.restartLoop());
+	}
+
+	/** Clear trail and restart the loop clock from phase 0. */
+	restartLoop() {
+		this.resetCycle();
+		this.startMs = millis();
+		this.lastPhase = 0;
+		this.prevCursor = this.cursorAt(0);
+		this.cursorReady = true;
+	}
+
+	resetCycle() {
+		trail.clear();
+		this.spawned = new Set();
+		this.fadeStarted = false;
+		this.cursorReady = false;
+		if (this.mode === 1) this.generateMousePath();
+		this.planIPositions();
+	}
+
+	/**
+	 * Build a fresh enter → curve → exit path in normalized coords.
+	 * Always starts off the left edge and exits off the right; interior bends vary.
+	 */
+	generateMousePath() {
+		const start = [-0.12, random(0.18, 0.82)];
+		const end = [1.12, random(0.18, 0.82)];
+		const points = [start];
+
+		// Inward first step so the stroke clearly enters from the left.
+		points.push([random(0.1, 0.24), constrain(start[1] + random(-0.12, 0.12), 0.12, 0.88)]);
+
+		const bends = 4 + Math.floor(random(0, 4));
+		let prev = points[points.length - 1];
+		for (let i = 0; i < bends; i++) {
+			const t = (i + 1) / (bends + 1);
+			// Progress left → right with lateral drift for curves.
+			const baseX = lerp(0.18, 0.82, t) + random(-0.06, 0.06);
+			const baseY = lerp(prev[1], end[1], 0.2 + t * 0.35);
+			const drift = 0.16 + random(0, 0.2);
+			const nx = constrain(baseX, 0.08, 0.92);
+			const ny = constrain(baseY + random(-drift, drift), 0.08, 0.92);
+			if (dist(prev[0], prev[1], nx, ny) < 0.1) continue;
+			prev = [nx, ny];
+			points.push(prev);
+		}
+
+		points.push([random(0.76, 0.9), constrain(end[1] + random(-0.12, 0.12), 0.12, 0.88)]);
+		points.push(end);
+		this.mouseWaypoints = points;
+	}
+
+	/**
+	 * Place "i" letters with a minimum Chebyshev gap so none sit next to each
+	 * other horizontally, vertically, or diagonally.
+	 */
+	planIPositions() {
+		this.iKeys = new Set();
+		if (this.mode === 1 || !grid) return;
+
+		const minD = max(2, Math.round(DEMO_CONFIG.iMinSpacing));
+		const scored = [];
+		for (let i = 0; i < grid.cells.length; i++) {
+			const cell = grid.cells[i];
+			const hash = Math.abs(cell.col * 73856093 ^ cell.row * 19349663 ^ params.randomSeed);
+			const prefer = hash % 17 === 0;
+			const order = noise(cell.col * 0.21, cell.row * 0.21, params.randomSeed * 0.01);
+			scored.push({ cell, prefer, order });
+		}
+		scored.sort((a, b) => {
+			if (a.prefer !== b.prefer) return a.prefer ? -1 : 1;
+			return a.order - b.order;
+		});
+
+		for (let i = 0; i < scored.length; i++) {
+			if (!scored[i].prefer) break;
+			const { col, row } = scored[i].cell;
+			if (this.canPlaceI(col, row, minD)) {
+				this.iKeys.add(grid.key(col, row));
+			}
+		}
+	}
+
+	canPlaceI(col, row, minD) {
+		for (const key of this.iKeys) {
+			const comma = key.indexOf(',');
+			const c = Number(key.slice(0, comma));
+			const r = Number(key.slice(comma + 1));
+			const d = max(abs(c - col), abs(r - row));
+			if (d < minD) return false;
+		}
+		return true;
+	}
+
+	phaseAt(now) {
+		if (this.startMs < 0) return 0;
+		const elapsed = max(0, now - this.startMs);
+		return (elapsed % DEMO_CONFIG.durationMs) / DEMO_CONFIG.durationMs;
+	}
+
+	cursorAt(travelU) {
+		const n = sampleCatmullRom(this.mouseWaypoints, travelU);
+		return { x: n.x * width, y: n.y * height };
+	}
+
+	demoShapeKind(col, row) {
+		if (this.iKeys.has(grid.key(col, row))) return 'i';
+		return trail.resolveShapeKind(col, row);
+	}
+
+	spawnCell(cell) {
+		if (this.spawned.has(cell) || cell.state !== 'inactive') return;
+		const kind = this.demoShapeKind(cell.col, cell.row);
+		cell.spawn(0, kind, cell.cx, cell.cy);
+		this.spawned.add(cell);
+	}
+
+	fadeAllActive() {
+		if (this.fadeStarted) return;
+		this.fadeStarted = true;
+		for (let i = 0; i < grid.cells.length; i++) {
+			const cell = grid.cells[i];
+			if (cell.isActiveOrAnimating()) {
+				cell.beginFadeOut();
+			}
+		}
+		trail.queue = [];
+		trail.underCursor = new Set();
+	}
+
+	update(now, dt) {
+		if (this.startMs < 0) {
+			trail.update(now, dt);
+			return;
+		}
+
+		const phase = this.phaseAt(now);
+		if (phase < this.lastPhase) {
+			this.resetCycle();
+			this.prevCursor = this.cursorAt(0);
+			this.cursorReady = true;
+		}
+		this.lastPhase = phase;
+
+		if (this.mode === 1) this.updateMouseDemo(phase, now);
+		else if (this.mode === 2) this.updateGridNoiseDemo(phase);
+		else if (this.mode === 3) this.updateVerticalWaveDemo(phase);
+
+		trail.update(now, dt);
+	}
+
+	/** Simulated cursor: enter → curve → exit → forced fade for a clean loop. */
+	updateMouseDemo(phase, now) {
+		const travelStart = 0.04;
+		const travelEnd = 0.72;
+		const fadeAt = 0.8;
+
+		if (phase >= fadeAt) {
+			this.fadeAllActive();
+			return;
+		}
+
+		const u =
+			phase <= travelStart
+				? 0
+				: phase >= travelEnd
+					? 1
+					: (phase - travelStart) / (travelEnd - travelStart);
+
+		const cur = this.cursorAt(u);
+		if (!this.cursorReady) {
+			this.prevCursor = cur;
+			this.cursorReady = true;
+			return;
+		}
+
+		const seg = dist(this.prevCursor.x, this.prevCursor.y, cur.x, cur.y);
+		const steps = max(1, ceil(seg / max(1, params.cellSize * 0.35)));
+		for (let s = 1; s <= steps; s++) {
+			const t0 = (s - 1) / steps;
+			const t1 = s / steps;
+			const x0 = lerp(this.prevCursor.x, cur.x, t0);
+			const y0 = lerp(this.prevCursor.y, cur.y, t0);
+			const x1 = lerp(this.prevCursor.x, cur.x, t1);
+			const y1 = lerp(this.prevCursor.y, cur.y, t1);
+			trail.processMouse(x0, y0, x1, y1, now);
+		}
+		this.prevCursor = cur;
+	}
+
+	/** Full grid: noise-staggered appear, short hold, noise-staggered fade. */
+	updateGridNoiseDemo(phase) {
+		const appearWindow = 0.42;
+		const holdEnd = 0.55;
+		const fadeWindow = 0.38;
+
+		for (let i = 0; i < grid.cells.length; i++) {
+			const cell = grid.cells[i];
+			const n = noise(cell.col * 0.17, cell.row * 0.17, 0.4);
+			const appearAt = n * appearWindow;
+			const fadeAt = holdEnd + (1 - n) * fadeWindow * 0.35;
+
+			if (phase >= appearAt && phase < holdEnd) {
+				this.spawnCell(cell);
+			}
+			if (phase >= fadeAt && cell.isActiveOrAnimating() && cell.state !== 'out') {
+				cell.beginFadeOut();
+			}
+		}
+
+		if (phase >= holdEnd + fadeWindow * 0.85) {
+			this.fadeAllActive();
+		}
+	}
+
+	/** Bottom-up sine wave fill, then bottom-up fade so the wave drains upward. */
+	updateVerticalWaveDemo(phase) {
+		const fillEnd = 0.52;
+		const holdEnd = 0.6;
+		const fadeEnd = 0.95;
+
+		if (phase < fillEnd) {
+			const fillU = applyEasing(phase / fillEnd, 'easeInOutSine');
+			const waveAmp = params.cellSize * 2.2;
+
+			for (let i = 0; i < grid.cells.length; i++) {
+				const cell = grid.cells[i];
+				const wave = Math.sin(cell.col * 0.45 + fillU * Math.PI * 2.5) * waveAmp;
+				// Lower rank = closer to bottom; wave advances upward as fillU grows.
+				const cellRank = 1 - cell.cy / height + wave / height;
+				const threshold = fillU * 1.15 - 0.05;
+				if (cellRank <= threshold) {
+					this.spawnCell(cell);
+				}
+			}
+			return;
+		}
+
+		if (phase < holdEnd) return;
+
+		const fadeU = applyEasing((phase - holdEnd) / max(0.001, fadeEnd - holdEnd), 'easeInOutSine');
+		for (let i = 0; i < grid.cells.length; i++) {
+			const cell = grid.cells[i];
+			if (!cell.isActiveOrAnimating() || cell.state === 'out') continue;
+			// Fade from bottom first → top last (same upward direction as the fill).
+			const fromBottom = 1 - cell.cy / height;
+			if (fromBottom <= fadeU * 1.1) {
+				cell.beginFadeOut();
+			}
+		}
+
+		if (phase >= fadeEnd) {
+			this.fadeAllActive();
+		}
+	}
+
+	requestRecord() {
+		if (this.isRecording) {
+			showToast('Already recording…');
+			return;
+		}
+		this.startMs = -1;
+		this.lastPhase = 0;
+		this.resetCycle();
+		requestAnimationFrame(() => {
+			this.startMs = millis();
+			this.prevCursor = this.cursorAt(0);
+			this.cursorReady = true;
+			this.startRecording();
+		});
+	}
+
+	pickRecorderMime() {
+		const candidates = [
+			'video/webm;codecs=vp9',
+			'video/webm;codecs=vp8',
+			'video/webm',
+		];
+		for (let i = 0; i < candidates.length; i++) {
+			if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[i])) {
+				return candidates[i];
+			}
+		}
+		return '';
+	}
+
+	startRecording() {
+		if (this.isRecording || typeof MediaRecorder === 'undefined') {
+			if (!this.isRecording) showToast('Recording unavailable');
+			return;
+		}
+
+		const canvas = document.querySelector('#app canvas');
+		if (!canvas || typeof canvas.captureStream !== 'function') {
+			showToast('captureStream unavailable');
+			return;
+		}
+
+		const mimeType = this.pickRecorderMime();
+		const stream = canvas.captureStream(DEMO_CONFIG.fps);
+		this.recordedChunks = [];
+
+		try {
+			this.mediaRecorder = mimeType
+				? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 12_000_000 })
+				: new MediaRecorder(stream, { videoBitsPerSecond: 12_000_000 });
+		} catch (err) {
+			console.warn(err);
+			showToast('MediaRecorder failed');
+			return;
+		}
+
+		this.isRecording = true;
+
+		this.mediaRecorder.ondataavailable = (e) => {
+			if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
+		};
+
+		this.mediaRecorder.onstop = () => {
+			this.isRecording = false;
+			if (this.recordStopTimer) {
+				clearTimeout(this.recordStopTimer);
+				this.recordStopTimer = null;
+			}
+			stream.getTracks().forEach((t) => t.stop());
+			this.downloadRecording();
+		};
+
+		this.mediaRecorder.start(250);
+		showToast(`Recording demo ${this.mode}…`);
+
+		this.recordStopTimer = setTimeout(() => {
+			this.recordStopTimer = null;
+			if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+				this.mediaRecorder.stop();
+			}
+		}, DEMO_CONFIG.durationMs);
+	}
+
+	downloadRecording() {
+		if (!this.recordedChunks.length) {
+			showToast('Recording produced no data');
+			return;
+		}
+		const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `grid-trail-demo-${this.mode}.webm`;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+		showToast(`Downloaded grid-trail-demo-${this.mode}.webm`);
+	}
+}
+
+function restartDemoLoop() {
+	if (DEMO_MODE && demoDirector) {
+		demoDirector.restartLoop();
+	}
 }
 
 // ─── GUI ─────────────────────────────────────────────────────────────────────
@@ -1199,11 +1655,36 @@ function setupGui() {
 	const GUICtor = typeof lil !== 'undefined' ? lil.GUI : typeof GUI !== 'undefined' ? GUI : null;
 	if (!GUICtor) return;
 
-	gui = new GUICtor({ title: 'Grid Trail' });
+	gui = new GUICtor({ title: DEMO_MODE ? `Grid Trail · Demo ${DEMO_MODE}` : 'Grid Trail' });
 	tailFadeControllers = [];
 
+	if (DEMO_MODE) {
+		const gDemo = gui.addFolder('Demo export');
+		gDemo.add(DEMO_CONFIG, 'durationMs', 2000, 30000, 500).name('duration (ms)').onFinishChange(() => {
+			restartDemoLoop();
+		});
+		gDemo.add(DEMO_CONFIG, 'iMinSpacing', 2, 8, 1).name('i min spacing').onFinishChange(() => {
+			restartDemoLoop();
+		});
+		gDemo.add(DEMO_CONFIG, 'fps', 15, 60, 1).name('record fps');
+		gDemo
+			.add(
+				{
+					record: () => {
+						if (demoDirector) demoDirector.requestRecord();
+					},
+				},
+				'record'
+			)
+			.name('Record');
+		gDemo.open();
+	}
+
 	const gGrid = gui.addFolder('Grid');
-	gGrid.add(params, 'cellSize', 12, 64, 1).onFinishChange(() => grid.rebuild());
+	gGrid.add(params, 'cellSize', 12, 64, 1).onFinishChange(() => {
+		grid.rebuild();
+		restartDemoLoop();
+	});
 	gGrid.add(params, 'debugGrid').name('show debug grid');
 
 	const gTrail = gui.addFolder('Trail');
@@ -1241,24 +1722,32 @@ function setupGui() {
 	gColor.add(params, 'opacityMultiplier', 0.2, 1, 0.01);
 	gColor.add(params, 'randomSeed', 0, 99999, 1).onFinishChange(() => {
 		grid.rebuild();
+		restartDemoLoop();
 	});
 
 	const gPresets = gui.addFolder('Presets');
-	gPresets.add(params, 'preset', PRESET_NAMES).name('preset').onChange(applyPreset);
+	gPresets.add(params, 'preset', PRESET_NAMES).name('preset').onChange((name) => {
+		applyPreset(name);
+		restartDemoLoop();
+	});
 	gPresets.add({ applyCurrentPreset }, 'applyCurrentPreset').name('apply preset');
 	gPresets.add(params, 'presetExportName').name('export name');
 	gPresets.add({ savePresetToClipboard }, 'savePresetToClipboard').name('export preset as JSON');
 
 	syncTrailFadeControls();
-	gui.close();
+	if (!DEMO_MODE) {
+		gui.close();
+	}
 }
 
 // ─── p5 lifecycle ────────────────────────────────────────────────────────────
 
 function setup() {
-	const canvasEl = createCanvas(windowWidth, windowHeight);
+	const w = DEMO_MODE ? DEMO_CONFIG.width : windowWidth;
+	const h = DEMO_MODE ? DEMO_CONFIG.height : windowHeight;
+	const canvasEl = createCanvas(w, h);
 	canvasEl.parent('app');
-	pixelDensity(min(2, displayDensity()));
+	pixelDensity(DEMO_MODE ? 1 : min(2, displayDensity()));
 	rectMode(CENTER);
 	colorMode(RGB, 255);
 	grid = new GridSystem();
@@ -1266,6 +1755,18 @@ function setup() {
 	grid.rebuild();
 	prevMouse.x = width * 0.5;
 	prevMouse.y = height * 0.5;
+
+	if (DEMO_MODE) {
+		document.body.classList.add('demo-mode');
+		document.title = `p5.js — Grid Trail · Demo ${DEMO_MODE}`;
+		frameRate(DEMO_CONFIG.fps);
+		applyPreset(DEMO_CONFIG.preset);
+		demoDirector = new DemoDirector(DEMO_MODE);
+		setupGui();
+		demoDirector.begin();
+		return;
+	}
+
 	setupGui();
 }
 
@@ -1274,6 +1775,15 @@ function draw() {
 	const dt = min(deltaTime, 64);
 
 	background(params.bgColor);
+
+	if (DEMO_MODE && demoDirector) {
+		demoDirector.update(timeMs, dt);
+		drawTrail();
+		if (params.debugGrid) {
+			grid.drawDebug();
+		}
+		return;
+	}
 
 	const mx = mouseX;
 	const my = mouseY;
@@ -1299,11 +1809,13 @@ function draw() {
 }
 
 function windowResized() {
+	if (DEMO_MODE) return;
 	resizeCanvas(windowWidth, windowHeight);
 	grid.rebuild();
 }
 
 function touchMoved() {
+	if (DEMO_MODE) return false;
 	if (touches.length > 0) {
 		return false;
 	}
