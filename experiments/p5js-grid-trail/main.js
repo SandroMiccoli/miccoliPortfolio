@@ -20,7 +20,39 @@ const DEMO_CONFIG = {
 	preset: 'Accent Pill 04',
 	/** Min Chebyshev distance (cells) between "i" letters in demos 2 & 3. */
 	iMinSpacing: 3,
+	/** Preview-only hero underlay (never included in .webm export). */
+	showHeroRef: true,
 };
+
+/**
+ * Demo 1 fixed path (normalized 0–1). Traced from the red reference stroke:
+ * enter left mid → top multi-hump → right descent with inward C → bottom notch → exit bottom-right.
+ */
+const DEMO1_PATH = [
+	[-0.08, 0.60],
+	[0.05, 0.42],
+	[0.10, 0.26],
+	[0.14, 0.16],
+	[0.22, 0.24],
+	[0.30, 0.14],
+	[0.38, 0.12],
+	[0.48, 0.20],
+	[0.56, 0.14],
+	[0.66, 0.16],
+	[0.78, 0.14],
+	[0.88, 0.18],
+	[0.94, 0.28],
+	[0.92, 0.40],
+	[0.78, 0.50],
+	[0.62, 0.56],
+	[0.68, 0.64],
+	[0.86, 0.70],
+	[0.94, 0.76],
+	[0.82, 0.82],
+	[0.72, 0.86],
+	[0.84, 0.90],
+	[1.08, 0.88],
+];
 
 /** @returns {1|2|3|null} */
 function parseDemoMode() {
@@ -1279,8 +1311,8 @@ class DemoDirector {
 		this.mediaRecorder = null;
 		this.recordedChunks = [];
 		this.recordStopTimer = null;
-		/** @type {number[][]} regenerated each Demo 1 cycle */
-		this.mouseWaypoints = [];
+		/** Fixed Demo 1 path (see DEMO1_PATH). */
+		this.mouseWaypoints = DEMO1_PATH;
 	}
 
 	begin() {
@@ -1302,40 +1334,8 @@ class DemoDirector {
 		this.spawned = new Set();
 		this.fadeStarted = false;
 		this.cursorReady = false;
-		if (this.mode === 1) this.generateMousePath();
+		this.mouseWaypoints = DEMO1_PATH;
 		this.planIPositions();
-	}
-
-	/**
-	 * Build a fresh enter → curve → exit path in normalized coords.
-	 * Always starts off the left edge and exits off the right; interior bends vary.
-	 */
-	generateMousePath() {
-		const start = [-0.12, random(0.18, 0.82)];
-		const end = [1.12, random(0.18, 0.82)];
-		const points = [start];
-
-		// Inward first step so the stroke clearly enters from the left.
-		points.push([random(0.1, 0.24), constrain(start[1] + random(-0.12, 0.12), 0.12, 0.88)]);
-
-		const bends = 4 + Math.floor(random(0, 4));
-		let prev = points[points.length - 1];
-		for (let i = 0; i < bends; i++) {
-			const t = (i + 1) / (bends + 1);
-			// Progress left → right with lateral drift for curves.
-			const baseX = lerp(0.18, 0.82, t) + random(-0.06, 0.06);
-			const baseY = lerp(prev[1], end[1], 0.2 + t * 0.35);
-			const drift = 0.16 + random(0, 0.2);
-			const nx = constrain(baseX, 0.08, 0.92);
-			const ny = constrain(baseY + random(-drift, drift), 0.08, 0.92);
-			if (dist(prev[0], prev[1], nx, ny) < 0.1) continue;
-			prev = [nx, ny];
-			points.push(prev);
-		}
-
-		points.push([random(0.76, 0.9), constrain(end[1] + random(-0.12, 0.12), 0.12, 0.88)]);
-		points.push(end);
-		this.mouseWaypoints = points;
 	}
 
 	/**
@@ -1616,6 +1616,8 @@ class DemoDirector {
 
 		this.mediaRecorder.start(250);
 		showToast(`Recording demo ${this.mode}…`);
+		const stage = document.getElementById('demo-stage');
+		if (stage) stage.classList.add('is-recording');
 
 		this.recordStopTimer = setTimeout(() => {
 			this.recordStopTimer = null;
@@ -1626,6 +1628,8 @@ class DemoDirector {
 	}
 
 	downloadRecording() {
+		const stage = document.getElementById('demo-stage');
+		if (stage) stage.classList.remove('is-recording');
 		if (!this.recordedChunks.length) {
 			showToast('Recording produced no data');
 			return;
@@ -1667,6 +1671,11 @@ function setupGui() {
 			restartDemoLoop();
 		});
 		gDemo.add(DEMO_CONFIG, 'fps', 15, 60, 1).name('record fps');
+		gDemo.add(DEMO_CONFIG, 'showHeroRef').name('show hero ref').onChange((v) => {
+			const stage = document.getElementById('demo-stage');
+			if (!stage) return;
+			stage.classList.toggle('hide-hero-ref', !v);
+		});
 		gDemo
 			.add(
 				{
@@ -1746,7 +1755,6 @@ function setup() {
 	const w = DEMO_MODE ? DEMO_CONFIG.width : windowWidth;
 	const h = DEMO_MODE ? DEMO_CONFIG.height : windowHeight;
 	const canvasEl = createCanvas(w, h);
-	canvasEl.parent('app');
 	pixelDensity(DEMO_MODE ? 1 : min(2, displayDensity()));
 	rectMode(CENTER);
 	colorMode(RGB, 255);
@@ -1760,6 +1768,14 @@ function setup() {
 		document.body.classList.add('demo-mode');
 		document.title = `p5.js — Grid Trail · Demo ${DEMO_MODE}`;
 		frameRate(DEMO_CONFIG.fps);
+		const stage = document.getElementById('demo-stage');
+		if (stage) {
+			stage.hidden = false;
+			canvasEl.parent(stage);
+			stage.classList.toggle('hide-hero-ref', !DEMO_CONFIG.showHeroRef);
+		} else {
+			canvasEl.parent('app');
+		}
 		applyPreset(DEMO_CONFIG.preset);
 		demoDirector = new DemoDirector(DEMO_MODE);
 		setupGui();
@@ -1767,6 +1783,7 @@ function setup() {
 		return;
 	}
 
+	canvasEl.parent('app');
 	setupGui();
 }
 
@@ -1774,9 +1791,14 @@ function draw() {
 	timeMs = millis();
 	const dt = min(deltaTime, 64);
 
-	background(params.bgColor);
-
 	if (DEMO_MODE && demoDirector) {
+		// Preview: clear canvas so the CSS hero underlay shows through.
+		// Recording: opaque background only — hero is DOM-only and never captured.
+		if (demoDirector.isRecording || !DEMO_CONFIG.showHeroRef) {
+			background(params.bgColor);
+		} else {
+			clear();
+		}
 		demoDirector.update(timeMs, dt);
 		drawTrail();
 		if (params.debugGrid) {
@@ -1784,6 +1806,8 @@ function draw() {
 		}
 		return;
 	}
+
+	background(params.bgColor);
 
 	const mx = mouseX;
 	const my = mouseY;
