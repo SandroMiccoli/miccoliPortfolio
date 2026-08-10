@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>GSAP SVG Morph</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<main class="page">
+		<section class="morph-card" aria-label="Interactive feature showcase">
+			<div class="morph-card__copy">
+				<ul class="option-list" role="list">
+					<li>
+						<button class="option is-active" type="button" data-index="0" aria-pressed="true">
+							<span class="option__title">Cluster Logic</span>
+							<span class="option__desc">Group related signals so the system reads as one coherent form.</span>
+						</button>
+					</li>
+					<li>
+						<button class="option" type="button" data-index="1" aria-pressed="false">
+							<span class="option__title">Signal Grid</span>
+							<span class="option__desc">Scan a field of nodes and isolate the one that matters most.</span>
+						</button>
+					</li>
+					<li>
+						<button class="option" type="button" data-index="2" aria-pressed="false">
+							<span class="option__title">Nested Focus</span>
+							<span class="option__desc">Move inward through layers until the subject sits dead center.</span>
+						</button>
+					</li>
+					<li>
+						<button class="option" type="button" data-index="3" aria-pressed="false">
+							<span class="option__title">Linked Path</span>
+							<span class="option__desc">Trace a sequence of connections from one state into the next.</span>
+						</button>
+					</li>
+				</ul>
+
+				<div class="option-indicator" aria-hidden="true">
+					<span class="option-indicator__dot">
+						<svg viewBox="0 0 24 24" width="12" height="12" fill="none">
+							<path d="M9 6l6 6-6 6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</span>
+				</div>
+
+				<a class="morph-cta" href="#" onclick="return false;">Explore the system</a>
+			</div>
+
+			<div class="morph-card__visual" aria-hidden="true">
+				<canvas class="morph-bg-canvas" id="metaball-canvas"></canvas>
+				<svg class="morph-svg" id="svg-stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+					<defs>
+						<!-- 1. Original artwork @ 75% (normalized from 229×234) -->
+						<path id="shape-01-base" d="M73.284 54.966C78.240 59.922 78.240 67.959 73.284 72.916C68.328 77.872 60.291 77.872 55.335 72.916C53.575 71.155 52.440 69.007 51.929 66.747C50.828 61.867 50.423 56.248 46.886 52.710C43.348 49.173 37.730 48.768 32.849 47.667C30.588 47.156 28.441 46.021 26.680 44.262C21.724 39.305 21.724 31.269 26.680 26.312C31.637 21.355 39.673 21.355 44.630 26.312C47.077 28.759 48.316 31.956 48.346 35.164C48.390 39.669 48.424 44.801 51.609 47.986C54.795 51.172 59.926 51.206 64.431 51.249C67.639 51.280 70.837 52.518 73.284 54.966Z"/>
+						<path id="shape-01-accent" d="M35.531 53.011C42.148 54.050 46.670 60.257 45.630 66.874C44.592 73.492 38.385 78.012 31.768 76.974C25.150 75.934 20.629 69.728 21.668 63.111C22.707 56.493 28.914 51.972 35.531 53.011Z M66.921 22.970C73.539 24.009 78.061 30.216 77.021 36.833C75.981 43.450 69.775 47.972 63.158 46.932C56.541 45.893 52.019 39.687 53.059 33.069C54.098 26.452 60.304 21.930 66.921 22.970Z"/>
+
+						<!-- 2. 4×4 grid + orange ring (100% reference size) -->
+						<path id="shape-02-base" d="M 14.9 22 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 33.567 22 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 52.233 22 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 70.9 22 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 14.9 40.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 33.567 40.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 70.9 40.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 14.9 59.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 33.567 59.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 52.233 59.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 70.9 59.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 14.9 78 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 33.567 78 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 52.233 78 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 70.9 78 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0"/>
+						<path id="shape-02-accent" fill-rule="evenodd" d="M 51.783 40.667 a 7.55 7.55 0 1 0 15.1 0 a 7.55 7.55 0 1 0 -15.1 0 M 55.383 40.667 a 3.95 3.95 0 1 0 7.9 0 a 3.95 3.95 0 1 0 -7.9 0"/>
+
+						<!-- 3. Three concentric circles @ 75%: black → orange → white -->
+						<path id="shape-03-base" d="M21.5 50 a 28.5 28.5 0 1 0 57 0 a 28.5 28.5 0 1 0 -57 0"/>
+						<path id="shape-03-accent" d="M30.5 50 a 19.5 19.5 0 1 0 39 0 a 19.5 19.5 0 1 0 -39 0"/>
+						<path id="shape-03-gap" d="M39.5 50 a 10.5 10.5 0 1 0 21 0 a 10.5 10.5 0 1 0 -21 0"/>
+
+						<!-- 4. Original interlocking artwork @ 75% (normalized from 283×198) -->
+						<path id="shape-04-base" d="M63.305 33.448C66.903 29.850 72.758 29.829 76.356 33.427C79.955 37.025 79.934 42.880 76.335 46.479C74.447 48.367 71.938 49.270 69.458 49.182C66.579 49.079 63.347 49.179 61.309 51.217C59.272 53.254 59.171 56.487 59.274 59.367C59.362 61.846 58.459 64.355 56.571 66.243C52.972 69.842 47.117 69.863 43.519 66.264C39.921 62.666 39.942 56.811 43.540 53.213C45.271 51.481 47.525 50.578 49.799 50.508C52.784 50.416 56.111 50.242 58.223 48.131C60.335 46.019 60.508 42.692 60.600 39.707C60.670 37.433 61.573 35.179 63.305 33.448Z"/>
+						<path id="shape-04-accent" d="M43.301 33.532C46.900 29.933 52.754 29.912 56.352 33.510C59.951 37.108 59.930 42.964 56.331 46.562C54.443 48.450 51.934 49.353 49.455 49.265C46.575 49.162 43.343 49.263 41.305 51.300C39.268 53.338 39.168 56.570 39.270 59.449C39.358 61.928 38.455 64.438 36.568 66.327C32.969 69.924 27.114 69.945 23.515 66.348C19.917 62.749 19.938 56.894 23.536 53.295C25.268 51.564 27.522 50.661 29.795 50.591C32.780 50.499 36.108 50.325 38.219 48.214C40.331 46.102 40.504 42.775 40.597 39.790C40.666 37.516 41.569 35.263 43.301 33.532Z"/>
+
+						<path id="shape-gap-hidden" d="M50 50h0.01v0.01H50z"/>
+					</defs>
+
+					<path id="morph-base" class="morph-base" d="M73.284 54.966C78.240 59.922 78.240 67.959 73.284 72.916C68.328 77.872 60.291 77.872 55.335 72.916C53.575 71.155 52.440 69.007 51.929 66.747C50.828 61.867 50.423 56.248 46.886 52.710C43.348 49.173 37.730 48.768 32.849 47.667C30.588 47.156 28.441 46.021 26.680 44.262C21.724 39.305 21.724 31.269 26.680 26.312C31.637 21.355 39.673 21.355 44.630 26.312C47.077 28.759 48.316 31.956 48.346 35.164C48.390 39.669 48.424 44.801 51.609 47.986C54.795 51.172 59.926 51.206 64.431 51.249C67.639 51.280 70.837 52.518 73.284 54.966Z"/>
+					<path id="morph-accent" class="morph-accent" fill-rule="evenodd" d="M35.531 53.011C42.148 54.050 46.670 60.257 45.630 66.874C44.592 73.492 38.385 78.012 31.768 76.974C25.150 75.934 20.629 69.728 21.668 63.111C22.707 56.493 28.914 51.972 35.531 53.011Z M66.921 22.970C73.539 24.009 78.061 30.216 77.021 36.833C75.981 43.450 69.775 47.972 63.158 46.932C56.541 45.893 52.019 39.687 53.059 33.069C54.098 26.452 60.304 21.930 66.921 22.970Z"/>
+					<path id="morph-gap" class="morph-gap" d="M50 50h0.01v0.01H50z" opacity="0"/>
+				</svg>
+			</div>
+		</section>
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/MorphSVGPlugin.min.js"></script>
+	<script type="module" src="main.js"></script>
+</body>
+</html>
