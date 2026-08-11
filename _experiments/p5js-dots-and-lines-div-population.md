@@ -9,7 +9,7 @@ tags:
   - scroll
 date: 2026-06-19
 featured: false
-show_on_home: true
+show_on_home: false
 tile_size: "1x1"
 thumbnail: "thumb.png"
 description: |
