@@ -15,10 +15,10 @@ const UNIFORMS = {
 	uGridScale: 18.0,
 	uDensity: 0.103,
 	uMergeK: 0.23,
-	uMoveChance: 0.15,
+	uMoveChance: 0.75,
 	uMoveRadius: 0.08,
 	uMinDotDist: -0.603,
-	uSpeed: 1.2,
+	uSpeed: 5.2,
 	uDotRadius: 0.08,
 	uMoveDist: 1.1,
 	uMargin: [0.05, 0.07, 0.07, 0.037],
@@ -129,7 +129,9 @@ export async function initMetaballBackground(canvas) {
 	gl.clearColor(0, 0, 0, 0);
 
 	const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	let start = performance.now();
+	let shaderTime = 0;
+	let motionScale = 0;
+	let lastNow = performance.now();
 	let raf = 0;
 	let running = true;
 
@@ -167,8 +169,15 @@ export async function initMetaballBackground(canvas) {
 		resize();
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
-		const t = reducedMotion ? 0 : (now - start) * 0.001;
-		gl.uniform1f(locs.uTime, t);
+		const dt = Math.min(0.05, (now - lastNow) * 0.001);
+		lastNow = now;
+
+		// Only advance shader time while motion is engaged (during SVG morphs)
+		if (!reducedMotion && motionScale > 0) {
+			shaderTime += dt * motionScale;
+		}
+
+		gl.uniform1f(locs.uTime, shaderTime);
 		gl.uniform2f(locs.uResolution, canvas.width, canvas.height);
 		setStaticUniforms();
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -186,6 +195,13 @@ export async function initMetaballBackground(canvas) {
 	raf = requestAnimationFrame(render);
 
 	return {
+		/** 0 = frozen dots, 1 = normal travel speed, >1 = faster */
+		setMotionScale(value) {
+			motionScale = Math.max(0, value);
+		},
+		getMotionScale() {
+			return motionScale;
+		},
 		destroy() {
 			running = false;
 			cancelAnimationFrame(raf);

@@ -41,8 +41,19 @@ const morphGap = document.querySelector('#morph-gap');
 
 let activeIndex = 0;
 let activeTl = null;
+let metaballBg = null;
 
+const motion = { scale: 0 };
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function syncShaderMotion() {
+	metaballBg?.setMotionScale(motion.scale);
+}
+
+function stopShaderMotion() {
+	motion.scale = 0;
+	syncShaderMotion();
+}
 
 function positionIndicator(index, animate = true) {
 	const option = options[index];
@@ -86,10 +97,40 @@ function goToState(index) {
 	positionIndicator(index, !reducedMotion);
 
 	if (activeTl) activeTl.kill();
+	stopShaderMotion();
 
 	activeTl = gsap.timeline({
-		defaults: { duration, ease: 'expo.inOut' }
+		defaults: { duration, ease: 'expo.inOut' },
+		onComplete: stopShaderMotion
 	});
+
+	// Accel into motion, then brake to a stop — synced with the morph
+	if (metaballBg && !reducedMotion) {
+		const accelDur = duration * 0.32;
+		const brakeDur = duration - accelDur;
+
+		activeTl.fromTo(
+			motion,
+			{ scale: 0 },
+			{
+				scale: 1.35,
+				duration: accelDur,
+				ease: 'power2.in',
+				onUpdate: syncShaderMotion
+			},
+			0
+		);
+		activeTl.to(
+			motion,
+			{
+				scale: 0,
+				duration: brakeDur,
+				ease: 'power3.out',
+				onUpdate: syncShaderMotion
+			},
+			accelDur
+		);
+	}
 
 	activeTl.to(morphBase, { morphSVG: next.base, fill: next.baseFill }, 0);
 	activeTl.to(morphAccent, { morphSVG: next.accent }, 0);
@@ -115,7 +156,8 @@ async function init() {
 	window.addEventListener('resize', () => positionIndicator(activeIndex, false));
 
 	try {
-		await initMetaballBackground(document.getElementById('metaball-canvas'));
+		metaballBg = await initMetaballBackground(document.getElementById('metaball-canvas'));
+		stopShaderMotion();
 	} catch (err) {
 		console.error('Metaball background failed to start:', err);
 	}
