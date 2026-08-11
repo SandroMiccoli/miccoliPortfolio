@@ -33,25 +33,37 @@ const STATES = [
 	}
 ];
 
+/** V1: idle frozen. V2: idle crawl, burst on morph. */
+const VERSIONS = {
+	v1: { idle: 0, peak: 1.35 },
+	v2: { idle: 0.07, peak: 1.35 }
+};
+
 const options = Array.from(document.querySelectorAll('.option'));
+const versionCards = Array.from(document.querySelectorAll('.version-card'));
 const indicator = document.querySelector('.option-indicator');
 const morphBase = document.querySelector('#morph-base');
 const morphAccent = document.querySelector('#morph-accent');
 const morphGap = document.querySelector('#morph-gap');
 
 let activeIndex = 0;
+let activeVersion = 'v1';
 let activeTl = null;
 let metaballBg = null;
 
 const motion = { scale: 0 };
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+function currentVersion() {
+	return VERSIONS[activeVersion] || VERSIONS.v1;
+}
+
 function syncShaderMotion() {
 	metaballBg?.setMotionScale(motion.scale);
 }
 
-function stopShaderMotion() {
-	motion.scale = 0;
+function restoreIdleMotion() {
+	motion.scale = reducedMotion ? 0 : currentVersion().idle;
 	syncShaderMotion();
 }
 
@@ -85,35 +97,54 @@ function setActiveOption(index) {
 	});
 }
 
+function setActiveVersion(version) {
+	if (!VERSIONS[version] || version === activeVersion) return;
+
+	activeVersion = version;
+	versionCards.forEach((btn) => {
+		const on = btn.dataset.version === version;
+		btn.classList.toggle('is-active', on);
+		btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+	});
+
+	// If a morph burst is running, let it finish into the new idle;
+	// otherwise snap idle motion immediately.
+	if (!activeTl || !activeTl.isActive()) {
+		restoreIdleMotion();
+	}
+}
+
 function goToState(index) {
 	if (index === activeIndex) return;
 	if (index < 0 || index >= STATES.length) return;
 
 	const next = STATES[index];
 	const duration = reducedMotion ? 0.01 : 0.9;
+	const { idle, peak } = currentVersion();
 
 	activeIndex = index;
 	setActiveOption(index);
 	positionIndicator(index, !reducedMotion);
 
 	if (activeTl) activeTl.kill();
-	stopShaderMotion();
+	motion.scale = reducedMotion ? 0 : idle;
+	syncShaderMotion();
 
 	activeTl = gsap.timeline({
 		defaults: { duration, ease: 'expo.inOut' },
-		onComplete: stopShaderMotion
+		onComplete: restoreIdleMotion
 	});
 
-	// Accel into motion, then brake to a stop — synced with the morph
+	// Accel from idle → peak, then brake back to idle (0 for V1, crawl for V2)
 	if (metaballBg && !reducedMotion) {
 		const accelDur = duration * 0.32;
 		const brakeDur = duration - accelDur;
 
 		activeTl.fromTo(
 			motion,
-			{ scale: 0 },
+			{ scale: idle },
 			{
-				scale: 1.35,
+				scale: peak,
 				duration: accelDur,
 				ease: 'power2.in',
 				onUpdate: syncShaderMotion
@@ -123,7 +154,7 @@ function goToState(index) {
 		activeTl.to(
 			motion,
 			{
-				scale: 0,
+				scale: idle,
 				duration: brakeDur,
 				ease: 'power3.out',
 				onUpdate: syncShaderMotion
@@ -153,16 +184,28 @@ async function init() {
 		});
 	});
 
+	versionCards.forEach((btn) => {
+		btn.addEventListener('click', () => {
+			setActiveVersion(btn.dataset.version);
+		});
+	});
+
 	window.addEventListener('resize', () => positionIndicator(activeIndex, false));
 
 	try {
 		metaballBg = await initMetaballBackground(document.getElementById('metaball-canvas'));
-		stopShaderMotion();
+		restoreIdleMotion();
 	} catch (err) {
 		console.error('Metaball background failed to start:', err);
 	}
 
 	if (!reducedMotion) {
+		gsap.from('.version-switch', {
+			opacity: 0,
+			y: -8,
+			duration: 0.5,
+			ease: 'power2.out'
+		});
 		gsap.from('.morph-card__copy', {
 			opacity: 0,
 			x: -18,

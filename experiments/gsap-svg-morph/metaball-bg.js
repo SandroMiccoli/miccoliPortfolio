@@ -172,7 +172,7 @@ export async function initMetaballBackground(canvas) {
 		const dt = Math.min(0.05, (now - lastNow) * 0.001);
 		lastNow = now;
 
-		// Only advance shader time while motion is engaged (during SVG morphs)
+		// Advance shader time by motionScale (0 = frozen, low = crawl, 1+ = burst)
 		if (!reducedMotion && motionScale > 0) {
 			shaderTime += dt * motionScale;
 		}

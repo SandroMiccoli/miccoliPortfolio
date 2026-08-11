@@ -16,7 +16,13 @@
 </head>
 <body>
 	<main class="page">
-		<section class="morph-card" aria-label="Interactive feature showcase">
+		<div class="stage">
+			<div class="version-switch" role="group" aria-label="Animation version">
+				<button type="button" class="version-card is-active" data-version="v1" aria-pressed="true">V1</button>
+				<button type="button" class="version-card" data-version="v2" aria-pressed="false">V2</button>
+			</div>
+
+			<section class="morph-card" aria-label="Interactive feature showcase">
 			<div class="morph-card__copy">
 				<ul class="option-list" role="list">
 					<li>
@@ -86,6 +92,7 @@
 				</svg>
 			</div>
 		</section>
+		</div>
 	</main>
 
 	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
