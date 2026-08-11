@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>GSAP SVG Storyboard</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<main class="page">
+		<header class="intro">
+			<div class="eyebrow">
+				<svg class="eyebrow__mark" viewBox="0 0 43 20" width="43" height="20" aria-hidden="true">
+					<circle cx="10" cy="10" r="8.5" fill="#FF6B1A"/>
+					<circle cx="33" cy="10" r="8.5" fill="#FF6B1A"/>
+				</svg>
+				<span class="eyebrow__label">Shape stories</span>
+			</div>
+
+			<h1 class="intro__heading">Three frames per beat —<br>one continuous story</h1>
+
+			<a class="intro__cta" href="#" onclick="return false;">Nice little button</a>
+		</header>
+
+		<section class="stage" aria-label="SVG storyboard interactive">
+			<div class="visual-panel" aria-hidden="true">
+				<div class="visual-panel__object" id="visual-object">
+					<svg class="morph-svg" id="svg-stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 743" fill="none">
+						<defs>
+							<!-- Pure thresholded blur = continuous metaball merge (no holes / seams). -->
+							<filter id="goo" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+								<feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur"/>
+								<feColorMatrix in="blur" mode="matrix" values="
+									1 0 0 0 0
+									0 1 0 0 0
+									0 0 1 0 0
+									0 0 0 20 -9" result="goo"/>
+							</filter>
+
+							<!-- Placeholder morph targets for other storyboards -->
+							<path id="shape-02-base" d="M 281.9 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 319.233 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 281.9 328.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 328.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 328.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 281.9 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 319.233 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 281.9 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 319.233 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0"/>
+							<path id="shape-02-accent" d="M350.657 371.657a8 8 0 1 0 0.01 0"/>
+							<path id="shape-03-base" d="M288.5 371.657a62 62 0 1 0 124.314 0a62 62 0 1 0-124.314 0"/>
+							<path id="shape-03-accent" d="M311 371.657a40 40 0 1 0 80 0a40 40 0 1 0-80 0"/>
+							<path id="shape-03-gap" d="M330 371.657a21 21 0 1 0 42 0a21 21 0 1 0-42 0"/>
+							<path id="shape-04-base" d="M380 330C395 315 420 315 435 330C450 345 450 370 435 385C425 395 410 400 395 398C380 396 365 398 355 408C345 418 345 435 355 445C365 455 385 455 395 445C405 435 410 420 408 405C406 390 408 375 418 365C428 355 440 345 440 330C440 315 425 300 410 300C395 300 385 310 380 330Z"/>
+							<path id="shape-04-accent" d="M320 330C335 315 360 315 375 330C390 345 390 370 375 385C365 395 350 400 335 398C320 396 305 398 295 408C285 418 285 435 295 445C305 455 325 455 335 445C345 435 350 420 348 405C346 390 348 375 358 365C368 355 380 345 380 330C380 315 365 300 350 300C335 300 325 310 320 330Z"/>
+							<path id="shape-05-base" d="M295 315h40v40H295z M365 315h40v40H365z M295 385h40v40H295z M365 385h40v40H365z"/>
+							<path id="shape-05-accent" d="M330 350h40v40H330z"/>
+							<path id="shape-06-base" d="M350.657 300 L420 371.657 L350.657 443 L281 371.657 Z"/>
+							<path id="shape-06-accent" d="M350.657 335 L385 371.657 L350.657 408 L316 371.657 Z"/>
+							<path id="shape-gap-hidden" d="M350.657 371.657h0.01v0.01H350.657z"/>
+							<path id="s1-f1-accent" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0"/>
+							<path id="s1-f1-soft" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0"/>
+						</defs>
+
+						<!-- Storyboard 0: Form cluster — gooey metaball release -->
+						<g id="story-metaball" class="story-layer is-active">
+							<g id="goo-group" filter="url(#goo)">
+								<rect id="meta-core" x="267" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
+								<circle id="blob-0" class="meta-blob" cx="400" cy="322" r="34" fill="#211E26"/>
+								<circle id="blob-1" class="meta-blob" cx="301" cy="322" r="34" fill="#211E26"/>
+								<circle id="blob-2" class="meta-blob" cx="301" cy="420" r="34" fill="#211E26"/>
+								<circle id="blob-3" class="meta-blob" cx="400" cy="420" r="34" fill="#211E26"/>
+							</g>
+							<g id="soft-dots" opacity="0">
+								<circle cx="191.2" cy="252.2" r="43" fill="#F46B1A" opacity="0.3"/>
+								<circle cx="584.2" cy="260.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+								<circle cx="106.1" cy="504.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+								<circle cx="584.2" cy="655.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+							</g>
+						</g>
+
+						<!-- Storyboard 1: Signal grid — dispersion → call → connect → order -->
+						<g id="story-signal" class="story-layer" visibility="hidden">
+							<!-- Soft peach echoes (5) -->
+							<g id="s2-soft">
+								<g class="s2-float" data-amp="5" data-dur="2.4" data-delay="0">
+									<circle cx="191.2" cy="252.2" r="43" fill="#F46B1A" opacity="0.3"/>
+								</g>
+								<g class="s2-float" data-amp="4" data-dur="2.1" data-delay="0.35">
+									<circle cx="584.2" cy="260.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+								</g>
+								<g class="s2-float" data-amp="6" data-dur="2.7" data-delay="0.15">
+									<circle cx="106.2" cy="109.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+								</g>
+								<g class="s2-float" data-amp="4.5" data-dur="2.2" data-delay="0.55">
+									<circle cx="106.1" cy="504.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+								</g>
+								<g class="s2-float" data-amp="5.5" data-dur="2.55" data-delay="0.25">
+									<circle cx="584.2" cy="655.2" r="42.5" fill="#F46B1A" opacity="0.2"/>
+								</g>
+							</g>
+
+							<!-- Tendrils grow from core AND from each solid toward each other -->
+							<g id="s2-tendrils" stroke="#F46B1A" stroke-linecap="round" fill="none">
+								<line id="s2-t0" x1="381.32" y1="288" x2="381.32" y2="288" stroke-width="0"/>
+								<line id="s2-t1" x1="319.02" y1="455.31" x2="319.02" y2="455.31" stroke-width="0"/>
+								<line id="s2-t2" x1="421.53" y1="438.71" x2="421.53" y2="438.71" stroke-width="0"/>
+								<line id="s2-b0" x1="422.72" y1="175.06" x2="422.72" y2="175.06" stroke-width="0"/>
+								<line id="s2-b1" x1="268.25" y1="589.55" x2="268.25" y2="589.55" stroke-width="0"/>
+								<line id="s2-b2" x1="467.96" y1="482.65" x2="467.96" y2="482.65" stroke-width="0"/>
+							</g>
+
+							<!-- 3 saturated solids -->
+							<g id="s2-solids">
+								<g class="s2-float" data-amp="3.5" data-dur="2.35" data-delay="0.1">
+									<circle id="s2-blob-0" cx="443.2" cy="119.2" r="59.5" fill="#F46B1A"/>
+								</g>
+								<g class="s2-float" data-amp="4" data-dur="2.6" data-delay="0.4">
+									<circle id="s2-blob-1" cx="247.2" cy="645.2" r="59.5" fill="#F46B1A"/>
+								</g>
+								<g class="s2-float" data-amp="3" data-dur="2.15" data-delay="0.2">
+									<circle id="s2-blob-2" cx="499.2" cy="512.2" r="43" fill="#F46B1A"/>
+								</g>
+							</g>
+
+							<rect id="s2-core" x="267" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
+						</g>
+
+						<!-- Storyboard 2: Nested focus — branch → retract → merge → mark -->
+						<g id="story-converge" class="story-layer" visibility="hidden">
+							<g id="s3-links" stroke="#F46B1A" stroke-linecap="round" fill="none">
+								<line id="s3-l0" x1="317.31" y1="310" x2="436" y2="268" stroke-width="8"/>
+								<line id="s3-l1" x1="317.31" y1="371.66" x2="436" y2="371.66" stroke-width="8"/>
+								<line id="s3-l2" x1="317.31" y1="433.31" x2="436" y2="475.31" stroke-width="8"/>
+							</g>
+							<!-- Midpoint bud → vertical tick (plus mark) -->
+							<rect id="s3-mark" x="371.66" y="371.66" width="10" height="0" rx="5" fill="#F46B1A" opacity="0"/>
+							<g id="s3-balls">
+								<circle id="s3-ball-0" cx="478" cy="268" r="42" fill="#F46B1A"/>
+								<circle id="s3-ball-1" cx="478" cy="371.66" r="42" fill="#F46B1A"/>
+								<circle id="s3-ball-2" cx="478" cy="475.31" r="42" fill="#F46B1A"/>
+							</g>
+							<rect id="s3-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
+						</g>
+
+						<!-- Storyboard 3: Linked path — settle → reveal orbit → bud → travel -->
+						<g id="story-orbit" class="story-layer" visibility="hidden">
+							<ellipse id="s4-orbit" cx="351" cy="371.66" rx="586" ry="367" fill="none" stroke="#211E26" stroke-width="3.1" opacity="0"/>
+							<line id="s4-link" x1="317.31" y1="371.66" x2="436" y2="371.66" stroke="#F46B1A" stroke-width="6" stroke-linecap="round"/>
+							<rect id="s4-mark" x="371.66" y="319.66" width="10" height="104" rx="5" fill="#F46B1A"/>
+							<circle id="s4-ball" cx="478" cy="371.66" r="42" fill="#211E26"/>
+							<!-- Seed: lozenge → circle, travels the ellipse -->
+							<ellipse id="s4-seed" cx="351" cy="182.5" rx="0" ry="0" fill="#F46B1A" opacity="0"/>
+							<rect id="s4-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
+						</g>
+
+						<!-- Unused MorphSVG stage (legacy fallback) -->
+						<g id="story-morph" class="story-layer" visibility="hidden">
+							<path id="morph-base" class="morph-base" d="M317 288H384.314A50 50 0 0 1 434.314 338V405.314A50 50 0 0 1 384.314 455.314H317A50 50 0 0 1 267 405.314V338A50 50 0 0 1 317 288Z"/>
+							<path id="morph-accent" class="morph-accent" fill-rule="evenodd" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0" opacity="0"/>
+							<path id="morph-gap" class="morph-gap" fill-rule="evenodd" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0" opacity="0"/>
+						</g>
+					</svg>
+				</div>
+			</div>
+
+			<div class="accordion" role="list">
+				<article class="acc-item is-open" data-index="0" role="listitem">
+					<button class="acc-item__trigger" type="button" aria-expanded="true">
+						<span class="acc-item__icon acc-item__icon--scatter" aria-hidden="true">
+							<span></span><span></span><span></span>
+							<span></span><span></span>
+							<span></span><span></span>
+						</span>
+						<span class="acc-item__title">Form cluster</span>
+					</button>
+					<div class="acc-item__panel">
+						<div class="acc-item__panel-inner">
+							<p class="acc-item__copy">Related masses pull together until they read as a single silhouette. Accent marks hitch along for the ride, then settle into the new balance.</p>
+							<div class="acc-item__stats">
+								<div class="stat">
+									<p class="stat__value">3 frames</p>
+									<p class="stat__label">states in this storyboard loop</p>
+								</div>
+								<div class="stat">
+									<p class="stat__value">0.85s</p>
+									<p class="stat__label">ease into the opening pose</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</article>
+
+				<article class="acc-item" data-index="1" role="listitem">
+					<button class="acc-item__trigger" type="button" aria-expanded="false">
+						<span class="acc-item__icon acc-item__icon--grid" aria-hidden="true">
+							<span></span><span></span><span></span>
+							<span></span><span></span><span></span>
+							<span></span><span></span><span></span>
+						</span>
+						<span class="acc-item__title">Signal grid</span>
+					</button>
+					<div class="acc-item__panel">
+						<div class="acc-item__panel-inner">
+							<p class="acc-item__copy">Eight loose signals. Three get called, then connected; the rest dissolve. The node slides left and the three pin into clean order.</p>
+							<div class="acc-item__stats">
+								<div class="stat">
+									<p class="stat__value">4 frames</p>
+									<p class="stat__label">disperse → call → connect → order</p>
+								</div>
+								<div class="stat">
+									<p class="stat__value">8 → 3</p>
+									<p class="stat__label">field of possibles to selected pins</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</article>
+
+				<article class="acc-item" data-index="2" role="listitem">
+					<button class="acc-item__trigger" type="button" aria-expanded="false">
+						<span class="acc-item__icon acc-item__icon--grid" aria-hidden="true">
+							<span></span><span></span><span></span>
+							<span></span><span></span><span></span>
+							<span></span><span></span><span></span>
+						</span>
+						<span class="acc-item__title">Nested focus</span>
+					</button>
+					<div class="acc-item__panel">
+						<div class="acc-item__panel-inner">
+							<p class="acc-item__copy">Three branches retract into one. The surviving signal settles to the square’s own dark tone, then stamps a mark at the midpoint of the connection.</p>
+							<div class="acc-item__stats">
+								<div class="stat">
+									<p class="stat__value">4 frames</p>
+									<p class="stat__label">branch → retract → merge → mark</p>
+								</div>
+								<div class="stat">
+									<p class="stat__value">3 → 1</p>
+									<p class="stat__label">multiplicity resolves into unity</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</article>
+
+				<article class="acc-item" data-index="3" role="listitem">
+					<button class="acc-item__trigger" type="button" aria-expanded="false">
+						<span class="acc-item__icon acc-item__icon--grid" aria-hidden="true">
+							<span></span><span></span><span></span>
+							<span></span><span></span><span></span>
+							<span></span><span></span><span></span>
+						</span>
+						<span class="acc-item__title">Linked path</span>
+					</button>
+					<div class="acc-item__panel">
+						<div class="acc-item__panel-inner">
+							<p class="acc-item__copy">The settled core summons an orbit. Residual mark energy buds onto the ring, then the seed launches and keeps traveling the loop.</p>
+							<div class="acc-item__stats">
+								<div class="stat">
+									<p class="stat__value">4 frames</p>
+									<p class="stat__label">settle → reveal → bud → orbit</p>
+								</div>
+								<div class="stat">
+									<p class="stat__value">Open loop</p>
+									<p class="stat__label">path expands; motion keeps going</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</article>
+			</div>
+		</section>
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+	<script type="module" src="main.js"></script>
+</body>
+</html>
