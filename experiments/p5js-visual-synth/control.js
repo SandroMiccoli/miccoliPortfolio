@@ -2,11 +2,21 @@
 	let uiApi = null;
 	let applyingRemote = false;
 
+	let warnedOffline = false;
+
 	function setStatus(on) {
 		const el = document.getElementById('sync-status');
 		if (!el) return;
 		el.textContent = on ? 'Connected' : 'Reconnecting…';
 		el.classList.toggle('is-on', on);
+		if (!window.SynthNotify) return;
+		if (on) {
+			SynthNotify.show('success', 'Connected to Visual Synth');
+			warnedOffline = false;
+		} else if (!warnedOffline) {
+			warnedOffline = true;
+			SynthNotify.show('warning', 'Connection lost. Reconnecting…');
+		}
 	}
 
 	function userPatch(patch) {
@@ -34,7 +44,13 @@
 				SynthState.replace(state);
 				applyingRemote = false;
 			},
-			onStatus: setStatus
+			onStatus: setStatus,
+			onNotify: function (level, message) {
+				if (window.SynthNotify) SynthNotify.show(level, message);
+			},
+			onStats: function (stats) {
+				if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
+			}
 		});
 	});
 })();

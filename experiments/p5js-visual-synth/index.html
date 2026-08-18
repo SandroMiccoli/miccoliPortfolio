@@ -14,27 +14,30 @@
 <body class="synth-body synth-display">
 	<div id="app" class="synth-stage"></div>
 
-	<button type="button" id="synth-handle" class="synth-handle" aria-label="Open controls" aria-expanded="false">
-		<span class="synth-handle__bar"></span>
-		<span class="synth-handle__label">CTRL</span>
-	</button>
+	<button type="button" id="synth-handle" class="synth-handle" hidden aria-hidden="true"></button>
 
 	<aside id="ui-root" class="synth-panel" aria-label="Visual Synth controls"></aside>
 
 	<button type="button" id="qr-btn" class="synth-qr-btn" hidden aria-label="Show access QR code">QR</button>
 
+	<div id="debug-hud" class="synth-debug-hud" hidden>
+		<div>FPS <span id="debug-fps">—</span></div>
+		<div>CPU <span id="debug-temp">—</span></div>
+	</div>
+
 	<div id="boot-overlay" class="synth-boot" hidden>
 		<div class="synth-boot__card">
 			<p class="synth-boot__kicker">Fullscreen visual instrument</p>
 			<h1 class="synth-boot__title">VISUAL SYNTH</h1>
-			<p id="boot-url" class="synth-boot__url">http://visual.local</p>
+			<p id="boot-url" class="synth-boot__url">http://visual-synth.local:8080</p>
 			<div id="boot-qr" class="synth-boot__qr"></div>
-			<p class="synth-boot__hint">Scan to control from your phone. Tap to enter.</p>
+			<p class="synth-boot__hint">Scan to control from your phone</p>
 		</div>
 	</div>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 	<script src="state.js"></script>
+	<script src="notify.js"></script>
 	<script src="shaders.js"></script>
 	<script src="camera.js"></script>
 	<script src="engine.js"></script>

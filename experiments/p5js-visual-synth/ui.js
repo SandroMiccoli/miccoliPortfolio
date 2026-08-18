@@ -89,6 +89,23 @@
 		camSection.appendChild(camToggle);
 		rootEl.appendChild(camSection);
 
+		const debugSection = el('section', 'synth-section');
+		debugSection.appendChild(el('h2', 'synth-section__label', 'Debug'));
+		const debugToggle = el('button', 'synth-btn synth-toggle', 'OFF');
+		debugToggle.type = 'button';
+		debugToggle.addEventListener('click', function () {
+			const debug = getState().debug || {};
+			patch({ debug: { enabled: !debug.enabled } });
+		});
+		debugSection.appendChild(debugToggle);
+		const debugStats = el('div', 'synth-debug-stats');
+		const fpsLine = el('p', 'synth-debug-stats__line', 'FPS —');
+		const tempLine = el('p', 'synth-debug-stats__line', 'CPU —');
+		debugStats.appendChild(fpsLine);
+		debugStats.appendChild(tempLine);
+		debugSection.appendChild(debugStats);
+		rootEl.appendChild(debugSection);
+
 		const blendSection = el('section', 'synth-section');
 		blendSection.appendChild(el('h2', 'synth-section__label', 'Blend'));
 
@@ -213,6 +230,16 @@
 
 			camToggle.textContent = s.camera.enabled ? 'ON' : 'OFF';
 			camToggle.classList.toggle('is-active', s.camera.enabled);
+			debugToggle.textContent = (s.debug && s.debug.enabled) ? 'ON' : 'OFF';
+			debugToggle.classList.toggle('is-active', !!(s.debug && s.debug.enabled));
+			debugStats.hidden = !(s.debug && s.debug.enabled);
+		}
+
+		function refreshStats(stats) {
+			if (!stats) return;
+			if (stats.fps != null) fpsLine.textContent = 'FPS ' + Number(stats.fps).toFixed(1);
+			if (stats.tempC == null) tempLine.textContent = 'CPU —';
+			else tempLine.textContent = 'CPU ' + Number(stats.tempC).toFixed(1) + ' °C';
 		}
 
 		rootEl.addEventListener('pointerdown', function (event) {
@@ -226,7 +253,7 @@
 		});
 
 		refresh();
-		return { refresh: refresh };
+		return { refresh: refresh, refreshStats: refreshStats };
 	}
 
 	root.SynthUI = { mount: mount };
