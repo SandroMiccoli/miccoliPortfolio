@@ -19,10 +19,10 @@
 		capture = null;
 	}
 
-	function start(onFail) {
+	function start(onFail, onSuccess) {
 		if (capture || starting) return;
 		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-			if (onFail) onFail(new Error('Camera not available'));
+			if (onFail) onFail(new Error('Camera not available in this browser'));
 			return;
 		}
 
@@ -30,30 +30,39 @@
 		ready = false;
 
 		try {
-			capture = createCapture({ video: true, audio: false }, function () {
+			let announced = false;
+			function succeed() {
+				if (announced || !capture) return;
+				announced = true;
+				clearTimeout(watchdog);
 				starting = false;
 				ready = true;
-			});
-			capture.elt.setAttribute('playsinline', 'true');
-			capture.elt.setAttribute('muted', 'true');
-			capture.hide();
+				if (onSuccess) onSuccess();
+			}
 
 			const watchdog = setTimeout(function () {
 				if (!ready) {
 					stop();
-					if (onFail) onFail(new Error('Camera timeout'));
+					if (onFail) onFail(new Error('Camera timed out. Check the device and permissions.'));
 				}
 			}, 5000);
 
-			capture.elt.addEventListener('loadeddata', function () {
+			capture = createCapture({ video: true, audio: false }, succeed);
+			capture.elt.setAttribute('playsinline', 'true');
+			capture.elt.setAttribute('muted', 'true');
+			capture.hide();
+
+			capture.elt.addEventListener('loadeddata', succeed);
+
+			capture.elt.addEventListener('error', function () {
 				clearTimeout(watchdog);
-				starting = false;
-				ready = true;
+				stop();
+				if (onFail) onFail(new Error('Camera device error'));
 			});
 		} catch (err) {
 			starting = false;
 			stop();
-			if (onFail) onFail(err);
+			if (onFail) onFail(err || new Error('Camera failed'));
 		}
 	}
 

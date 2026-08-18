@@ -19,6 +19,18 @@ body.synth-body {
 
 body.synth-display {
 	touch-action: none;
+	cursor: none;
+}
+
+body.synth-display.is-cursor-visible,
+body.synth-display.is-cursor-visible * {
+	cursor: default;
+}
+
+body.synth-display.is-cursor-visible button,
+body.synth-display.is-cursor-visible input,
+body.synth-display.is-cursor-visible select {
+	cursor: pointer;
 }
 
 body.synth-control {
@@ -42,46 +54,7 @@ body.synth-control {
 }
 
 .synth-handle {
-	position: fixed;
-	top: 50%;
-	right: 0;
-	z-index: 140;
-	transform: translateY(-50%);
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 14px 10px 14px 12px;
-	border: 1px solid rgba(255, 255, 255, 0.18);
-	border-right: 0;
-	border-radius: 10px 0 0 10px;
-	background: rgba(8, 8, 10, 0.78);
-	color: #fff;
-	cursor: pointer;
-	backdrop-filter: blur(10px);
-}
-
-.synth-handle__bar {
-	width: 3px;
-	height: 28px;
-	border-radius: 2px;
-	background: #fff;
-	opacity: 0.85;
-}
-
-.synth-handle__label {
-	writing-mode: vertical-rl;
-	transform: rotate(180deg);
-	font-size: 10px;
-	letter-spacing: 0.18em;
-	font-weight: 700;
-}
-
-.synth-handle.is-open {
-	right: min(320px, 86vw);
-}
-
-.lab-body .synth-handle {
-	top: calc(50% + 24px);
+	display: none !important;
 }
 
 .synth-panel {
@@ -215,6 +188,13 @@ body.synth-control {
 	justify-content: center;
 	background: rgba(0, 0, 0, 0.72);
 	cursor: pointer;
+	opacity: 1;
+	transition: opacity 0.9s ease;
+}
+
+.synth-boot.is-leaving {
+	opacity: 0;
+	pointer-events: none;
 }
 
 .synth-boot[hidden],
@@ -278,6 +258,14 @@ body.synth-control {
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	cursor: pointer;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.25s ease;
+}
+
+body.is-chrome-visible .synth-qr-btn:not([hidden]) {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 .lab-body .synth-qr-btn {
@@ -299,4 +287,118 @@ body.synth-control {
 
 .synth-status.is-on {
 	opacity: 0.9;
+}
+
+.synth-toasts {
+	position: fixed;
+	top: 16px;
+	left: 50%;
+	z-index: 180;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: min(420px, calc(100vw - 24px));
+	transform: translateX(-50%);
+	pointer-events: none;
+}
+
+.synth-toast {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px 12px 16px;
+	border-radius: 8px;
+	border: 4px solid #888;
+	border-left-width: 12px;
+	background: rgba(10, 10, 12, 0.94);
+	backdrop-filter: blur(12px);
+	opacity: 0;
+	transform: translateY(-8px);
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.synth-toast.is-in {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.synth-toast.is-out {
+	opacity: 0;
+	transform: translateY(-8px);
+}
+
+.synth-toast__kind {
+	flex: 0 0 auto;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	padding-top: 2px;
+}
+
+.synth-toast__msg {
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.synth-toast--success {
+	border-color: #2ee36a;
+	background: rgba(8, 28, 16, 0.95);
+}
+
+.synth-toast--success .synth-toast__kind {
+	color: #2ee36a;
+}
+
+.synth-toast--warning {
+	border-color: #ffd000;
+	background: rgba(32, 24, 4, 0.95);
+}
+
+.synth-toast--warning .synth-toast__kind {
+	color: #ffd000;
+}
+
+.synth-toast--error {
+	border-color: #ff3b3b;
+	background: rgba(36, 8, 8, 0.95);
+}
+
+.synth-toast--error .synth-toast__kind {
+	color: #ff3b3b;
+}
+
+.synth-debug-hud {
+	position: fixed;
+	top: 12px;
+	left: 12px;
+	z-index: 120;
+	padding: 8px 10px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 6px;
+	background: rgba(0, 0, 0, 0.55);
+	font-family: ui-monospace, "Cascadia Code", monospace;
+	font-size: 12px;
+	letter-spacing: 0.04em;
+	line-height: 1.45;
+	pointer-events: none;
+}
+
+.synth-debug-hud[hidden] {
+	display: none !important;
+}
+
+.synth-debug-stats {
+	margin-top: 10px;
+	font-family: ui-monospace, "Cascadia Code", monospace;
+	font-size: 12px;
+	opacity: 0.8;
+}
+
+.synth-debug-stats[hidden] {
+	display: none !important;
+}
+
+.synth-debug-stats__line {
+	margin-bottom: 4px;
 }

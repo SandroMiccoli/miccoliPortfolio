@@ -54,6 +54,10 @@
 				handlers.onState(msg.state);
 			} else if (msg.type === 'info' && handlers.onInfo) {
 				handlers.onInfo(msg);
+			} else if (msg.type === 'notify' && handlers.onNotify) {
+				handlers.onNotify(msg.level, msg.message);
+			} else if (msg.type === 'stats' && handlers.onStats) {
+				handlers.onStats(msg);
 			}
 		});
 
@@ -76,6 +80,12 @@
 		connect: connect,
 		sendPatch: function (patch) {
 			send({ type: 'patch', patch: patch });
+		},
+		sendNotify: function (level, message) {
+			send({ type: 'notify', level: level, message: message });
+		},
+		sendStats: function (fps) {
+			send({ type: 'stats', fps: fps });
 		},
 		connected: function () {
 			return connected;

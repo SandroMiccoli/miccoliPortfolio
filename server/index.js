@@ -1,5 +1,6 @@
 const http = require('http');
 const os = require('os');
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { WebSocketServer } = require('ws');
@@ -34,6 +35,9 @@ const DEFAULT_STATE = {
 		opacity: 0.45,
 		blendMode: 'screen',
 		intensity: 1
+	},
+	debug: {
+		enabled: false
 	}
 };
 
@@ -75,7 +79,18 @@ function lanAddress() {
 }
 
 function mdnsHost() {
-	return String(os.hostname() || 'visual').split('.')[0] + '.local';
+	return String(os.hostname() || 'visual-synth').split('.')[0] + '.local';
+}
+
+function readCpuTemp() {
+	try {
+		const raw = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8');
+		const milli = Number(raw);
+		if (!Number.isFinite(milli)) return null;
+		return milli / 1000;
+	} catch (err) {
+		return null;
+	}
 }
 
 function originFor(host, port) {
@@ -108,7 +123,7 @@ function listen(server, port) {
 
 async function start() {
 	const app = express();
-	let port = Number(process.env.PORT) || 80;
+	let port = Number(process.env.PORT) || 8080;
 	let state = clone(DEFAULT_STATE);
 
 	app.get('/api/info', (_req, res) => {
@@ -118,11 +133,27 @@ async function start() {
 
 	const server = http.createServer(app);
 	const wss = new WebSocketServer({ server });
+	let latestStats = { fps: null, tempC: readCpuTemp() };
 
 	function broadcastState() {
 		const packed = JSON.stringify({ type: 'state', state: state });
 		wss.clients.forEach((client) => {
 			if (client.readyState === 1) client.send(packed);
+		});
+	}
+
+	function broadcast(payload, except) {
+		const packed = JSON.stringify(payload);
+		wss.clients.forEach((client) => {
+			if (client !== except && client.readyState === 1) client.send(packed);
+		});
+	}
+
+	function broadcastStats() {
+		latestStats.tempC = readCpuTemp();
+		const payload = { type: 'stats', fps: latestStats.fps, tempC: latestStats.tempC };
+		wss.clients.forEach((client) => {
+			if (client.readyState === 1) client.send(JSON.stringify(payload));
 		});
 	}
 
@@ -138,15 +169,29 @@ async function start() {
 			if (msg.type === 'hello') {
 				ws.send(JSON.stringify({ type: 'state', state: state }));
 				ws.send(JSON.stringify(Object.assign({ type: 'info' }, makeInfo(port))));
+				ws.send(JSON.stringify({ type: 'stats', fps: latestStats.fps, tempC: latestStats.tempC }));
 				return;
 			}
 
 			if (msg.type === 'patch' && msg.patch) {
 				state = deepMerge(state, msg.patch);
 				broadcastState();
+				return;
+			}
+
+			if (msg.type === 'notify' && msg.message) {
+				broadcast({ type: 'notify', level: msg.level || 'warning', message: msg.message }, ws);
+				return;
+			}
+
+			if (msg.type === 'stats' && msg.fps != null) {
+				latestStats.fps = Number(msg.fps);
+				broadcastStats();
 			}
 		});
 	});
+
+	setInterval(broadcastStats, 2000);
 
 	const preferred = port;
 	try {

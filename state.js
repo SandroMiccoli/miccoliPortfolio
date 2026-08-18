@@ -27,6 +27,9 @@
 			opacity: 0.45,
 			blendMode: 'screen',
 			intensity: 1
+		},
+		debug: {
+			enabled: false
 		}
 	};
 
