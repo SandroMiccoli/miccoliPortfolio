@@ -45,6 +45,14 @@ body.synth-body {
 	-webkit-tap-highlight-color: transparent;
 }
 
+html.synth-html--control,
+html.synth-html--control body.synth-control {
+	height: auto;
+	min-height: 100%;
+	min-height: 100dvh;
+	overflow: visible;
+}
+
 body.synth-display,
 body.synth-display * {
 	cursor: none !important;
@@ -55,13 +63,9 @@ body.synth-display {
 }
 
 body.synth-control {
-	height: auto;
-	min-height: 100vh;
-	min-height: 100dvh;
 	max-width: 520px;
 	margin: 0 auto;
-	overflow: auto;
-	overscroll-behavior-y: contain;
+	overflow: visible;
 	touch-action: pan-y;
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
