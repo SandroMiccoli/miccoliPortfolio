@@ -2,7 +2,6 @@
 	const EDGE = 48;
 	const BOOT_MS = 10000;
 	const CHROME_IDLE_MS = 2800;
-	const CURSOR_IDLE_MS = 1800;
 	let uiApi = null;
 	let panelOpen = false;
 	let applyingRemote = false;
@@ -10,7 +9,6 @@
 	let lastInfo = null;
 	let bootShown = false;
 	let chromeTimer = 0;
-	let cursorTimer = 0;
 	let lastFpsSent = 0;
 	let cameraAnnouncedOn = false;
 
@@ -54,25 +52,14 @@
 		}, CHROME_IDLE_MS);
 	}
 
-	function showCursor() {
-		document.body.classList.add('is-cursor-visible');
-		clearTimeout(cursorTimer);
-		if (panelOpen) return;
-		cursorTimer = setTimeout(function () {
-			if (!panelOpen) document.body.classList.remove('is-cursor-visible');
-		}, CURSOR_IDLE_MS);
-	}
-
 	function setupIdleChrome() {
-		window.addEventListener('pointermove', function (event) {
+		window.addEventListener('pointermove', function () {
 			if (bootIsUp()) return;
-			if (event.pointerType === 'mouse') showCursor();
 			revealChrome();
 		});
 		window.addEventListener('pointerdown', function (event) {
 			if (event.target.closest && event.target.closest('#boot-overlay')) return;
 			if (bootIsUp()) return;
-			if (event.pointerType === 'mouse') showCursor();
 			revealChrome();
 		});
 	}
@@ -209,9 +196,19 @@
 	function updateDebugHud(stats) {
 		const fpsEl = document.getElementById('debug-fps');
 		const tempEl = document.getElementById('debug-temp');
-		if (fpsEl && stats.fps != null) fpsEl.textContent = Number(stats.fps).toFixed(1);
-		if (tempEl) {
-			tempEl.textContent = stats.tempC == null ? '—' : Number(stats.tempC).toFixed(1) + '°C';
+		const meters = window.SynthMeters;
+		if (fpsEl && stats.fps != null) {
+			fpsEl.textContent = Number(stats.fps).toFixed(1);
+			if (meters) meters.apply(fpsEl, meters.fpsTone(stats.fps));
+		}
+		if (tempEl && Object.prototype.hasOwnProperty.call(stats, 'tempC')) {
+			if (stats.tempC == null) {
+				tempEl.textContent = '-';
+				if (meters) meters.apply(tempEl, '');
+			} else {
+				tempEl.textContent = Number(stats.tempC).toFixed(1) + '°C';
+				if (meters) meters.apply(tempEl, meters.tempTone(stats.tempC));
+			}
 		}
 		if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 	}
@@ -223,10 +220,11 @@
 			SynthCamera.start(function (err) {
 				cameraAnnouncedOn = false;
 				notifyAll('error', (err && err.message) || 'Camera failed');
-				userPatch({ camera: { enabled: false } });
+				userPatch({ camera: { enabled: false, connected: false } });
 			}, function () {
 				cameraAnnouncedOn = true;
 				notifyAll('success', 'Camera on');
+				userPatch({ camera: { connected: true } });
 			});
 		} else {
 			const wasLive = SynthCamera.ready() || SynthCamera.isStarting() || cameraAnnouncedOn;
@@ -235,6 +233,9 @@
 				notifyAll('success', 'Camera off');
 			}
 			cameraAnnouncedOn = false;
+			if (state.camera.connected) {
+				userPatch({ camera: { connected: false } });
+			}
 		}
 	}
 
@@ -245,6 +246,7 @@
 		canvas.parent(parent);
 		pixelDensity(1);
 		frameRate(30);
+		noCursor();
 
 		SynthEngine.init();
 
@@ -292,13 +294,12 @@
 	}
 
 	function draw() {
+		noCursor();
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
 		if (state.debug && state.debug.enabled) {
 			const fps = frameRate();
-			const fpsEl = document.getElementById('debug-fps');
-			if (fpsEl) fpsEl.textContent = fps.toFixed(1);
-			if (uiApi && uiApi.refreshStats) uiApi.refreshStats({ fps: fps });
+			updateDebugHud({ fps: fps });
 			if (millis() - lastFpsSent > 500) {
 				lastFpsSent = millis();
 				SynthSync.sendStats(fps);

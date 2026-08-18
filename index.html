@@ -3,6 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<meta name="theme-color" content="#101010">
 	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
 	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
 	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
@@ -21,14 +22,13 @@
 	<button type="button" id="qr-btn" class="synth-qr-btn" hidden aria-label="Show access QR code">QR</button>
 
 	<div id="debug-hud" class="synth-debug-hud" hidden>
-		<div>FPS <span id="debug-fps">—</span></div>
-		<div>CPU <span id="debug-temp">—</span></div>
+		<div>FPS <span id="debug-fps" class="synth-meter">-</span></div>
+		<div>CPU <span id="debug-temp" class="synth-meter">-</span></div>
 	</div>
 
 	<div id="boot-overlay" class="synth-boot" hidden>
 		<div class="synth-boot__card">
-			<p class="synth-boot__kicker">Fullscreen visual instrument</p>
-			<h1 class="synth-boot__title">VISUAL SYNTH</h1>
+			<h1 class="synth-boot__title">Synth</h1>
 			<p id="boot-url" class="synth-boot__url">http://visual-synth.local:8080</p>
 			<div id="boot-qr" class="synth-boot__qr"></div>
 			<p class="synth-boot__hint">Scan to control from your phone</p>

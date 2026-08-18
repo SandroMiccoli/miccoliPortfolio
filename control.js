@@ -3,11 +3,17 @@
 	let applyingRemote = false;
 
 	let warnedOffline = false;
+	let seenLive = false;
 
 	function setStatus(on) {
 		const el = document.getElementById('sync-status');
 		if (!el) return;
-		el.textContent = on ? 'Connected' : 'Reconnecting…';
+		if (on) {
+			el.textContent = 'Connected';
+			seenLive = true;
+		} else {
+			el.textContent = seenLive ? 'Reconnecting' : 'Connecting';
+		}
 		el.classList.toggle('is-on', on);
 		if (!window.SynthNotify) return;
 		if (on) {
@@ -15,7 +21,7 @@
 			warnedOffline = false;
 		} else if (!warnedOffline) {
 			warnedOffline = true;
-			SynthNotify.show('warning', 'Connection lost. Reconnecting…');
+			SynthNotify.show('warning', 'Connection lost. Reconnecting.');
 		}
 	}
 
