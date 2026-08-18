@@ -5,14 +5,17 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="mobile-web-app-capable" content="yes">
-	<title>Visual Synth — Control</title>
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="theme-color" content="#101010">
+	<title>Visual Synth Control</title>
 	<link rel="stylesheet" href="style.css">
 </head>
 <body class="synth-body synth-control">
-	<header class="synth-control-head">
-		<p class="synth-boot__kicker">Remote</p>
-		<h1 class="synth-control-head__title">VISUAL SYNTH</h1>
-		<p id="sync-status" class="synth-status">Connecting…</p>
+	<header class="synth-chrome">
+		<div class="synth-chrome__inner">
+			<h1 class="synth-chrome__title">Visual Synth</h1>
+			<p id="sync-status" class="synth-status">Connecting</p>
+		</div>
 	</header>
 	<main id="ui-root" class="synth-panel is-open is-page" aria-label="Visual Synth controls"></main>
 
