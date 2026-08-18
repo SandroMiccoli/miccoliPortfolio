@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>Visual Synth</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body class="synth-body synth-display">
+	<div id="app" class="synth-stage"></div>
+
+	<button type="button" id="synth-handle" class="synth-handle" aria-label="Open controls" aria-expanded="false">
+		<span class="synth-handle__bar"></span>
+		<span class="synth-handle__label">CTRL</span>
+	</button>
+
+	<aside id="ui-root" class="synth-panel" aria-label="Visual Synth controls"></aside>
+
+	<button type="button" id="qr-btn" class="synth-qr-btn" hidden aria-label="Show access QR code">QR</button>
+
+	<div id="boot-overlay" class="synth-boot" hidden>
+		<div class="synth-boot__card">
+			<p class="synth-boot__kicker">Fullscreen visual instrument</p>
+			<h1 class="synth-boot__title">VISUAL SYNTH</h1>
+			<p id="boot-url" class="synth-boot__url">http://visual.local</p>
+			<div id="boot-qr" class="synth-boot__qr"></div>
+			<p class="synth-boot__hint">Scan to control from your phone. Tap to enter.</p>
+		</div>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+	<script src="state.js"></script>
+	<script src="shaders.js"></script>
+	<script src="camera.js"></script>
+	<script src="engine.js"></script>
+	<script src="ui.js"></script>
+	<script src="sync.js"></script>
+	<script src="main.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+</body>
+</html>
