@@ -144,26 +144,7 @@ body,
 }
 
 .story-layer {
-	visibility: hidden;
-	opacity: 0;
 	pointer-events: none;
-}
-
-.story-layer.is-active {
-	visibility: visible;
-	opacity: 1;
-}
-
-.morph-base {
-	fill: #211e26;
-}
-
-.morph-accent {
-	fill: #f46b1a;
-}
-
-.morph-gap {
-	fill: #f46b1a;
 }
 
 .accordion {

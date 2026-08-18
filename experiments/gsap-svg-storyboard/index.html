@@ -35,7 +35,7 @@
 				<div class="visual-panel__object" id="visual-object">
 					<svg class="morph-svg" id="svg-stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702 743" fill="none">
 						<defs>
-							<!-- Pure thresholded blur = continuous metaball merge (no holes / seams). -->
+							<!-- Thresholded blur = continuous metaball merge. -->
 							<filter id="goo" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
 								<feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur"/>
 								<feColorMatrix in="blur" mode="matrix" values="
@@ -44,22 +44,6 @@
 									0 0 1 0 0
 									0 0 0 20 -9" result="goo"/>
 							</filter>
-
-							<!-- Placeholder morph targets for other storyboards -->
-							<path id="shape-02-base" d="M 281.9 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 319.233 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 310 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 281.9 328.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 328.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 328.667 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 281.9 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 319.233 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 347.333 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 281.9 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 300.567 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 319.233 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0 M 337.9 366 a 7.1 7.1 0 1 0 14.2 0 a 7.1 7.1 0 1 0 -14.2 0"/>
-							<path id="shape-02-accent" d="M350.657 371.657a8 8 0 1 0 0.01 0"/>
-							<path id="shape-03-base" d="M288.5 371.657a62 62 0 1 0 124.314 0a62 62 0 1 0-124.314 0"/>
-							<path id="shape-03-accent" d="M311 371.657a40 40 0 1 0 80 0a40 40 0 1 0-80 0"/>
-							<path id="shape-03-gap" d="M330 371.657a21 21 0 1 0 42 0a21 21 0 1 0-42 0"/>
-							<path id="shape-04-base" d="M380 330C395 315 420 315 435 330C450 345 450 370 435 385C425 395 410 400 395 398C380 396 365 398 355 408C345 418 345 435 355 445C365 455 385 455 395 445C405 435 410 420 408 405C406 390 408 375 418 365C428 355 440 345 440 330C440 315 425 300 410 300C395 300 385 310 380 330Z"/>
-							<path id="shape-04-accent" d="M320 330C335 315 360 315 375 330C390 345 390 370 375 385C365 395 350 400 335 398C320 396 305 398 295 408C285 418 285 435 295 445C305 455 325 455 335 445C345 435 350 420 348 405C346 390 348 375 358 365C368 355 380 345 380 330C380 315 365 300 350 300C335 300 325 310 320 330Z"/>
-							<path id="shape-05-base" d="M295 315h40v40H295z M365 315h40v40H365z M295 385h40v40H295z M365 385h40v40H365z"/>
-							<path id="shape-05-accent" d="M330 350h40v40H330z"/>
-							<path id="shape-06-base" d="M350.657 300 L420 371.657 L350.657 443 L281 371.657 Z"/>
-							<path id="shape-06-accent" d="M350.657 335 L385 371.657 L350.657 408 L316 371.657 Z"/>
-							<path id="shape-gap-hidden" d="M350.657 371.657h0.01v0.01H350.657z"/>
-							<path id="s1-f1-accent" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0"/>
-							<path id="s1-f1-soft" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0"/>
 						</defs>
 
 						<!-- Storyboard 0: Form cluster — gooey metaball release -->
@@ -152,13 +136,6 @@
 							<!-- Seed: lozenge → circle, travels the ellipse -->
 							<ellipse id="s4-seed" cx="351" cy="182.5" rx="0" ry="0" fill="#F46B1A" opacity="0"/>
 							<rect id="s4-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
-						</g>
-
-						<!-- Unused MorphSVG stage (legacy fallback) -->
-						<g id="story-morph" class="story-layer" visibility="hidden">
-							<path id="morph-base" class="morph-base" d="M317 288H384.314A50 50 0 0 1 434.314 338V405.314A50 50 0 0 1 384.314 455.314H317A50 50 0 0 1 267 405.314V338A50 50 0 0 1 317 288Z"/>
-							<path id="morph-accent" class="morph-accent" fill-rule="evenodd" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0" opacity="0"/>
-							<path id="morph-gap" class="morph-gap" fill-rule="evenodd" d="M350.657 371.657a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0-1 0" opacity="0"/>
 						</g>
 					</svg>
 				</div>
