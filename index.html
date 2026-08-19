@@ -17,7 +17,7 @@
 
 	<button type="button" id="synth-handle" class="synth-handle" hidden aria-hidden="true"></button>
 
-	<aside id="ui-root" class="synth-panel" aria-label="Visual Synth controls"></aside>
+	<aside id="ui-root" class="synth-panel" aria-label="Visual Synth PIPEs"></aside>
 
 	<button type="button" id="qr-btn" class="synth-qr-btn" hidden aria-label="Show access QR code">QR</button>
 
@@ -36,10 +36,20 @@
 	</div>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-	<script src="state.js"></script>
+	<script src="icons.js"></script>
 	<script src="notify.js"></script>
 	<script src="shaders.js"></script>
-	<script src="camera.js"></script>
+	<script src="core/registry.js"></script>
+	<script src="operators/lines.js"></script>
+	<script src="operators/warp.js"></script>
+	<script src="operators/lookup.js"></script>
+	<script src="operators/bloom.js"></script>
+	<script src="operators/screen.js"></script>
+	<script src="operators/placeholders.js"></script>
+	<script src="core/pipeline.js"></script>
+	<script src="core/pipes.js"></script>
+	<script src="state.js"></script>
+	<script src="core/executor.js"></script>
 	<script src="engine.js"></script>
 	<script src="ui.js"></script>
 	<script src="sync.js"></script>
