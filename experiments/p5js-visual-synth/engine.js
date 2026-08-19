@@ -1,8 +1,6 @@
 (function (root) {
-	const BLEND = { normal: 0, add: 1, multiply: 2, screen: 3 };
-
-	let shaders = {};
-	let dummyTex = null;
+	const THUMB_W = 160;
+	const THUMB_H = 90;
 
 	function isWebGL2() {
 		return typeof WebGL2RenderingContext !== 'undefined' &&
@@ -38,59 +36,128 @@
 		return createShader(vert, frag);
 	}
 
-	function setCameraUniforms(sh, state) {
-		const live = state.camera.enabled && root.SynthCamera.ready();
-		const tex = live ? root.SynthCamera.texture() : dummyTex;
-		sh.setUniform('u_camera', tex);
-		sh.setUniform('u_cameraEnabled', live ? 1.0 : 0.0);
-		sh.setUniform('u_camOpacity', state.camera.opacity);
-		sh.setUniform('u_camIntensity', state.camera.intensity);
-		sh.setUniform('u_blendMode', BLEND[state.camera.blendMode] || 0);
+	function drawTo(target, sh, uniforms) {
+		const w = target ? target.width : width;
+		const h = target ? target.height : height;
+
+		function blit() {
+			ortho();
+			shader(sh);
+			sh.setUniform('u_resolution', [w, h]);
+			if (uniforms) {
+				Object.keys(uniforms).forEach(function (key) {
+					sh.setUniform(key, uniforms[key]);
+				});
+			}
+			noStroke();
+			rectMode(CORNER);
+			rect(-w / 2, -h / 2, w, h);
+			resetShader();
+		}
+
+		if (target && typeof target.begin === 'function') {
+			target.begin();
+			resetShader();
+			clear();
+			blit();
+			target.end();
+			return;
+		}
+		blit();
+	}
+
+	let liveExecutor = null;
+	let thumbGfx = null;
+	let readCanvas = null;
+	let readImage = null;
+	let pixelBuf = null;
+	let pixelBufLen = 0;
+	const shaders = {};
+
+	function operatorsOf(stateOrOps) {
+		if (Array.isArray(stateOrOps)) return stateOrOps;
+		if (root.SynthPipes) {
+			const pipe = root.SynthPipes.active(stateOrOps);
+			if (pipe) return pipe.operators || [];
+		}
+		return (stateOrOps && stateOrOps.pipeline) || [];
 	}
 
 	root.SynthEngine = {
-		init: function () {
-			shaders.waves = compile(SYNTH_SHADERS.vert, SYNTH_SHADERS.waves);
-			shaders.noise = compile(SYNTH_SHADERS.vert, SYNTH_SHADERS.noise);
-			shaders.shader = compile(SYNTH_SHADERS.vert, SYNTH_SHADERS.psychedelic);
+		shaders: shaders,
+		compile: compile,
+		drawTo: drawTo,
+		THUMB_W: THUMB_W,
+		THUMB_H: THUMB_H,
 
-			dummyTex = createGraphics(2, 2);
-			dummyTex.pixelDensity(1);
-			dummyTex.background(0);
+		init: function () {
+			const src = root.SYNTH_SHADERS;
+			const vert = src.vert;
+			['lines', 'warp', 'lookup', 'bloomBright', 'bloomBlur', 'bloomComp', 'copy'].forEach(function (name) {
+				shaders[name] = compile(vert, src[name]);
+			});
+			liveExecutor = root.SynthExecutor.create(root.SynthEngine);
 		},
 
-		draw: function (state, time) {
-			ortho();
-			const name = shaders[state.generator] ? state.generator : 'waves';
-			const sh = shaders[name];
-			shader(sh);
-			sh.setUniform('u_resolution', [width, height]);
-			sh.setUniform('u_time', time);
-			setCameraUniforms(sh, state);
+		resize: function () {
+			if (liveExecutor) liveExecutor.resize();
+		},
 
-			if (name === 'waves') {
-				sh.setUniform('u_frequency', state.waves.frequency);
-				sh.setUniform('u_amplitude', state.waves.amplitude);
-				sh.setUniform('u_speed', state.waves.speed);
-				sh.setUniform('u_direction', state.waves.direction);
-				sh.setUniform('u_scale', state.waves.scale);
-			} else if (name === 'noise') {
-				sh.setUniform('u_scale', state.noise.scale);
-				sh.setUniform('u_speed', state.noise.speed);
-				sh.setUniform('u_intensity', state.noise.intensity);
-				sh.setUniform('u_hue', state.noise.hue);
-				sh.setUniform('u_mode', state.noise.mode === 'color' ? 1.0 : 0.0);
-			} else {
-				sh.setUniform('u_speed', state.shader.speed);
-				sh.setUniform('u_scale', state.shader.scale);
-				sh.setUniform('u_distortion', state.shader.distortion);
-				sh.setUniform('u_intensity', state.shader.intensity);
-				sh.setUniform('u_hue', state.shader.hue);
+		draw: function (stateOrOps, time) {
+			ortho();
+			background(0);
+			if (liveExecutor) liveExecutor.run(operatorsOf(stateOrOps), time);
+		},
+
+		capture: function () {
+			const gl = drawingContext;
+			if (!gl || typeof gl.readPixels !== 'function') return '';
+			const w = gl.drawingBufferWidth | 0;
+			const h = gl.drawingBufferHeight | 0;
+			if (w < 2 || h < 2) return '';
+
+			const len = w * h * 4;
+			if (!pixelBuf || pixelBufLen !== len) {
+				pixelBuf = new Uint8Array(len);
+				pixelBufLen = len;
 			}
 
-			noStroke();
-			rectMode(CORNER);
-			rect(-width / 2, -height / 2, width, height);
+			const prevFbo = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuf);
+			if (prevFbo) gl.bindFramebuffer(gl.FRAMEBUFFER, prevFbo);
+
+			if (!readCanvas) readCanvas = document.createElement('canvas');
+			if (readCanvas.width !== w || readCanvas.height !== h) {
+				readCanvas.width = w;
+				readCanvas.height = h;
+				readImage = null;
+			}
+			const rctx = readCanvas.getContext('2d');
+			if (!readImage) readImage = rctx.createImageData(w, h);
+			const row = w * 4;
+			for (let y = 0; y < h; y += 1) {
+				readImage.data.set(
+					pixelBuf.subarray((h - 1 - y) * row, (h - y) * row),
+					y * row
+				);
+			}
+			rctx.putImageData(readImage, 0, 0);
+
+			if (!thumbGfx) {
+				thumbGfx = document.createElement('canvas');
+				thumbGfx.width = THUMB_W;
+				thumbGfx.height = THUMB_H;
+			}
+			const ctx = thumbGfx.getContext('2d');
+			ctx.fillStyle = '#000';
+			ctx.fillRect(0, 0, THUMB_W, THUMB_H);
+			ctx.drawImage(readCanvas, 0, 0, THUMB_W, THUMB_H);
+			try {
+				return thumbGfx.toDataURL('image/jpeg', 0.72);
+			} catch (err) {
+				return '';
+			}
 		}
 	};
 })(window);

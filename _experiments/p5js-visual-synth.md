@@ -12,7 +12,7 @@ show_on_home: false
 tile_size: "1x1"
 thumbnail: "thumb.png"
 description: |
-  A fullscreen procedural visual instrument with three GPU generators (waves, noise, psychedelic shader), webcam blend, and a touch-ready control panel. The same sketch runs in the lab and on a Raspberry Pi, where a local web UI drives the renderer over WebSocket — no video stream to the phone.
+  A modular visual instrument organized as a grid of PIPEs. Each PIPE is a reusable operator chain (Lines → Warp → Color Lookup → Bloom → Screen) running as a linear, non-destructive dataflow. Same sketch in the lab and on a Raspberry Pi, with phone control over WebSocket.
 stack:
   - p5.js
   - WebGL

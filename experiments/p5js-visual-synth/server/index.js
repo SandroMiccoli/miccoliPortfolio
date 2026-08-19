@@ -7,36 +7,63 @@ const { WebSocketServer } = require('ws');
 
 const ROOT = path.join(__dirname, '..');
 
+const DEFAULT_OPERATORS = [
+	{
+		id: 'op_lines',
+		type: 'lines',
+		name: 'Lines',
+		bypassed: false,
+		parameters: {
+			density: 18,
+			thickness: 0.22,
+			angle: 12,
+			spread: 38,
+			speed: 0.25,
+			mix: 0.55,
+			invert: 0,
+			blendMode: 'normal'
+		}
+	},
+	{
+		id: 'op_warp',
+		type: 'warp',
+		name: 'Warp',
+		bypassed: false,
+		parameters: { amount: 0.22, frequency: 4.5, speed: 0.4, detail: 0.65 }
+	},
+	{
+		id: 'op_lookup',
+		type: 'lookup',
+		name: 'Color Lookup',
+		bypassed: false,
+		parameters: { ramp: 'fire', hue: 0, contrast: 1.1, brightness: 0 }
+	},
+	{
+		id: 'op_bloom',
+		type: 'bloom',
+		name: 'Bloom',
+		bypassed: false,
+		parameters: { threshold: 0.32, intensity: 0.9, radius: 1.35 }
+	},
+	{
+		id: 'op_screen',
+		type: 'screen',
+		name: 'Screen',
+		bypassed: false,
+		parameters: { gain: 1 }
+	}
+];
+
 const DEFAULT_STATE = {
-	generator: 'waves',
-	waves: {
-		frequency: 6.5,
-		amplitude: 0.45,
-		speed: 0.55,
-		direction: 28,
-		scale: 1.1
-	},
-	noise: {
-		mode: 'color',
-		scale: 3.5,
-		speed: 0.35,
-		intensity: 0.85,
-		hue: 200
-	},
-	shader: {
-		speed: 0.8,
-		scale: 1.2,
-		distortion: 0.9,
-		intensity: 0.85,
-		hue: 310
-	},
-	camera: {
-		enabled: false,
-		connected: false,
-		opacity: 0.45,
-		blendMode: 'screen',
-		intensity: 1
-	},
+	pipes: [
+		{
+			id: 'pipe_01',
+			name: 'PIPE 01',
+			thumbnail: '',
+			operators: DEFAULT_OPERATORS
+		}
+	],
+	activePipeId: 'pipe_01',
 	debug: {
 		enabled: false
 	}
@@ -62,6 +89,104 @@ function deepMerge(target, patch) {
 		}
 	});
 	return out;
+}
+
+function applyOpParam(state, opParam) {
+	if (!opParam || !opParam.id) return state;
+	const next = clone(state);
+	next.pipes = (next.pipes || []).map((pipe) => {
+		const operators = (pipe.operators || []).map((op) => {
+			if (op.id !== opParam.id) return op;
+			const updated = clone(op);
+			updated.parameters = updated.parameters || {};
+			if (opParam.parameters) {
+				Object.keys(opParam.parameters).forEach((key) => {
+					updated.parameters[key] = opParam.parameters[key];
+				});
+			} else if (Object.prototype.hasOwnProperty.call(opParam, 'key')) {
+				updated.parameters[opParam.key] = opParam.value;
+			}
+			if (typeof opParam.bypassed === 'boolean') {
+				updated.bypassed = opParam.bypassed;
+			}
+			return updated;
+		});
+		return Object.assign({}, pipe, { operators: operators });
+	});
+	return next;
+}
+
+function setActiveOperators(state, operators) {
+	const next = clone(state);
+	const id = next.activePipeId;
+	next.pipes = (next.pipes || []).map((pipe) => {
+		if (pipe.id !== id) return pipe;
+		const updated = clone(pipe);
+		updated.operators = clone(operators);
+		return updated;
+	});
+	return next;
+}
+
+const PATCH_KEYS = {
+	pipes: true,
+	activePipeId: true,
+	operators: true,
+	pipeline: true,
+	opParam: true,
+	pipeThumb: true,
+	pipeMeta: true
+};
+
+function applyPatch(state, patch) {
+	if (!patch) return state;
+	let next = state;
+	if (Object.prototype.hasOwnProperty.call(patch, 'pipes')) {
+		next = clone(next);
+		next.pipes = clone(patch.pipes);
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'activePipeId')) {
+		next = clone(next);
+		next.activePipeId = patch.activePipeId;
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'operators')) {
+		next = setActiveOperators(next, patch.operators);
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'pipeline')) {
+		next = setActiveOperators(next, patch.pipeline);
+	}
+	if (patch.opParam) {
+		next = applyOpParam(next, patch.opParam);
+	}
+	if (patch.pipeThumb && patch.pipeThumb.id) {
+		next = clone(next);
+		next.pipes = (next.pipes || []).map((pipe) => {
+			if (pipe.id !== patch.pipeThumb.id) return pipe;
+			const updated = clone(pipe);
+			updated.thumbnail = patch.pipeThumb.thumbnail || '';
+			return updated;
+		});
+	}
+	if (patch.pipeMeta && patch.pipeMeta.id) {
+		next = clone(next);
+		next.pipes = (next.pipes || []).map((pipe) => {
+			if (pipe.id !== patch.pipeMeta.id) return pipe;
+			const updated = clone(pipe);
+			if (typeof patch.pipeMeta.name === 'string') {
+				updated.name = patch.pipeMeta.name;
+			}
+			return updated;
+		});
+	}
+	const rest = {};
+	Object.keys(patch).forEach((key) => {
+		if (PATCH_KEYS[key]) return;
+		rest[key] = patch[key];
+	});
+	if (Object.keys(rest).length) {
+		next = deepMerge(next, rest);
+	}
+	return next;
 }
 
 function lanAddress() {
@@ -175,7 +300,7 @@ async function start() {
 			}
 
 			if (msg.type === 'patch' && msg.patch) {
-				state = deepMerge(state, msg.patch);
+				state = applyPatch(state, msg.patch);
 				broadcastState();
 				return;
 			}

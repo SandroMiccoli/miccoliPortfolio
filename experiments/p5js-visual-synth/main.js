@@ -10,21 +10,47 @@
 	let bootShown = false;
 	let chromeTimer = 0;
 	let lastFpsSent = 0;
-	let cameraAnnouncedOn = false;
+	let thumbDirty = true;
+	let thumbDue = 0;
+	let watchPipeId = '';
+	let watchVis = '';
+	let capturingThumb = false;
 
 	function inLab() {
 		return document.body.classList.contains('lab-body');
-	}
-
-	function notifyAll(level, message) {
-		if (window.SynthNotify) SynthNotify.show(level, message);
-		SynthSync.sendNotify(level, message);
 	}
 
 	function userPatch(patch) {
 		if (applyingRemote) return;
 		SynthState.patch(patch);
 		SynthSync.sendPatch(patch);
+	}
+
+	function requestThumb(immediate) {
+		thumbDirty = true;
+		thumbDue = immediate ? 0 : millis() + 180;
+	}
+
+	function scheduleThumb(state) {
+		if (!window.SynthPipes || !window.SynthEngine || !SynthEngine.capture) return;
+		const pipe = SynthPipes.active(state);
+		if (!pipe) return;
+		const vis = SynthPipes.visualSignature(pipe);
+		const switched = pipe.id !== watchPipeId;
+		const changed = vis !== watchVis;
+		if (switched || changed || !pipe.thumbnail) {
+			watchPipeId = pipe.id;
+			watchVis = vis;
+			requestThumb(switched || !pipe.thumbnail);
+		}
+		if (!thumbDirty || capturingThumb) return;
+		if (millis() < thumbDue) return;
+		capturingThumb = true;
+		const url = SynthEngine.capture();
+		capturingThumb = false;
+		if (!url) return;
+		thumbDirty = false;
+		userPatch({ pipeThumb: { id: pipe.id, thumbnail: url } });
 	}
 
 	function bootIsUp() {
@@ -213,35 +239,10 @@
 		if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 	}
 
-	function syncCamera(state) {
-		if (state.camera.enabled) {
-			if (SynthCamera.ready() || SynthCamera.isStarting()) return;
-			notifyAll('warning', 'Opening camera…');
-			SynthCamera.start(function (err) {
-				cameraAnnouncedOn = false;
-				notifyAll('error', (err && err.message) || 'Camera failed');
-				userPatch({ camera: { enabled: false, connected: false } });
-			}, function () {
-				cameraAnnouncedOn = true;
-				notifyAll('success', 'Camera on');
-				userPatch({ camera: { connected: true } });
-			});
-		} else {
-			const wasLive = SynthCamera.ready() || SynthCamera.isStarting() || cameraAnnouncedOn;
-			SynthCamera.stop();
-			if (wasLive && cameraAnnouncedOn) {
-				notifyAll('success', 'Camera off');
-			}
-			cameraAnnouncedOn = false;
-			if (state.camera.connected) {
-				userPatch({ camera: { connected: false } });
-			}
-		}
-	}
-
 	function setup() {
 		const parent = document.getElementById('app') || document.body;
 		setAttributes('antialias', false);
+		setAttributes('preserveDrawingBuffer', true);
 		const canvas = createCanvas(windowWidth, windowHeight, WEBGL);
 		canvas.parent(parent);
 		pixelDensity(1);
@@ -254,12 +255,14 @@
 			getState: function () {
 				return SynthState.get();
 			},
-			patch: userPatch
+			patch: userPatch,
+			capturePipe: function () {
+				requestThumb(true);
+			}
 		});
 
 		SynthState.subscribe(function (state) {
 			if (uiApi) uiApi.refresh();
-			syncCamera(state);
 			setDebugHud(!!(state.debug && state.debug.enabled));
 		});
 
@@ -268,7 +271,6 @@
 		setupBoot();
 		setPanel(false);
 		setDebugHud(false);
-		syncCamera(SynthState.get());
 
 		SynthSync.connect({
 			role: 'display',
@@ -297,6 +299,7 @@
 		noCursor();
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
+		scheduleThumb(state);
 		if (state.debug && state.debug.enabled) {
 			const fps = frameRate();
 			updateDebugHud({ fps: fps });
@@ -309,6 +312,7 @@
 
 	function windowResized() {
 		resizeCanvas(windowWidth, windowHeight);
+		if (window.SynthEngine && SynthEngine.resize) SynthEngine.resize();
 	}
 
 	window.setup = setup;

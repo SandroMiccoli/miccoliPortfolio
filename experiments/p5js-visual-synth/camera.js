@@ -1,3 +1,4 @@
+/* Future Camera generator. Not wired into the MVP pipeline. */
 (function (root) {
 	let capture = null;
 	let starting = false;
