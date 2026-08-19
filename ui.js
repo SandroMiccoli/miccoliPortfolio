@@ -83,6 +83,7 @@
 		let liveFrame = '';
 		const sliders = {};
 		const palettes = {};
+		const colors = {};
 
 		function activePipe() {
 			return root.SynthPipes ? root.SynthPipes.active(getState()) : null;
@@ -552,7 +553,9 @@
 			const paramKey = options.paramKey;
 			const spec = options.spec;
 			const bipolar = min < 0 && max > 0;
+			const isStepper = !!(options.stepper || (spec && spec.kind === 'int'));
 			const wrap = el('div', bipolar ? 'synth-field synth-field--bipolar' : 'synth-field');
+			if (isStepper) wrap.classList.add('synth-field--stepper');
 			if (options.className) wrap.classList.add(options.className);
 
 			const topRow = el('div', 'synth-field__top');
@@ -565,7 +568,6 @@
 			lead.appendChild(labelEl);
 			topRow.appendChild(lead);
 			const valueEl = el('span', 'synth-field__value', '');
-			topRow.appendChild(valueEl);
 
 			let modBtn = null;
 			if (canMod) {
@@ -599,6 +601,33 @@
 			track.appendChild(playhead);
 			slider.appendChild(track);
 			wrap.appendChild(topRow);
+
+			let minusBtn = null;
+			let plusBtn = null;
+			if (isStepper) {
+				const tail = el('div', 'synth-field__tail');
+				tail.appendChild(valueEl);
+				const stepper = el('div', 'synth-stepper');
+				minusBtn = el('button', 'synth-stepper__btn', '−');
+				plusBtn = el('button', 'synth-stepper__btn', '+');
+				minusBtn.type = 'button';
+				plusBtn.type = 'button';
+				minusBtn.setAttribute('aria-label', 'Decrease ' + label);
+				plusBtn.setAttribute('aria-label', 'Increase ' + label);
+				minusBtn.addEventListener('click', function () {
+					commit(current - step, true);
+				});
+				plusBtn.addEventListener('click', function () {
+					commit(current + step, true);
+				});
+				stepper.appendChild(minusBtn);
+				stepper.appendChild(plusBtn);
+				tail.appendChild(stepper);
+				topRow.appendChild(tail);
+			} else {
+				topRow.appendChild(valueEl);
+			}
+
 			wrap.appendChild(slider);
 
 			let current = min;
@@ -677,6 +706,8 @@
 				}
 				thumb.style.left = (t * 100) + '%';
 				valueEl.textContent = formatDisplay(current);
+				if (minusBtn) minusBtn.disabled = current <= min;
+				if (plusBtn) plusBtn.disabled = current >= max;
 				slider.setAttribute('aria-valuenow', String(current));
 				slider.setAttribute('aria-valuetext', formatDisplay(current));
 			}
@@ -1203,7 +1234,7 @@
 			function onDocPointer(event) {
 				if (!open) return;
 				if (pop.contains(event.target)) return;
-				if (event.target.closest && event.target.closest('.synth-swatch__face, .synth-palettes__add, .synth-palette')) return;
+				if (event.target.closest && event.target.closest('.synth-swatch__face, .synth-palettes__add, .synth-palette, .synth-color__face')) return;
 				close();
 			}
 
@@ -1237,6 +1268,60 @@
 		}
 
 		const colorPicker = makeColorPicker();
+
+		function makeColorField(op, spec) {
+			const field = el('div', 'synth-field synth-field--color');
+			const top = el('div', 'synth-field__top');
+			top.appendChild(el('span', '', spec.label));
+			const swatch = el('button', 'synth-color__face');
+			swatch.type = 'button';
+			swatch.setAttribute('aria-label', 'Edit ' + spec.label);
+			top.appendChild(swatch);
+			field.appendChild(top);
+
+			function currentHex() {
+				const found = ops().filter(function (item) {
+					return item.id === op.id;
+				})[0];
+				const params = (found && found.parameters) || op.parameters || {};
+				return params[spec.key] || '#FFFFFF';
+			}
+
+			function paint(hex) {
+				const value = hex || currentHex();
+				swatch.style.background = value;
+				swatch.classList.toggle('is-active', colorPicker.isOpen() && pickingSlot === swatch);
+			}
+
+			let pickingSlot = null;
+
+			swatch.addEventListener('click', function () {
+				if (colorPicker.isOpen() && pickingSlot === swatch) {
+					colorPicker.close();
+					return;
+				}
+				pickingSlot = swatch;
+				colorPicker.open(currentHex(), swatch, function (nextHex) {
+					setParam(op.id, spec.key, nextHex);
+					paint(nextHex);
+				}, function () {
+					pickingSlot = null;
+					paint();
+				});
+				paint(currentHex());
+			});
+
+			paint();
+			return {
+				wrap: field,
+				setValue: function (hex) {
+					paint(hex);
+					if (colorPicker.isOpen() && pickingSlot === swatch) {
+						colorPicker.syncAnchor(swatch);
+					}
+				}
+			};
+		}
 
 		function makePaletteField(op) {
 			const Lookup = root.SynthLookup;
@@ -1600,6 +1685,12 @@
 					inner.appendChild(field.wrap);
 					return;
 				}
+				if (spec.kind === 'color') {
+					const field = makeColorField(op, spec);
+					colors[op.id + ':' + spec.key] = field;
+					inner.appendChild(field.wrap);
+					return;
+				}
 				if (spec.kind === 'enum') {
 					const field = el('div', 'synth-field');
 					const fieldTop = el('div', 'synth-field__top');
@@ -1651,6 +1742,9 @@
 			});
 			Object.keys(palettes).forEach(function (key) {
 				delete palettes[key];
+			});
+			Object.keys(colors).forEach(function (key) {
+				delete colors[key];
 			});
 			colorPicker.close();
 			if (g) g.killTweensOf(stack.querySelectorAll('.synth-op, .synth-op__body, .synth-op__caret'));
@@ -1858,10 +1952,15 @@
 
 					Object.keys(op.parameters || {}).forEach(function (key) {
 						const slider = sliders[op.id + ':' + key];
-						if (!slider) return;
-						const mod = (op.modulations || {})[key];
-						if (slider.setMod) slider.setMod(mod);
-						if (!(mod && mod.enabled)) slider.setValue(op.parameters[key]);
+						if (slider) {
+							const mod = (op.modulations || {})[key];
+							if (slider.setMod) slider.setMod(mod);
+							if (!(mod && mod.enabled)) slider.setValue(op.parameters[key]);
+						}
+						const colorField = colors[op.id + ':' + key];
+						if (colorField && colorField.setValue) {
+							colorField.setValue(op.parameters[key]);
+						}
 					});
 
 					const paletteField = palettes[op.id];

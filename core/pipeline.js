@@ -24,6 +24,9 @@
 			return spec.options[Math.floor(Math.random() * spec.options.length)].id;
 		}
 		if (spec.kind === 'palette') return undefined;
+		if (spec.kind === 'color') {
+			return root.SynthColor ? root.SynthColor.random() : '#FFFFFF';
+		}
 		if (typeof spec.min !== 'number' || typeof spec.max !== 'number') return undefined;
 		const step = spec.step || 1;
 		const span = spec.max - spec.min;

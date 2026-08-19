@@ -6,13 +6,13 @@
 			id: 'generator',
 			label: 'Generators',
 			color: '#B45CC8',
-			about: 'Creates a visual from nothing. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
+			about: 'Creates a visual from nothing. Lines, Noise, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
 		},
 		effect: {
 			id: 'effect',
 			label: 'Effects / Filters',
 			color: '#4AAE72',
-			about: 'Transforms the incoming image. Warp bends space. Bloom glows bright areas. An effect never starts a new picture on its own.'
+			about: 'Transforms the incoming image. Warp bends space. Kaleidoscope mirrors it. Bloom glows bright areas. An effect never starts a new picture on its own.'
 		},
 		color: {
 			id: 'color',
@@ -62,6 +62,45 @@
 				return mode.id === id;
 			})[0];
 			return found ? found.value : 0;
+		}
+	};
+
+	function clampByte(n) {
+		return Math.max(0, Math.min(255, Math.round(n)));
+	}
+
+	root.SynthColor = {
+		parseHex: function (hex) {
+			const raw = String(hex || '').trim().replace(/^#/, '');
+			if (raw.length === 3) {
+				return [
+					parseInt(raw[0] + raw[0], 16),
+					parseInt(raw[1] + raw[1], 16),
+					parseInt(raw[2] + raw[2], 16)
+				];
+			}
+			if (raw.length >= 6) {
+				return [
+					parseInt(raw.slice(0, 2), 16),
+					parseInt(raw.slice(2, 4), 16),
+					parseInt(raw.slice(4, 6), 16)
+				];
+			}
+			return [255, 255, 255];
+		},
+		toRgb: function (hex) {
+			const rgb = root.SynthColor.parseHex(hex);
+			return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
+		},
+		toHex: function (r, g, b) {
+			function byte(n) {
+				return clampByte(n).toString(16).padStart(2, '0');
+			}
+			return ('#' + byte(r) + byte(g) + byte(b)).toUpperCase();
+		},
+		random: function () {
+			const n = Math.floor(Math.random() * 0xffffff);
+			return '#' + n.toString(16).padStart(6, '0').toUpperCase();
 		}
 	};
 

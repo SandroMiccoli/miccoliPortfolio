@@ -1551,6 +1551,84 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	display: block;
 }
 
+.synth-field__tail {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 0 0 auto;
+}
+
+.synth-stepper {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 4px;
+}
+
+.synth-stepper__btn {
+	width: 36px;
+	min-width: 36px;
+	height: 36px;
+	min-height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: color-mix(in srgb, #ededed 12%, transparent);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 18px;
+	font-weight: 500;
+	line-height: 1;
+	cursor: pointer;
+	appearance: none;
+	touch-action: manipulation;
+	user-select: none;
+}
+
+.synth-stepper__btn:active {
+	transform: scale(0.96);
+}
+
+.synth-stepper__btn:disabled {
+	opacity: 0.32;
+	cursor: default;
+	transform: none;
+}
+
+.synth-stepper__btn:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 1px;
+}
+
+.synth-field--color .synth-field__top {
+	align-items: center;
+}
+
+.synth-color__face {
+	flex: 0 0 auto;
+	width: 72px;
+	height: 28px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, #ededed 22%, transparent);
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-color__face:active {
+	transform: scale(0.97);
+}
+
+.synth-color__face.is-active {
+	box-shadow: 0 0 0 1.5px var(--fg);
+}
+
+.synth-color__face:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 2px;
+}
+
 .synth-op .synth-slider.is-mod .synth-slider__thumb--in,
 .synth-op .synth-slider.is-mod .synth-slider__thumb--out {
 	width: 10px;

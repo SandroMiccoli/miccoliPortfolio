@@ -140,7 +140,7 @@
 	}
 
 	function evaluate(mod, spec, ctx, seed) {
-		if (!mod || !mod.enabled || !spec || spec.kind === 'enum' || spec.kind === 'palette') return undefined;
+		if (!mod || !mod.enabled || !spec || spec.kind === 'enum' || spec.kind === 'palette' || spec.kind === 'color') return undefined;
 		const t = driverT(mod, ctx, seed);
 		const min = spec.min;
 		const max = spec.max;
