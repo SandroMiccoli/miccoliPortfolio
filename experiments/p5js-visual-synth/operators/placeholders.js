@@ -2,15 +2,12 @@
 	const CATS = root.SynthCategories || {};
 
 	const PLACEHOLDERS = [
-		{ type: 'noise', name: 'Noise', category: 'generator' },
 		{ type: 'gradient', name: 'Gradient', category: 'generator' },
 		{ type: 'particles', name: 'Particles', category: 'generator' },
-		{ type: 'camera', name: 'Camera', category: 'generator' },
 		{ type: 'video', name: 'Video', category: 'generator' },
 		{ type: 'displace', name: 'Displace', category: 'effect' },
 		{ type: 'blur', name: 'Blur', category: 'effect' },
 		{ type: 'feedback', name: 'Feedback', category: 'effect' },
-		{ type: 'kaleidoscope', name: 'Kaleidoscope', category: 'effect' },
 		{ type: 'hue', name: 'Hue / Saturation', category: 'color' },
 		{ type: 'levels', name: 'Levels', category: 'color' },
 		{ type: 'contrast', name: 'Contrast', category: 'color' },

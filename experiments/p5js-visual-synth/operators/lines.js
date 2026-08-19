@@ -7,46 +7,50 @@
 		category: 'generator',
 		categoryLabel: cat.label,
 		color: cat.color,
-		help: 'Draws a procedural field of lines. Angle and spread set two directions, so you can build grids and moire. After another operator, Blending Mode composites this field with whatever came before (try Difference for a second set of lines).',
+		help: 'Draws parallel stripes. Amount is the count, Width and Fuzzyness shape each band, Rotation and Position place them. Color tints the lines. After another operator, Blending Mode composites this field with whatever came before.',
 		implemented: true,
 		defaults: {
-			density: 18,
-			thickness: 0.22,
-			angle: 12,
-			spread: 38,
-			speed: 0.25,
-			mix: 0.55,
-			invert: 0,
+			fuzzyness: 0.64,
+			amount: 5,
+			width: 0.44,
+			rotation: 0,
+			position: 0.5,
+			color: '#FFFFFF',
 			blendMode: 'normal'
 		},
 		params: [
-			{ key: 'density', label: 'Density', kind: 'range', min: 2, max: 64, step: 0.5 },
-			{ key: 'thickness', label: 'Thickness', kind: 'range', min: 0.04, max: 0.48, step: 0.01 },
-			{ key: 'angle', label: 'Angle', kind: 'range', min: 0, max: 180, step: 1 },
-			{ key: 'spread', label: 'Spread', kind: 'range', min: 0, max: 90, step: 1 },
-			{ key: 'speed', label: 'Speed', kind: 'range', min: -2, max: 2, step: 0.01 },
-			{ key: 'mix', label: 'Mix', kind: 'range', min: 0, max: 1, step: 0.01 },
-			{ key: 'invert', label: 'Invert', kind: 'enum', options: [
-				{ id: 0, label: 'Off' },
-				{ id: 1, label: 'On' }
-			]},
+			{ key: 'fuzzyness', label: 'Fuzzyness', kind: 'range', min: 0, max: 1, step: 0.01 },
+			{ key: 'amount', label: 'Amount', kind: 'int', min: 0, max: 30, step: 1 },
+			{ key: 'width', label: 'Width', kind: 'range', min: 0, max: 1, step: 0.01 },
+			{ key: 'rotation', label: 'Rotation', kind: 'range', min: 0, max: 360, step: 1, unit: '°' },
+			{ key: 'position', label: 'Position', kind: 'range', min: 0, max: 1, step: 0.01 },
+			{ key: 'color', label: 'Color', kind: 'color' },
 			root.SynthBlend.param
 		],
 		create: function (engine) {
+			const defaults = root.SynthRegistry.get('lines').defaults;
+
+			function num(value, fallback) {
+				const n = Number(value);
+				return isFinite(n) ? n : fallback;
+			}
+
 			return {
 				process: function (ctx) {
+					const p = ctx.parameters || {};
+					const amount = p.amount != null ? p.amount : (p.density != null ? p.density : defaults.amount);
+					const width = p.width != null ? p.width : (p.thickness != null ? p.thickness : defaults.width);
+					const rotation = p.rotation != null ? p.rotation : (p.angle != null ? p.angle : defaults.rotation);
 					engine.drawTo(ctx.output, engine.shaders.lines, {
 						u_input: ctx.input,
 						u_hasInput: ctx.hasInput ? 1 : 0,
-						u_blendMode: root.SynthBlend.toUniform(ctx.parameters.blendMode),
-						u_density: ctx.parameters.density,
-						u_thickness: ctx.parameters.thickness,
-						u_angle: ctx.parameters.angle,
-						u_spread: ctx.parameters.spread,
-						u_speed: ctx.parameters.speed,
-						u_mix: ctx.parameters.mix,
-						u_invert: ctx.parameters.invert,
-						u_time: ctx.time
+						u_blendMode: root.SynthBlend.toUniform(p.blendMode),
+						u_fuzzyness: num(p.fuzzyness, defaults.fuzzyness),
+						u_amount: Math.max(0, num(amount, defaults.amount)),
+						u_width: num(width, defaults.width),
+						u_rotation: num(rotation, defaults.rotation),
+						u_position: num(p.position, defaults.position),
+						u_color: root.SynthColor.toRgb(p.color || defaults.color)
 					});
 				}
 			};

@@ -1,5 +1,6 @@
 (function (root) {
 	const color = '#5B7FD4';
+	const LEVELS = 4;
 
 	function makeFbo(w, h) {
 		const opts = {
@@ -18,7 +19,7 @@
 		category: 'effect',
 		categoryLabel: 'Effects / Filters',
 		color: color,
-		help: 'Extracts bright regions of the incoming image, blurs them, and adds the glow back. Threshold picks what counts as bright.',
+		help: 'Extracts bright regions, blurs them through a dual-filter pyramid, and composites the glow back. Threshold picks what counts as bright. Radius spreads the haze. Intensity is the mix.',
 		implemented: true,
 		defaults: {
 			threshold: 0.32,
@@ -31,63 +32,64 @@
 			{ key: 'radius', label: 'Radius', kind: 'range', min: 0.4, max: 3, step: 0.01 }
 		],
 		create: function (engine) {
-			let bright = null;
-			let blurA = null;
-			let blurB = null;
-			let bw = 0;
-			let bh = 0;
+			let mips = [];
+			let srcW = 0;
+			let srcH = 0;
+
+			function clearMips() {
+				mips.forEach(function (fbo) {
+					if (fbo) fbo.remove();
+				});
+				mips = [];
+			}
 
 			function ensure(w, h) {
-				const nextW = Math.max(2, Math.floor(w / 2));
-				const nextH = Math.max(2, Math.floor(h / 2));
-				if (bright && bw === nextW && bh === nextH) return;
-				bw = nextW;
-				bh = nextH;
-				if (bright) bright.remove();
-				if (blurA) blurA.remove();
-				if (blurB) blurB.remove();
-				bright = makeFbo(bw, bh);
-				blurA = makeFbo(bw, bh);
-				blurB = makeFbo(bw, bh);
+				w = Math.max(2, Math.floor(w));
+				h = Math.max(2, Math.floor(h));
+				if (mips.length === LEVELS && srcW === w && srcH === h) return;
+				srcW = w;
+				srcH = h;
+				clearMips();
+				let mw = w;
+				let mh = h;
+				for (let i = 0; i < LEVELS; i += 1) {
+					mw = Math.max(2, Math.floor(mw / 2));
+					mh = Math.max(2, Math.floor(mh / 2));
+					mips.push(makeFbo(mw, mh));
+				}
 			}
 
 			return {
 				process: function (ctx) {
 					ensure(ctx.width, ctx.height);
-					const radius = ctx.parameters.radius;
-					const texel = [1 / bw, 1 / bh];
+					const offset = ctx.parameters.radius;
 
-					engine.drawTo(bright, engine.shaders.bloomBright, {
+					engine.drawTo(mips[0], engine.shaders.bloomBright, {
 						u_input: ctx.input,
 						u_threshold: ctx.parameters.threshold
 					});
-					engine.drawTo(blurA, engine.shaders.bloomBlur, {
-						u_input: bright,
-						u_texel: texel,
-						u_dir: [1, 0],
-						u_radius: radius
-					});
-					engine.drawTo(blurB, engine.shaders.bloomBlur, {
-						u_input: blurA,
-						u_texel: texel,
-						u_dir: [0, 1],
-						u_radius: radius
-					});
-					engine.drawTo(blurA, engine.shaders.bloomBlur, {
-						u_input: blurB,
-						u_texel: texel,
-						u_dir: [1, 0],
-						u_radius: radius * 1.6
-					});
-					engine.drawTo(blurB, engine.shaders.bloomBlur, {
-						u_input: blurA,
-						u_texel: texel,
-						u_dir: [0, 1],
-						u_radius: radius * 1.6
-					});
+
+					for (let i = 1; i < mips.length; i += 1) {
+						const src = mips[i - 1];
+						engine.drawTo(mips[i], engine.shaders.bloomDown, {
+							u_input: src,
+							u_texel: [1 / src.width, 1 / src.height],
+							u_offset: offset
+						});
+					}
+
+					for (let i = mips.length - 2; i >= 0; i -= 1) {
+						const src = mips[i + 1];
+						engine.drawTo(mips[i], engine.shaders.bloomUp, {
+							u_input: src,
+							u_texel: [1 / mips[i].width, 1 / mips[i].height],
+							u_offset: offset
+						});
+					}
+
 					engine.drawTo(ctx.output, engine.shaders.bloomComp, {
 						u_input: ctx.input,
-						u_bloom: blurB,
+						u_bloom: mips[0],
 						u_intensity: ctx.parameters.intensity
 					});
 				},
@@ -95,10 +97,8 @@
 					ensure(w, h);
 				},
 				dispose: function () {
-					if (bright) bright.remove();
-					if (blurA) blurA.remove();
-					if (blurB) blurB.remove();
-					bright = blurA = blurB = null;
+					clearMips();
+					srcW = srcH = 0;
 				}
 			};
 		}

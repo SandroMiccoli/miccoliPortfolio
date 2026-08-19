@@ -41,7 +41,7 @@
 		const h = target ? target.height : height;
 
 		function blit() {
-			ortho();
+			ortho(-w / 2, w / 2, -h / 2, h / 2);
 			shader(sh);
 			sh.setUniform('u_resolution', [w, h]);
 			if (uniforms) {
@@ -93,7 +93,7 @@
 		init: function () {
 			const src = root.SYNTH_SHADERS;
 			const vert = src.vert;
-			['lines', 'warp', 'lookup', 'bloomBright', 'bloomBlur', 'bloomComp', 'copy'].forEach(function (name) {
+			['lines', 'noise', 'camera', 'warp', 'lookup', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'copy'].forEach(function (name) {
 				shaders[name] = compile(vert, src[name]);
 			});
 			liveExecutor = root.SynthExecutor.create(root.SynthEngine);
