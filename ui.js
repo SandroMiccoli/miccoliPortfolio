@@ -75,12 +75,14 @@
 		let lastSignature = null;
 		let lastGridSig = null;
 		let sliding = false;
+		let picking = false;
 		let renaming = false;
 		let expandedId = null;
 		let libInsertAt = 0;
 		let liveOn = false;
 		let liveFrame = '';
 		const sliders = {};
+		const palettes = {};
 
 		function activePipe() {
 			return root.SynthPipes ? root.SynthPipes.active(getState()) : null;
@@ -629,6 +631,7 @@
 			}
 
 			function formatDisplay(value) {
+				if (spec && spec.unit === '°') return Math.round(value) + '°';
 				const text = formatValue(value, step);
 				if (bipolar && value > 0) return '+' + text;
 				return text;
@@ -975,6 +978,405 @@
 			patch({ opParam: { id: id, key: key, value: value } });
 		}
 
+		function setParams(id, parameters) {
+			patch({ opParam: { id: id, parameters: parameters } });
+		}
+
+		function lookupParams(op) {
+			return root.SynthLookup
+				? root.SynthLookup.normalize(op.parameters || {})
+				: (op.parameters || {});
+		}
+
+		function patchLookup(opId, next) {
+			setParams(opId, {
+				paletteId: next.paletteId,
+				colors: next.colors,
+				bg: next.bg,
+				savedPalettes: next.savedPalettes
+			});
+		}
+
+		function makeColorPicker() {
+			const Lookup = root.SynthLookup;
+			const pop = el('div', 'synth-picker');
+			pop.hidden = true;
+			pop.setAttribute('role', 'dialog');
+			pop.setAttribute('aria-label', 'Color picker');
+
+			const map = el('div', 'synth-picker__map');
+			map.setAttribute('role', 'slider');
+			map.setAttribute('aria-label', 'Saturation and brightness');
+			const mapCursor = el('div', 'synth-picker__map-cursor');
+			map.appendChild(mapCursor);
+
+			const tools = el('div', 'synth-picker__tools');
+			const dropBtn = el('button', 'synth-picker__drop');
+			dropBtn.type = 'button';
+			dropBtn.setAttribute('aria-label', 'Sample color');
+			dropBtn.appendChild(root.SynthIcons.svg('eyedropper'));
+			if (!window.EyeDropper) dropBtn.hidden = true;
+			const preview = el('div', 'synth-picker__preview');
+			const hue = el('div', 'synth-picker__hue');
+			hue.setAttribute('role', 'slider');
+			hue.setAttribute('aria-label', 'Hue');
+			const hueThumb = el('div', 'synth-picker__hue-thumb');
+			hue.appendChild(hueThumb);
+			tools.appendChild(dropBtn);
+			tools.appendChild(preview);
+			tools.appendChild(hue);
+
+			const rgbRow = el('div', 'synth-picker__rgb');
+			const channels = ['R', 'G', 'B'].map(function (name, index) {
+				const cell = el('label', 'synth-picker__chan');
+				const input = el('input', 'synth-picker__num');
+				input.type = 'number';
+				input.min = '0';
+				input.max = '255';
+				input.step = '1';
+				input.inputMode = 'numeric';
+				input.setAttribute('aria-label', name);
+				cell.appendChild(input);
+				cell.appendChild(el('span', '', name));
+				rgbRow.appendChild(cell);
+				return { name: name, index: index, input: input };
+			});
+
+			pop.appendChild(map);
+			pop.appendChild(tools);
+			pop.appendChild(rgbRow);
+			document.body.appendChild(pop);
+
+			let hsv = [0, 1, 1];
+			let onChange = null;
+			let onClose = null;
+			let open = false;
+			let mapPointer = null;
+			let huePointer = null;
+
+			function hexNow() {
+				if (!Lookup) return '#000000';
+				const rgb = Lookup.hsvToRgb(hsv[0], hsv[1], hsv[2]);
+				return Lookup.toHex(rgb[0], rgb[1], rgb[2]);
+			}
+
+			function rgbNow() {
+				if (!Lookup) return [0, 0, 0];
+				return Lookup.hsvToRgb(hsv[0], hsv[1], hsv[2]).map(function (n) {
+					return Math.max(0, Math.min(255, Math.round(n)));
+				});
+			}
+
+			function paint() {
+				const hueDeg = hsv[0] * 360;
+				const rgb = rgbNow();
+				const hex = hexNow();
+				map.style.setProperty('--picker-hue-color', 'hsl(' + hueDeg + 'deg, 100%, 50%)');
+				mapCursor.style.left = (hsv[1] * 100) + '%';
+				mapCursor.style.top = ((1 - hsv[2]) * 100) + '%';
+				hueThumb.style.left = (hsv[0] * 100) + '%';
+				preview.style.background = hex;
+				channels.forEach(function (chan) {
+					if (document.activeElement !== chan.input) {
+						chan.input.value = String(rgb[chan.index]);
+					}
+				});
+			}
+
+			function emit() {
+				if (onChange) onChange(hexNow());
+			}
+
+			function setFromHex(hex, silent) {
+				if (!Lookup) return;
+				const rgb = Lookup.parseHex(hex);
+				hsv = Lookup.rgbToHsv(rgb[0], rgb[1], rgb[2]);
+				paint();
+				if (!silent) emit();
+			}
+
+			function svFromEvent(event) {
+				const rect = map.getBoundingClientRect();
+				const x = rect.width ? (event.clientX - rect.left) / rect.width : 0;
+				const y = rect.height ? (event.clientY - rect.top) / rect.height : 0;
+				hsv[1] = Math.max(0, Math.min(1, x));
+				hsv[2] = Math.max(0, Math.min(1, 1 - y));
+				paint();
+				emit();
+			}
+
+			function hueFromEvent(event) {
+				const rect = hue.getBoundingClientRect();
+				const x = rect.width ? (event.clientX - rect.left) / rect.width : 0;
+				hsv[0] = Math.max(0, Math.min(1, x));
+				paint();
+				emit();
+			}
+
+			map.addEventListener('pointerdown', function (event) {
+				if (event.button !== 0 && event.pointerType === 'mouse') return;
+				mapPointer = event.pointerId;
+				try { map.setPointerCapture(event.pointerId); } catch (err) { /* ignore */ }
+				svFromEvent(event);
+			});
+			map.addEventListener('pointermove', function (event) {
+				if (event.pointerId !== mapPointer) return;
+				svFromEvent(event);
+			});
+			map.addEventListener('pointerup', function (event) {
+				if (event.pointerId === mapPointer) mapPointer = null;
+			});
+			map.addEventListener('pointercancel', function () {
+				mapPointer = null;
+			});
+
+			hue.addEventListener('pointerdown', function (event) {
+				if (event.button !== 0 && event.pointerType === 'mouse') return;
+				huePointer = event.pointerId;
+				try { hue.setPointerCapture(event.pointerId); } catch (err) { /* ignore */ }
+				hueFromEvent(event);
+			});
+			hue.addEventListener('pointermove', function (event) {
+				if (event.pointerId !== huePointer) return;
+				hueFromEvent(event);
+			});
+			hue.addEventListener('pointerup', function (event) {
+				if (event.pointerId === huePointer) huePointer = null;
+			});
+			hue.addEventListener('pointercancel', function () {
+				huePointer = null;
+			});
+
+			channels.forEach(function (chan) {
+				chan.input.addEventListener('focus', function () {
+					chan.input.select();
+				});
+				chan.input.addEventListener('input', function () {
+					const rgb = rgbNow();
+					const next = Number(chan.input.value);
+					if (!isFinite(next)) return;
+					rgb[chan.index] = Math.max(0, Math.min(255, next));
+					if (!Lookup) return;
+					hsv = Lookup.rgbToHsv(rgb[0], rgb[1], rgb[2]);
+					paint();
+					emit();
+				});
+			});
+
+			dropBtn.addEventListener('click', function () {
+				if (!window.EyeDropper) return;
+				const dropper = new window.EyeDropper();
+				dropper.open().then(function (result) {
+					if (result && result.sRGBHex) setFromHex(result.sRGBHex);
+				}).catch(function () { /* cancelled */ });
+			});
+
+			function place(anchor) {
+				const rect = anchor.getBoundingClientRect();
+				const width = pop.offsetWidth || 228;
+				const height = pop.offsetHeight || 268;
+				const pad = 8;
+				let left = rect.left + rect.width / 2 - width / 2;
+				let top = rect.bottom + pad;
+				if (top + height > window.innerHeight - pad) {
+					top = rect.top - height - pad;
+				}
+				left = Math.max(pad, Math.min(left, window.innerWidth - width - pad));
+				top = Math.max(pad, Math.min(top, window.innerHeight - height - pad));
+				pop.style.left = left + 'px';
+				pop.style.top = top + 'px';
+			}
+
+			function close() {
+				if (!open) return;
+				open = false;
+				picking = false;
+				pop.hidden = true;
+				mapPointer = null;
+				huePointer = null;
+				const done = onClose;
+				onChange = null;
+				onClose = null;
+				if (done) done();
+			}
+
+			function onDocPointer(event) {
+				if (!open) return;
+				if (pop.contains(event.target)) return;
+				if (event.target.closest && event.target.closest('.synth-swatch__face, .synth-palettes__add, .synth-palette')) return;
+				close();
+			}
+
+			function onKey(event) {
+				if (!open) return;
+				if (event.key === 'Escape') close();
+			}
+
+			document.addEventListener('pointerdown', onDocPointer, true);
+			document.addEventListener('keydown', onKey);
+
+			return {
+				node: pop,
+				isOpen: function () {
+					return open;
+				},
+				open: function (hex, anchor, change, closed) {
+					onChange = change;
+					onClose = closed;
+					open = true;
+					picking = true;
+					pop.hidden = false;
+					setFromHex(hex, true);
+					place(anchor);
+				},
+				close: close,
+				syncAnchor: function (anchor) {
+					if (open && anchor) place(anchor);
+				}
+			};
+		}
+
+		const colorPicker = makeColorPicker();
+
+		function makePaletteField(op) {
+			const Lookup = root.SynthLookup;
+			const field = el('div', 'synth-field synth-palettes');
+			const grid = el('div', 'synth-palettes__grid');
+			grid.setAttribute('role', 'listbox');
+			grid.setAttribute('aria-label', 'Color palettes');
+			const edit = el('div', 'synth-palettes__edit');
+			field.appendChild(grid);
+			field.appendChild(edit);
+
+			let activeSlot = null;
+
+			function current() {
+				const found = ops().filter(function (item) {
+					return item.id === op.id;
+				})[0];
+				return lookupParams(found || op);
+			}
+
+			function paintChip(node, palette) {
+				node.innerHTML = '';
+				node.dataset.paletteId = palette.id;
+				const strip = el('span', 'synth-palette__strip');
+				(palette.colors || []).forEach(function (hex) {
+					const band = el('span', 'synth-palette__band');
+					band.style.background = hex;
+					strip.appendChild(band);
+				});
+				node.appendChild(strip);
+			}
+
+			function renderGrid(resolved) {
+				const items = Lookup ? Lookup.catalog(resolved.savedPalettes) : [];
+				grid.innerHTML = '';
+				items.forEach(function (palette) {
+					const btn = el('button', 'synth-palette');
+					btn.type = 'button';
+					btn.setAttribute('role', 'option');
+					btn.setAttribute('aria-label', 'Palette ' + palette.id);
+					paintChip(btn, palette);
+					const selected = !resolved.dirty && palette.id === resolved.paletteId;
+					btn.classList.toggle('is-active', selected);
+					btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+					btn.addEventListener('click', function () {
+						if (!Lookup) return;
+						patchLookup(op.id, Lookup.applyPreset(current(), palette.id));
+						colorPicker.close();
+					});
+					grid.appendChild(btn);
+				});
+			}
+
+			function swatchButton(slot, hex, label) {
+				const wrap = el('div', 'synth-swatch');
+				const btn = el('button', 'synth-swatch__face');
+				btn.type = 'button';
+				btn.dataset.slot = String(slot);
+				btn.style.background = hex;
+				btn.setAttribute('aria-label', 'Edit color ' + label);
+				btn.addEventListener('click', function (event) {
+					event.stopPropagation();
+					openSlot(slot, btn);
+				});
+				wrap.appendChild(btn);
+				wrap.appendChild(el('span', 'synth-swatch__label', label));
+				return wrap;
+			}
+
+			function openSlot(slot, anchor) {
+				const resolved = current();
+				const hex = slot === 'bg' ? resolved.bg : resolved.colors[Number(slot)];
+				activeSlot = slot;
+				edit.querySelectorAll('.synth-swatch__face.is-active').forEach(function (node) {
+					node.classList.remove('is-active');
+				});
+				anchor.classList.add('is-active');
+				colorPicker.open(hex, anchor, function (nextHex) {
+					if (!Lookup) return;
+					patchLookup(op.id, Lookup.setSlot(current(), slot, nextHex));
+					anchor.style.background = nextHex;
+				}, function () {
+					activeSlot = null;
+					render(current());
+				});
+			}
+
+			function renderEdit(resolved) {
+				edit.innerHTML = '';
+				const letters = (Lookup && Lookup.letters) || 'ABCD';
+				(resolved.colors || []).forEach(function (hex, index) {
+					edit.appendChild(swatchButton(index, hex, letters[index] || String(index + 1)));
+				});
+				edit.appendChild(el('span', 'synth-palettes__rule'));
+				edit.appendChild(swatchButton('bg', resolved.bg, 'BG'));
+				const addWrap = el('div', 'synth-swatch synth-swatch--add');
+				const add = el('button', 'synth-palettes__add');
+				add.type = 'button';
+				add.setAttribute('aria-label', 'Save palette');
+				add.appendChild(root.SynthIcons.svg('plus'));
+				add.addEventListener('click', function () {
+					if (!Lookup || !current().dirty) return;
+					patchLookup(op.id, Lookup.saveCurrent(current()));
+					colorPicker.close();
+				});
+				addWrap.appendChild(add);
+				addWrap.appendChild(el('span', 'synth-swatch__label', '\u00a0'));
+				addWrap.hidden = !resolved.dirty;
+				edit.appendChild(addWrap);
+			}
+
+			function render(resolved) {
+				renderGrid(resolved);
+				renderEdit(resolved);
+			}
+
+			render(lookupParams(op));
+
+			return {
+				wrap: field,
+				setParams: function (parameters) {
+					const resolved = Lookup
+						? Lookup.normalize(parameters || {})
+						: parameters || {};
+					if (picking) {
+						const faces = edit.querySelectorAll('.synth-swatch__face');
+						faces.forEach(function (btn) {
+							const slot = btn.dataset.slot;
+							const hex = slot === 'bg' ? resolved.bg : resolved.colors[Number(slot)];
+							if (hex) btn.style.background = hex;
+						});
+						const addWrap = edit.querySelector('.synth-swatch--add');
+						if (addWrap) addWrap.hidden = !resolved.dirty;
+						return;
+					}
+					render(resolved);
+				}
+			};
+		}
+
 		function insertBtn(index, kind) {
 			const isAdd = kind === 'add';
 			const wrap = el('div', isAdd ? 'synth-insert synth-insert--add' : 'synth-insert synth-insert--node');
@@ -1192,6 +1594,12 @@
 			const params = def.params || [];
 			params.forEach(function (spec) {
 				if (spec.show === 'afterInput' && index === 0) return;
+				if (spec.kind === 'palette') {
+					const field = makePaletteField(op);
+					palettes[op.id] = field;
+					inner.appendChild(field.wrap);
+					return;
+				}
 				if (spec.kind === 'enum') {
 					const field = el('div', 'synth-field');
 					const fieldTop = el('div', 'synth-field__top');
@@ -1241,6 +1649,10 @@
 			Object.keys(sliders).forEach(function (key) {
 				delete sliders[key];
 			});
+			Object.keys(palettes).forEach(function (key) {
+				delete palettes[key];
+			});
+			colorPicker.close();
 			if (g) g.killTweensOf(stack.querySelectorAll('.synth-op, .synth-op__body, .synth-op__caret'));
 			stack.innerHTML = '';
 			stack.classList.toggle('is-empty', !pipeline.length);
@@ -1451,6 +1863,11 @@
 						if (slider.setMod) slider.setMod(mod);
 						if (!(mod && mod.enabled)) slider.setValue(op.parameters[key]);
 					});
+
+					const paletteField = palettes[op.id];
+					if (paletteField && paletteField.setParams) {
+						paletteField.setParams(op.parameters);
+					}
 
 					card.querySelectorAll('[data-enum-key]').forEach(function (btn) {
 						const key = btn.dataset.enumKey;

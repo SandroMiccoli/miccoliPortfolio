@@ -203,7 +203,7 @@ Does not draw its own picture. It distorts the incoming UVs and resamples the pr
 
 ### 3. Color Lookup (Color)
 
-Reads luminance from Warp's output and replaces it with a 1D ramp (Fire, Ice, Spectrum, Acid, Mono), plus hue rotate, contrast, and brightness. The ramp is a resource of this operator, not a global.
+Reads luminance from the previous operator and replaces it with a color palette. Presets are visual swatches; A-D and BG are editable. Hue shift, saturation, and exposure grade the mapped color. The palette is a resource of this operator, not a global.
 
 ### 4. Bloom (Effect / Filter)
 

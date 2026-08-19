@@ -36,7 +36,15 @@ const DEFAULT_OPERATORS = [
 		type: 'lookup',
 		name: 'Color Lookup',
 		bypassed: false,
-		parameters: { ramp: 'fire', hue: 0, contrast: 1.1, brightness: 0 }
+		parameters: {
+			paletteId: 'fire',
+			colors: ['#5C0812', '#D62408', '#FF9412', '#FFECC6'],
+			bg: '#080206',
+			savedPalettes: [],
+			hue: 0,
+			saturation: 1,
+			exposure: 1
+		}
 	},
 	{
 		id: 'op_bloom',

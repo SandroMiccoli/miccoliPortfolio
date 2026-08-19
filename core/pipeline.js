@@ -23,6 +23,7 @@
 		if (spec.kind === 'enum' && spec.options && spec.options.length) {
 			return spec.options[Math.floor(Math.random() * spec.options.length)].id;
 		}
+		if (spec.kind === 'palette') return undefined;
 		if (typeof spec.min !== 'number' || typeof spec.max !== 'number') return undefined;
 		const step = spec.step || 1;
 		const span = spec.max - spec.min;
@@ -36,6 +37,7 @@
 			const value = randomParam(spec);
 			if (value !== undefined) out[spec.key] = value;
 		});
+		if (typeof def.randomize === 'function') def.randomize(out);
 		return out;
 	}
 
