@@ -25,6 +25,22 @@
 		apply: applyTone
 	};
 
+	function prefersReduced() {
+		return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+	}
+
+	function dur(seconds) {
+		return prefersReduced() ? 0 : seconds;
+	}
+
+	function getGsap() {
+		return window.gsap || null;
+	}
+
+	if (window.gsap && window.Flip) {
+		window.gsap.registerPlugin(window.Flip);
+	}
+
 	function el(tag, className, text) {
 		const node = document.createElement(tag);
 		if (className) node.className = className;
@@ -77,6 +93,20 @@
 		}
 
 		rootEl.innerHTML = '';
+
+		const preview = el('section', 'synth-preview');
+		preview.setAttribute('aria-label', 'PIPE output preview');
+		const previewFrame = el('div', 'synth-preview__frame');
+		const previewImg = el('img');
+		previewImg.alt = '';
+		previewImg.hidden = true;
+		const previewEmpty = el('p', 'synth-preview__empty', 'Waiting for output');
+		const previewName = el('p', 'synth-preview__name', 'PIPE');
+		previewFrame.appendChild(previewImg);
+		previewFrame.appendChild(previewEmpty);
+		previewFrame.appendChild(previewName);
+		preview.appendChild(previewFrame);
+		rootEl.appendChild(preview);
 
 		const top = el('div', 'synth-panel__top');
 		top.appendChild(el('p', 'synth-panel__mark', 'Synth'));
@@ -282,15 +312,43 @@
 		activeTools.appendChild(deletePipeBtn);
 
 		function closeSheet() {
-			sheet.hidden = true;
-			sheetBody.innerHTML = '';
 			hideTip();
+			const g = getGsap();
+			if (!g || sheet.hidden || prefersReduced()) {
+				sheet.hidden = true;
+				sheetBody.innerHTML = '';
+				return;
+			}
+			g.to(sheet, {
+				autoAlpha: 0,
+				y: 10,
+				duration: dur(0.2),
+				ease: 'power2.in',
+				onComplete: function () {
+					sheet.hidden = true;
+					sheetBody.innerHTML = '';
+					g.set(sheet, { y: 0, autoAlpha: 1 });
+				}
+			});
 		}
 
 		function openSheet(title) {
+			const wasHidden = sheet.hidden;
 			sheetTitle.textContent = title;
 			sheet.hidden = false;
 			sheet.scrollTop = 0;
+			const g = getGsap();
+			if (g) g.killTweensOf(sheet);
+			if (wasHidden && g && !prefersReduced()) {
+				g.fromTo(sheet, { autoAlpha: 0, y: 16 }, {
+					autoAlpha: 1,
+					y: 0,
+					duration: dur(0.28),
+					ease: 'power2.out'
+				});
+			} else if (g) {
+				g.set(sheet, { autoAlpha: 1, y: 0 });
+			}
 		}
 
 		function openTypesHelp() {
@@ -372,6 +430,16 @@
 				}
 				sheetBody.appendChild(block);
 			});
+			const g = getGsap();
+			if (g && !prefersReduced()) {
+				g.from(sheetBody.querySelectorAll('.synth-chip, .synth-lib__cat-label'), {
+					autoAlpha: 0,
+					y: 8,
+					duration: dur(0.24),
+					stagger: 0.025,
+					ease: 'power2.out'
+				});
+			}
 		}
 
 		function makeChip(def) {
@@ -582,21 +650,36 @@
 				dragging = true;
 				event.preventDefault();
 				const cards = Array.prototype.slice.call(stack.querySelectorAll('.synth-op'));
+				const dragCard = stack.querySelector('[data-id="' + opId + '"]');
+				const g = getGsap();
+				if (dragCard && g) {
+					g.set(dragCard, {
+						y: event.clientY - startY,
+						scale: 1.03,
+						zIndex: 6
+					});
+				}
 				cards.forEach(function (card) {
 					card.classList.toggle('is-drop', false);
 					card.classList.toggle('is-dragging', card.dataset.id === opId);
 				});
 				let target = null;
 				cards.forEach(function (card) {
+					if (card.dataset.id === opId) return;
 					const rect = card.getBoundingClientRect();
 					if (event.clientY >= rect.top && event.clientY <= rect.bottom) target = card;
 				});
-				if (target && target.dataset.id !== opId) target.classList.add('is-drop');
+				if (target) target.classList.add('is-drop');
 			}, { passive: false });
 
 			function finish(event) {
 				if (event.pointerId !== pointerId) return;
 				const cards = Array.prototype.slice.call(stack.querySelectorAll('.synth-op'));
+				const dragCard = stack.querySelector('[data-id="' + opId + '"]');
+				const g = getGsap();
+				if (dragCard && g) {
+					g.set(dragCard, { y: 0, scale: 1, zIndex: 1, clearProps: 'transform,zIndex' });
+				}
 				let dest = -1;
 				cards.forEach(function (card, i) {
 					if (card.classList.contains('is-drop')) dest = i;
@@ -613,11 +696,47 @@
 			handle.addEventListener('pointercancel', finish);
 		}
 
+		function setCardOpen(card, open, animate) {
+			if (!card) return;
+			const body = card.querySelector('.synth-op__body');
+			const caret = card.querySelector('.synth-op__caret');
+			const ident = card.querySelector('.synth-op__ident');
+			if (ident) ident.setAttribute('aria-expanded', open ? 'true' : 'false');
+			card.classList.toggle('is-open', open);
+			if (body) {
+				if (open) body.removeAttribute('inert');
+				else body.setAttribute('inert', '');
+				body.setAttribute('aria-hidden', open ? 'false' : 'true');
+			}
+			const g = getGsap();
+			const instant = !animate || prefersReduced();
+			if (caret && g) {
+				if (instant) g.set(caret, { rotation: open ? 180 : 0 });
+				else g.to(caret, { rotation: open ? 180 : 0, duration: dur(0.22), ease: 'power2.out' });
+			}
+			if (!body) return;
+			if (!g) {
+				body.style.display = open ? 'block' : 'none';
+				body.style.height = open ? 'auto' : '0px';
+				body.style.opacity = open ? '1' : '0';
+				body.style.visibility = open ? 'visible' : 'hidden';
+				return;
+			}
+			g.set(body, { overflow: 'hidden', display: 'block' });
+			const vars = { height: open ? 'auto' : 0, autoAlpha: open ? 1 : 0 };
+			if (instant) g.set(body, vars);
+			else g.to(body, Object.assign({
+				duration: open ? dur(0.38) : dur(0.26),
+				ease: open ? 'power2.out' : 'power2.in'
+			}, vars));
+		}
+
 		function buildOpCard(op, index, total) {
 			const def = root.SynthRegistry.get(op.type) || {};
 			const color = def.color || '#8E8E8E';
 			const card = el('article', 'synth-op');
 			card.dataset.id = op.id;
+			card.setAttribute('data-flip-id', op.id);
 			card.style.setProperty('--op-color', color);
 			if (op.id === expandedId) card.classList.add('is-open');
 			if (op.bypassed) card.classList.add('is-bypass');
@@ -640,12 +759,16 @@
 			ident.appendChild(el('span', 'synth-op__swatch'));
 			ident.appendChild(el('span', 'synth-op__name', op.name || def.name || op.type));
 			const caret = el('span', 'synth-op__caret');
-			caret.appendChild(root.SynthIcons.svg(op.id === expandedId ? 'caret-up' : 'caret-down'));
+			caret.appendChild(root.SynthIcons.svg('caret-down'));
 			ident.appendChild(caret);
 			ident.addEventListener('click', function () {
-				expandedId = expandedId === op.id ? null : op.id;
-				lastSignature = null;
-				refresh();
+				const next = expandedId === op.id ? null : op.id;
+				const prev = expandedId;
+				expandedId = next;
+				if (prev && prev !== next) {
+					setCardOpen(stack.querySelector('[data-id="' + prev + '"]'), false, true);
+				}
+				setCardOpen(card, next === op.id, true);
 			});
 			head.appendChild(ident);
 
@@ -700,7 +823,8 @@
 			card.appendChild(head);
 
 			const body = el('div', 'synth-op__body');
-			body.appendChild(tools);
+			const inner = el('div', 'synth-op__body-inner');
+			inner.appendChild(tools);
 			const params = def.params || [];
 			params.forEach(function (spec) {
 				if (spec.show === 'afterInput' && index === 0) return;
@@ -723,7 +847,7 @@
 						row.appendChild(btn);
 					});
 					field.appendChild(row);
-					body.appendChild(field);
+					inner.appendChild(field);
 					return;
 				}
 
@@ -732,21 +856,38 @@
 				});
 				field.wrap.dataset.param = spec.key;
 				sliders[op.id + ':' + spec.key] = field;
-				body.appendChild(field.wrap);
+				inner.appendChild(field.wrap);
 			});
+			body.appendChild(inner);
 			card.appendChild(body);
 			return card;
 		}
 
 		function rebuildStack(pipeline) {
+			const g = getGsap();
+			const Flip = window.Flip;
+			const prevOps = stack.querySelectorAll('.synth-op');
+			const state = (g && Flip && prevOps.length) ? Flip.getState(prevOps) : null;
+
 			Object.keys(sliders).forEach(function (key) {
 				delete sliders[key];
 			});
+			if (g) g.killTweensOf(stack.querySelectorAll('.synth-op, .synth-op__body, .synth-op__caret'));
 			stack.innerHTML = '';
 			stack.classList.toggle('is-empty', !pipeline.length);
 			if (!pipeline.length) {
 				stack.appendChild(el('p', 'synth-stack__empty', 'Tap Add operator to start the chain.'));
 				stack.appendChild(insertBtn(0, 'add'));
+				if (state && Flip && g) {
+					Flip.from(state, {
+						duration: dur(0.32),
+						ease: 'power2.inOut',
+						absolute: true,
+						onLeave: function (elements) {
+							g.to(elements, { autoAlpha: 0, y: -8, duration: dur(0.2), ease: 'power2.in' });
+						}
+					});
+				}
 				return;
 			}
 			stack.appendChild(insertBtn(0, 'node'));
@@ -755,6 +896,45 @@
 				const last = index === pipeline.length - 1;
 				stack.appendChild(insertBtn(index + 1, last ? 'add' : 'node'));
 			});
+
+			const nextOps = stack.querySelectorAll('.synth-op');
+			nextOps.forEach(function (card) {
+				setCardOpen(card, card.dataset.id === expandedId, false);
+			});
+
+			if (state && Flip && g) {
+				Flip.from(state, {
+					duration: dur(0.42),
+					ease: 'power2.inOut',
+					absolute: true,
+					simple: true,
+					onEnter: function (elements) {
+						g.fromTo(elements, { autoAlpha: 0, y: 16 }, {
+							autoAlpha: 1,
+							y: 0,
+							duration: dur(0.3),
+							ease: 'power2.out'
+						});
+					},
+					onLeave: function (elements) {
+						g.to(elements, { autoAlpha: 0, y: -10, duration: dur(0.22), ease: 'power2.in' });
+					}
+				});
+			}
+		}
+
+		function refreshPreview(pipe) {
+			previewName.textContent = pipe ? pipe.name : 'PIPE';
+			const url = pipe && pipe.thumbnail;
+			if (url) {
+				if (previewImg.getAttribute('src') !== url) previewImg.src = url;
+				previewImg.hidden = false;
+				previewEmpty.hidden = true;
+			} else {
+				previewImg.removeAttribute('src');
+				previewImg.hidden = true;
+				previewEmpty.hidden = false;
+			}
 		}
 
 		function makePipeTile(pipe, activeId) {
@@ -842,9 +1022,10 @@
 			if (!renaming) {
 				activeName.textContent = pipe ? pipe.name : 'PIPE';
 			}
+			refreshPreview(pipe);
 			deletePipeBtn.disabled = pipes.length <= 1;
 
-			const signature = pipelineSignature(pipeline) + ':' + String(expandedId) + ':' + String(s.activePipeId || '');
+			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '');
 			if (signature !== lastSignature) {
 				lastSignature = signature;
 				rebuildStack(pipeline);
