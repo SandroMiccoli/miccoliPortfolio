@@ -28,6 +28,7 @@
 		return {
 			pipes: [pipe],
 			activePipeId: pipe.id,
+			clock: root.SynthClock ? root.SynthClock.defaults() : { bpm: 120, originMs: Date.now() },
 			debug: { enabled: false }
 		};
 	}
@@ -35,10 +36,14 @@
 	function migrate(raw) {
 		const base = defaultState();
 		if (!raw) return base;
+		const clock = root.SynthClock
+			? root.SynthClock.fromState(raw)
+			: Object.assign({ bpm: 120, originMs: Date.now() }, raw.clock || {});
 		if (raw.pipes && raw.pipes.length) {
 			return {
 				pipes: clone(raw.pipes),
 				activePipeId: raw.activePipeId || raw.pipes[0].id,
+				clock: clock,
 				debug: raw.debug || { enabled: false }
 			};
 		}
@@ -49,6 +54,7 @@
 			return {
 				pipes: [pipe],
 				activePipeId: pipe.id,
+				clock: clock,
 				debug: raw.debug || { enabled: false }
 			};
 		}
@@ -80,6 +86,30 @@
 		return next;
 	}
 
+	function applyOpMod(state, opMod) {
+		if (!opMod || !opMod.id || !opMod.key) return state;
+		const next = clone(state);
+		next.pipes = (next.pipes || []).map(function (pipe) {
+			const operators = (pipe.operators || []).map(function (op) {
+				if (op.id !== opMod.id) return op;
+				const updated = clone(op);
+				updated.modulations = updated.modulations || {};
+				if (!opMod.modulation) {
+					delete updated.modulations[opMod.key];
+					return updated;
+				}
+				updated.modulations[opMod.key] = Object.assign(
+					{},
+					updated.modulations[opMod.key] || {},
+					opMod.modulation
+				);
+				return updated;
+			});
+			return Object.assign({}, pipe, { operators: operators });
+		});
+		return next;
+	}
+
 	function setActiveOperators(state, operators) {
 		const next = clone(state);
 		const id = next.activePipeId;
@@ -98,6 +128,7 @@
 		operators: true,
 		pipeline: true,
 		opParam: true,
+		opMod: true,
 		pipeThumb: true,
 		pipeMeta: true
 	};
@@ -121,6 +152,9 @@
 		}
 		if (patch.opParam) {
 			next = applyOpParam(next, patch.opParam);
+		}
+		if (patch.opMod) {
+			next = applyOpMod(next, patch.opMod);
 		}
 		if (patch.pipeThumb && patch.pipeThumb.id) {
 			next = clone(next);

@@ -106,10 +106,16 @@
 		draw: function (stateOrOps, time) {
 			ortho();
 			background(0);
-			if (liveExecutor) liveExecutor.run(operatorsOf(stateOrOps), time);
+			if (!liveExecutor) return;
+			const state = Array.isArray(stateOrOps) ? null : stateOrOps;
+			liveExecutor.run(operatorsOf(stateOrOps), time, {
+				nowMs: Date.now(),
+				clock: root.SynthClock && state ? root.SynthClock.fromState(state) : null,
+				fft: root.SynthFft ? root.SynthFft.levels() : null
+			});
 		},
 
-		capture: function () {
+		capture: function (quality) {
 			const gl = drawingContext;
 			if (!gl || typeof gl.readPixels !== 'function') return '';
 			const w = gl.drawingBufferWidth | 0;
@@ -154,7 +160,8 @@
 			ctx.fillRect(0, 0, THUMB_W, THUMB_H);
 			ctx.drawImage(readCanvas, 0, 0, THUMB_W, THUMB_H);
 			try {
-				return thumbGfx.toDataURL('image/jpeg', 0.72);
+				const q = quality == null ? 0.72 : quality;
+				return thumbGfx.toDataURL('image/jpeg', q);
 			} catch (err) {
 				return '';
 			}

@@ -58,6 +58,12 @@
 				handlers.onNotify(msg.level, msg.message);
 			} else if (msg.type === 'stats' && handlers.onStats) {
 				handlers.onStats(msg);
+			} else if (msg.type === 'preview' && handlers.onPreview) {
+				handlers.onPreview(msg);
+			} else if (msg.type === 'live' && handlers.onLive) {
+				handlers.onLive(!!msg.enabled);
+			} else if (msg.type === 'fft' && handlers.onFft) {
+				handlers.onFft(msg);
 			}
 		});
 
@@ -86,6 +92,20 @@
 		},
 		sendStats: function (fps) {
 			send({ type: 'stats', fps: fps });
+		},
+		sendLive: function (enabled) {
+			send({ type: 'live', enabled: !!enabled });
+		},
+		sendPreview: function (url, pipeId) {
+			send({ type: 'preview', url: url, pipeId: pipeId || '' });
+		},
+		sendFft: function (levels) {
+			send({
+				type: 'fft',
+				low: levels && levels.low,
+				mid: levels && levels.mid,
+				high: levels && levels.high
+			});
 		},
 		connected: function () {
 			return connected;

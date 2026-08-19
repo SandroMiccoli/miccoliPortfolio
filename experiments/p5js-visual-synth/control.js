@@ -8,13 +8,18 @@
 	function setStatus(on) {
 		const el = document.getElementById('sync-status');
 		if (!el) return;
+		el.classList.remove('is-on', 'is-wait', 'is-off');
 		if (on) {
 			el.textContent = 'Connected';
+			el.classList.add('is-on');
 			seenLive = true;
+		} else if (seenLive) {
+			el.textContent = 'Reconnecting';
+			el.classList.add('is-off');
 		} else {
-			el.textContent = seenLive ? 'Reconnecting' : 'Connecting';
+			el.textContent = 'Connecting';
+			el.classList.add('is-wait');
 		}
-		el.classList.toggle('is-on', on);
 		if (!window.SynthNotify) return;
 		if (on) {
 			SynthNotify.show('success', 'Connected to Visual Synth');
@@ -36,8 +41,23 @@
 			getState: function () {
 				return SynthState.get();
 			},
-			patch: userPatch
+			patch: userPatch,
+			setLivePreview: function (on) {
+				SynthSync.sendLive(on);
+			}
 		});
+
+		if (window.SynthFft) {
+			SynthFft.setBroadcast(function (levels) {
+				SynthSync.sendFft(levels);
+			});
+		}
+
+		function loop() {
+			if (uiApi && uiApi.tick) uiApi.tick();
+			window.requestAnimationFrame(loop);
+		}
+		window.requestAnimationFrame(loop);
 
 		SynthState.subscribe(function () {
 			if (uiApi) uiApi.refresh();
@@ -56,6 +76,15 @@
 			},
 			onStats: function (stats) {
 				if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
+			},
+			onPreview: function (msg) {
+				if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(msg.url);
+			},
+			onLive: function (enabled) {
+				if (uiApi && uiApi.setLiveMode) uiApi.setLiveMode(!!enabled);
+			},
+			onFft: function (msg) {
+				if (window.SynthFft) SynthFft.setRemote(msg);
 			}
 		});
 	});

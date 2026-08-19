@@ -64,6 +64,10 @@ const DEFAULT_STATE = {
 		}
 	],
 	activePipeId: 'pipe_01',
+	clock: {
+		bpm: 120,
+		originMs: Date.now()
+	},
 	debug: {
 		enabled: false
 	}
@@ -116,6 +120,30 @@ function applyOpParam(state, opParam) {
 	return next;
 }
 
+function applyOpMod(state, opMod) {
+	if (!opMod || !opMod.id || !opMod.key) return state;
+	const next = clone(state);
+	next.pipes = (next.pipes || []).map((pipe) => {
+		const operators = (pipe.operators || []).map((op) => {
+			if (op.id !== opMod.id) return op;
+			const updated = clone(op);
+			updated.modulations = updated.modulations || {};
+			if (!opMod.modulation) {
+				delete updated.modulations[opMod.key];
+				return updated;
+			}
+			updated.modulations[opMod.key] = Object.assign(
+				{},
+				updated.modulations[opMod.key] || {},
+				opMod.modulation
+			);
+			return updated;
+		});
+		return Object.assign({}, pipe, { operators: operators });
+	});
+	return next;
+}
+
 function setActiveOperators(state, operators) {
 	const next = clone(state);
 	const id = next.activePipeId;
@@ -134,6 +162,7 @@ const PATCH_KEYS = {
 	operators: true,
 	pipeline: true,
 	opParam: true,
+	opMod: true,
 	pipeThumb: true,
 	pipeMeta: true
 };
@@ -157,6 +186,9 @@ function applyPatch(state, patch) {
 	}
 	if (patch.opParam) {
 		next = applyOpParam(next, patch.opParam);
+	}
+	if (patch.opMod) {
+		next = applyOpMod(next, patch.opMod);
 	}
 	if (patch.pipeThumb && patch.pipeThumb.id) {
 		next = clone(next);
@@ -260,6 +292,7 @@ async function start() {
 	const server = http.createServer(app);
 	const wss = new WebSocketServer({ server });
 	let latestStats = { fps: null, tempC: readCpuTemp() };
+	let livePreview = false;
 
 	function broadcastState() {
 		const packed = JSON.stringify({ type: 'state', state: state });
@@ -293,9 +326,22 @@ async function start() {
 			}
 
 			if (msg.type === 'hello') {
+				ws.role = msg.role || '';
 				ws.send(JSON.stringify({ type: 'state', state: state }));
 				ws.send(JSON.stringify(Object.assign({ type: 'info' }, makeInfo(port))));
 				ws.send(JSON.stringify({ type: 'stats', fps: latestStats.fps, tempC: latestStats.tempC }));
+				ws.send(JSON.stringify({ type: 'live', enabled: livePreview }));
+				return;
+			}
+
+			if (msg.type === 'live') {
+				livePreview = !!msg.enabled;
+				broadcast({ type: 'live', enabled: livePreview });
+				return;
+			}
+
+			if (msg.type === 'preview' && msg.url) {
+				broadcast({ type: 'preview', url: msg.url, pipeId: msg.pipeId || '' }, ws);
 				return;
 			}
 
@@ -313,6 +359,16 @@ async function start() {
 			if (msg.type === 'stats' && msg.fps != null) {
 				latestStats.fps = Number(msg.fps);
 				broadcastStats();
+				return;
+			}
+
+			if (msg.type === 'fft') {
+				broadcast({
+					type: 'fft',
+					low: Number(msg.low) || 0,
+					mid: Number(msg.mid) || 0,
+					high: Number(msg.high) || 0
+				}, ws);
 			}
 		});
 	});

@@ -10,7 +10,36 @@
 		return 'op_' + Math.random().toString(36).slice(2, 10);
 	}
 
-	function makeInstance(type, id) {
+	function snap(value, min, max, step) {
+		const stepped = Math.round((value - min) / step) * step + min;
+		const clamped = Math.min(max, Math.max(min, stepped));
+		if (step >= 1) return Math.round(clamped);
+		const digits = step < 0.1 ? 2 : 1;
+		return Number(clamped.toFixed(digits));
+	}
+
+	function randomParam(spec) {
+		if (!spec) return undefined;
+		if (spec.kind === 'enum' && spec.options && spec.options.length) {
+			return spec.options[Math.floor(Math.random() * spec.options.length)].id;
+		}
+		if (typeof spec.min !== 'number' || typeof spec.max !== 'number') return undefined;
+		const step = spec.step || 1;
+		const span = spec.max - spec.min;
+		return snap(spec.min + Math.random() * span, spec.min, spec.max, step);
+	}
+
+	function randomizeParameters(def) {
+		const out = clone(def.defaults || {});
+		(def.params || []).forEach(function (spec) {
+			if (!spec || !spec.key) return;
+			const value = randomParam(spec);
+			if (value !== undefined) out[spec.key] = value;
+		});
+		return out;
+	}
+
+	function makeInstance(type, id, randomize) {
 		const def = root.SynthRegistry.get(type);
 		if (!def || !def.implemented) return null;
 		return {
@@ -18,7 +47,8 @@
 			type: def.type,
 			name: def.name,
 			bypassed: false,
-			parameters: clone(def.defaults || {})
+			parameters: randomize ? randomizeParameters(def) : clone(def.defaults || {}),
+			modulations: {}
 		};
 	}
 
@@ -49,7 +79,7 @@
 
 		add: function (pipeline, type, index) {
 			const next = (pipeline || []).slice();
-			const inst = makeInstance(type);
+			const inst = makeInstance(type, null, true);
 			if (!inst) return next;
 			const at = index == null ? insertIndex(next) : Math.max(0, Math.min(next.length, index));
 			const def = root.SynthRegistry.get(type);

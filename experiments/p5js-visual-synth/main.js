@@ -15,6 +15,8 @@
 	let watchPipeId = '';
 	let watchVis = '';
 	let capturingThumb = false;
+	let livePreview = false;
+	let liveThumbAge = 0;
 
 	function inLab() {
 		return document.body.classList.contains('lab-body');
@@ -43,6 +45,24 @@
 			watchVis = vis;
 			requestThumb(switched || !pipe.thumbnail);
 		}
+
+		if (livePreview) {
+			if (capturingThumb || millis() < thumbDue) return;
+			capturingThumb = true;
+			const url = SynthEngine.capture(0.52);
+			capturingThumb = false;
+			if (!url) return;
+			thumbDue = millis() + 90;
+			liveThumbAge += 90;
+			SynthSync.sendPreview(url, pipe.id);
+			if (liveThumbAge >= 2000 || switched || changed) {
+				liveThumbAge = 0;
+				thumbDirty = false;
+				userPatch({ pipeThumb: { id: pipe.id, thumbnail: url } });
+			}
+			return;
+		}
+
 		if (!thumbDirty || capturingThumb) return;
 		if (millis() < thumbDue) return;
 		capturingThumb = true;
@@ -291,6 +311,14 @@
 			},
 			onStats: function (stats) {
 				updateDebugHud(stats);
+			},
+			onLive: function (enabled) {
+				livePreview = !!enabled;
+				thumbDue = 0;
+				liveThumbAge = 2000;
+			},
+			onFft: function (msg) {
+				if (window.SynthFft) SynthFft.setRemote(msg);
 			}
 		});
 	}
@@ -300,6 +328,7 @@
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
 		scheduleThumb(state);
+		if (uiApi && uiApi.tick) uiApi.tick();
 		if (state.debug && state.debug.enabled) {
 			const fps = frameRate();
 			updateDebugHud({ fps: fps });

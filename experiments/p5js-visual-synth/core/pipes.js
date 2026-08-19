@@ -57,7 +57,8 @@
 				id: op.id,
 				type: op.type,
 				bypassed: !!op.bypassed,
-				parameters: op.parameters || {}
+				parameters: op.parameters || {},
+				modulations: op.modulations || {}
 			};
 		}));
 	}
