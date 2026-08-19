@@ -34,6 +34,8 @@
 	let restartTimer = 0;
 	const listeners = [];
 	const MAX_BLIT_W = 1280;
+	const PHONE_SEND_W = 270;
+	const PHONE_SEND_H = 480;
 	const GUM_MS = 8000;
 	const GUM_TRY_MS = 4500;
 	const FRAME_MS = 10000;
@@ -231,15 +233,50 @@
 	}
 
 	function constraintsFor(deviceId, facing) {
-		const video = { audio: false };
-		if (deviceId) {
-			video.video = { deviceId: { exact: deviceId } };
-		} else if (facing) {
-			video.video = { facingMode: { ideal: facing } };
-		} else {
-			video.video = true;
+		const video = {
+			width: { ideal: 720 },
+			height: { ideal: 1280 },
+			aspectRatio: { ideal: 9 / 16 }
+		};
+		if (deviceId) video.deviceId = { exact: deviceId };
+		else if (facing) video.facingMode = { ideal: facing };
+		return { audio: false, video: video };
+	}
+
+	function phoneFacing() {
+		try {
+			const tracks = stream && stream.getVideoTracks && stream.getVideoTracks();
+			const track = tracks && tracks[0];
+			if (track && track.getSettings) return String(track.getSettings().facingMode || '');
+		} catch (err) { /* ignore */ }
+		return '';
+	}
+
+	function drawPhoneSend() {
+		const vw = video.videoWidth;
+		const vh = video.videoHeight;
+		if (vw < 2 || vh < 2) return false;
+		const cw = PHONE_SEND_W;
+		const ch = PHONE_SEND_H;
+		if (sendCanvas.width !== cw || sendCanvas.height !== ch) {
+			sendCanvas.width = cw;
+			sendCanvas.height = ch;
 		}
-		return video;
+		const portraitPhone = (window.innerHeight || 1) >= (window.innerWidth || 1);
+		const rotate = portraitPhone && vw > vh
+			? (phoneFacing() === 'user' ? -Math.PI / 2 : Math.PI / 2)
+			: 0;
+		const visW = rotate ? vh : vw;
+		const visH = rotate ? vw : vh;
+		const scale = Math.max(cw / visW, ch / visH);
+		sendCtx.fillStyle = '#000';
+		sendCtx.fillRect(0, 0, cw, ch);
+		sendCtx.save();
+		sendCtx.translate(cw / 2, ch / 2);
+		if (rotate) sendCtx.rotate(rotate);
+		sendCtx.drawImage(video, -vw * scale / 2, -vh * scale / 2, vw * scale, vh * scale);
+		sendCtx.restore();
+		return true;
 	}
 
 	function withTimeout(promise, ms, message) {
@@ -469,13 +506,7 @@
 		sendCtx = sendCanvas.getContext('2d', { alpha: false });
 		sendTimer = window.setInterval(function () {
 			if (!ready || !video || !video.videoWidth || !root.SynthSync || !root.SynthSync.sendCameraFrame) return;
-			const w = 480;
-			const h = Math.max(2, Math.round(video.videoHeight * (w / video.videoWidth)));
-			if (sendCanvas.width !== w || sendCanvas.height !== h) {
-				sendCanvas.width = w;
-				sendCanvas.height = h;
-			}
-			sendCtx.drawImage(video, 0, 0, w, h);
+			if (!drawPhoneSend()) return;
 			try {
 				root.SynthSync.sendCameraFrame(sendCanvas.toDataURL('image/jpeg', 0.5));
 			} catch (err) { /* ignore */ }

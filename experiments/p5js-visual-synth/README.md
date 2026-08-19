@@ -427,6 +427,7 @@ exec chromium --kiosk --app=http://127.0.0.1:8080/ \
   --autoplay-policy=no-user-gesture-required \
   --use-fake-ui-for-media-stream \
   --enable-media-stream \
+  --disable-features=WebRtcPipeWireCamera \
   --ignore-gpu-blocklist --use-gl=egl \
   --ozone-platform=x11
 ```
@@ -486,6 +487,24 @@ sudo systemd-run --unit=visual-synth-kiosk-test \
 
 Watch the Pi screen, not the SSH session. Stop with `sudo systemctl stop visual-synth-kiosk-test`. Logs: `journalctl -u visual-synth-kiosk -e`.
 
+#### Wayland kiosk (cage)
+
+If the HDMI session is **cage** instead of xinit, put the same Chromium flags on `ExecStart` in `visual-synth-kiosk.service`, including `--disable-features=WebRtcPipeWireCamera`. Example:
+
+```ini
+ExecStart=/usr/bin/cage -- /usr/bin/chromium --kiosk --app=http://127.0.0.1:8080/ \
+  --noerrdialogs --disable-infobars \
+  --disable-session-crashed-bubble \
+  --check-for-update-interval=31536000 \
+  --autoplay-policy=no-user-gesture-required \
+  --use-fake-ui-for-media-stream \
+  --enable-media-stream \
+  --disable-features=WebRtcPipeWireCamera \
+  --ozone-platform=wayland
+```
+
+Give the unit a user session so Chromium can talk to the bus (`XDG_RUNTIME_DIR=/run/user/1000`, and typically `DBUS_SESSION_BUS_ADDRESS` / `PIPEWIRE_RUNTIME_DIR` for that same user). Restart with `sudo systemctl daemon-reload && sudo systemctl restart visual-synth-kiosk`.
+
 ### 7. Phone control
 
 1. Join the same Wi-Fi as the Pi
@@ -511,19 +530,36 @@ groups   # pi must include video
 
 If `video` is missing: `sudo usermod -aG video pi` then reboot.
 
-2. Chromium in kiosk must auto-accept the camera prompt. Without this flag, adding Camera Input from the phone does nothing because the permission dialog never appears on the HDMI screen. In `/home/pi/.xinitrc` keep:
+2. Chromium in kiosk must auto-accept the camera prompt. Without this flag, adding Camera Input from the phone does nothing because the permission dialog never appears on the HDMI screen. Keep:
 
 ```
 --use-fake-ui-for-media-stream --enable-media-stream
 ```
 
-Then restart the kiosk: `sudo systemctl restart visual-synth-kiosk`.
+3. Raspberry Pi OS Chromium enables **PipeWire camera** by default. In a Lite kiosk (xinit or cage) that path often never opens the USB device: `getUserMedia` times out, the webcam LED stays off, `ffmpeg -f v4l2 -i /dev/video0` still works, and `wpctl status` shows the camera while Chromium never appears as a **video** client (audio only).
 
-3. Add **Camera Input**, leave Source on **Display**, and pick the USB device if more than one appears.
+Force V4L2 — the same path ffmpeg uses. Add this Chromium flag (if `--disable-features` already exists, append `WebRtcPipeWireCamera` with a comma, do not add a second flag):
+
+```
+--disable-features=WebRtcPipeWireCamera
+```
+
+Then:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart visual-synth-kiosk
+```
+
+Do **not** add `--use-fake-device-for-media-stream` except as a drawing test; that replaces the real camera with Chromium’s green test pattern.
+
+4. Add **Camera Input**, leave Source on **Display**, and tap **Reconnect** if the status card is in error.
 
 **Phone camera**
 
 Modern browsers block `getUserMedia` on plain HTTP. The server also listens on HTTPS (port 8443) with a self-signed certificate. Open the printed `https   .../control.html` URL, accept the certificate warning, then set Source to **Phone**. HTTP control still works for everything except the phone camera.
+
+Phone frames are encoded as **9:16** (270×480) before they leave the phone: the landscape sensor buffer is rotated when the phone is upright, then cover-cropped. Cover / Contain on Camera Input then see a portrait texture against the landscape HDMI frame.
 
 ## Troubleshooting
 
@@ -535,6 +571,7 @@ Modern browsers block `getUserMedia` on plain HTTP. The server also listens on H
 | Port already in use | Another process is on 8080. Stop it, or start with `PORT=8081 npm start` and update the kiosk URL. |
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
 | Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream`, then restart the kiosk. |
+| USB camera times out / LED never on, `ffmpeg` works | Chromium is using PipeWire for the camera. Add `--disable-features=WebRtcPipeWireCamera` to the kiosk Chromium args, `daemon-reload`, restart `visual-synth-kiosk`. |
 | Phone camera does nothing | Open the printed **https** control URL (port 8443) and accept the certificate. HTTP blocks the phone camera. |
 | CDN scripts fail offline | Vendor `p5.min.js` / `qrcode.min.js` next to `index.html`. |
 
