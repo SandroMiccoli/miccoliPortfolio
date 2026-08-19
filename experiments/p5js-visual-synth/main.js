@@ -286,6 +286,12 @@
 			setDebugHud(!!(state.debug && state.debug.enabled));
 		});
 
+		if (window.SynthCamera) {
+			SynthCamera.onChange(function () {
+				if (uiApi) uiApi.refresh();
+			});
+		}
+
 		setupGestures();
 		setupIdleChrome();
 		setupBoot();
@@ -319,8 +325,13 @@
 			},
 			onFft: function (msg) {
 				if (window.SynthFft) SynthFft.setRemote(msg);
+			},
+			onCameraFrame: function (url) {
+				if (window.SynthCamera) SynthCamera.setRemoteFrame(url);
 			}
 		});
+
+		if (window.SynthCamera) SynthCamera.probeDisplay();
 	}
 
 	function draw() {

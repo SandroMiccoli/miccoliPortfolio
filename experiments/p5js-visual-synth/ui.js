@@ -1699,7 +1699,13 @@
 					const row = el('div', 'synth-row synth-row--wrap');
 					row.setAttribute('role', 'group');
 					row.setAttribute('aria-label', spec.label);
-					spec.options.forEach(function (opt) {
+					let options = spec.options || [];
+					if (typeof spec.options === 'function') options = spec.options(op) || [];
+					if (spec.optionsFrom === 'cameraDevices' && root.SynthCamera) {
+						const source = (op.parameters && op.parameters.source) || 'display';
+						options = root.SynthCamera.deviceOptions(source);
+					}
+					options.forEach(function (opt) {
 						const btn = el('button', 'synth-btn', opt.label);
 						btn.type = 'button';
 						btn.dataset.enumKey = spec.key;
@@ -1932,7 +1938,9 @@
 			refreshPreview(pipe);
 			deletePipeBtn.disabled = pipes.length <= 1;
 
-			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '');
+			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '') + ':' + (
+				root.SynthCamera && root.SynthCamera.signature ? root.SynthCamera.signature() : ''
+			);
 			if (signature !== lastSignature) {
 				lastSignature = signature;
 				rebuildStack(pipeline);

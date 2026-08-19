@@ -3,6 +3,13 @@
 	let role = 'display';
 	let connected = false;
 	let handlers = {};
+	const pending = [];
+
+	function enqueue(payload) {
+		if (!payload || (payload.type !== 'notify' && payload.type !== 'cameras')) return;
+		pending.push(payload);
+		if (pending.length > 24) pending.shift();
+	}
 
 	function inLab() {
 		return document.body.classList.contains('lab-body');
@@ -14,8 +21,16 @@
 	}
 
 	function send(payload) {
-		if (!socket || socket.readyState !== WebSocket.OPEN) return;
+		if (!socket || socket.readyState !== WebSocket.OPEN) {
+			enqueue(payload);
+			return;
+		}
 		socket.send(JSON.stringify(payload));
+	}
+
+	function flushPending() {
+		const queued = pending.splice(0, pending.length);
+		queued.forEach(send);
 	}
 
 	function connect(options) {
@@ -40,6 +55,7 @@
 		ws.addEventListener('open', function () {
 			connected = true;
 			send({ type: 'hello', role: role });
+			flushPending();
 			if (handlers.onStatus) handlers.onStatus(true);
 		});
 
@@ -64,6 +80,10 @@
 				handlers.onLive(!!msg.enabled);
 			} else if (msg.type === 'fft' && handlers.onFft) {
 				handlers.onFft(msg);
+			} else if (msg.type === 'cameras' && handlers.onCameras) {
+				handlers.onCameras(msg.devices || []);
+			} else if (msg.type === 'cameraFrame' && handlers.onCameraFrame) {
+				handlers.onCameraFrame(msg.url);
 			}
 		});
 
@@ -106,6 +126,13 @@
 				mid: levels && levels.mid,
 				high: levels && levels.high
 			});
+		},
+		sendCameras: function (devices) {
+			send({ type: 'cameras', devices: devices || [] });
+		},
+		sendCameraFrame: function (url) {
+			if (!url) return;
+			send({ type: 'cameraFrame', url: url });
 		},
 		connected: function () {
 			return connected;

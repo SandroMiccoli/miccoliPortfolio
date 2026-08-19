@@ -425,6 +425,8 @@ exec chromium --kiosk --app=http://127.0.0.1:8080/ \
   --disable-session-crashed-bubble \
   --check-for-update-interval=31536000 \
   --autoplay-policy=no-user-gesture-required \
+  --use-fake-ui-for-media-stream \
+  --enable-media-stream \
   --ignore-gpu-blocklist --use-gl=egl \
   --ozone-platform=x11
 ```
@@ -491,7 +493,37 @@ Watch the Pi screen, not the SSH session. Stop with `sudo systemctl stop visual-
 3. Change PIPEs and operators: activate, add, bypass, reorder, tweak parameters. The Pi display updates immediately
 4. On the Pi, press **U** or tap the right edge for the same panel
 
-The phone never receives video. It only sends PIPE patches over WebSocket. Thumbnails are generated on the display and come back in state.
+The phone never receives the rendered video. It only sends PIPE patches over WebSocket, plus optional FFT and phone-camera frames. Thumbnails are generated on the display and come back in state.
+
+### Camera (USB on the Pi, or the phone)
+
+Camera Input has a **Source** control: **Display** (webcam on the Raspberry Pi) or **Phone** (the control phone). The picture is always composited on the Pi. The phone never shows the camera in its own UI.
+
+**Display / USB webcam**
+
+1. Plug the webcam in and confirm the Pi sees it:
+
+```bash
+sudo apt install -y v4l-utils
+v4l2-ctl --list-devices
+groups   # pi must include video
+```
+
+If `video` is missing: `sudo usermod -aG video pi` then reboot.
+
+2. Chromium in kiosk must auto-accept the camera prompt. Without this flag, adding Camera Input from the phone does nothing because the permission dialog never appears on the HDMI screen. In `/home/pi/.xinitrc` keep:
+
+```
+--use-fake-ui-for-media-stream --enable-media-stream
+```
+
+Then restart the kiosk: `sudo systemctl restart visual-synth-kiosk`.
+
+3. Add **Camera Input**, leave Source on **Display**, and pick the USB device if more than one appears.
+
+**Phone camera**
+
+Modern browsers block `getUserMedia` on plain HTTP. The server also listens on HTTPS (port 8443) with a self-signed certificate. Open the printed `https   .../control.html` URL, accept the certificate warning, then set Source to **Phone**. HTTP control still works for everything except the phone camera.
 
 ## Troubleshooting
 
@@ -502,6 +534,8 @@ The phone never receives video. It only sends PIPE patches over WebSocket. Thumb
 | `visual-synth.local` does not open | Use `http://visual-synth.local:8080` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
 | Port already in use | Another process is on 8080. Stop it, or start with `PORT=8081 npm start` and update the kiosk URL. |
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
+| Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream`, then restart the kiosk. |
+| Phone camera does nothing | Open the printed **https** control URL (port 8443) and accept the certificate. HTTP blocks the phone camera. |
 | CDN scripts fail offline | Vendor `p5.min.js` / `qrcode.min.js` next to `index.html`. |
 
 ## Files
@@ -525,7 +559,7 @@ The phone never receives video. It only sends PIPE patches over WebSocket. Thumb
 | `notify.js` | Success / warning / error toasts |
 | `sync.js` | WebSocket client (no-op in the lab) |
 | `server/index.js` | Static HTTP + WebSocket + `/api/info` |
-| `camera.js` | Unused in MVP. Kept for a future Camera generator |
+| `camera.js` | Display USB capture, phone frame sender, device list |
 
 ## What this build is not
 
