@@ -447,7 +447,7 @@
 			if (name === 'TimeoutError') {
 				failMessage = isControl()
 					? 'Camera did not start in time. Tap Reconnect.'
-					: 'USB camera did not start. Chromium may be hitting a Pi codec node instead of the C270. Tap Reconnect.';
+					: 'USB camera timed out. On the Pi kiosk, add --disable-features=WebRtcPipeWireCamera so Chromium uses V4L2 instead of PipeWire, then restart visual-synth-kiosk.';
 			} else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
 				failMessage = 'Camera permission denied. On the Pi, add --use-fake-ui-for-media-stream to Chromium.';
 			} else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
