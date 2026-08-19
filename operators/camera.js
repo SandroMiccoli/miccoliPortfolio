@@ -7,7 +7,7 @@
 		category: 'generator',
 		categoryLabel: cat.label,
 		color: cat.color,
-		help: 'Live camera texture. Display uses the USB webcam on the Pi. Phone uses the control phone camera and sends frames over the network. Mirror flips the image. Cover fills the frame; Contain letterboxes.',
+		help: 'Live camera texture. Display uses the USB webcam on the renderer. Phone uses this control phone and sends frames over the network. Device, Mirror, and Fit appear after that source is live. Reconnect stops and reopens the camera.',
 		implemented: true,
 		defaults: {
 			source: 'display',
@@ -32,13 +32,14 @@
 				label: 'Device',
 				kind: 'enum',
 				randomize: false,
-				optionsFrom: 'cameraDevices'
+				optionsFrom: 'cameraDevices',
+				visibleWhen: 'cameraDevices'
 			},
-			{ key: 'mirror', label: 'Mirror', kind: 'enum', options: [
+			{ key: 'mirror', label: 'Mirror', kind: 'enum', visibleWhen: 'cameraLive', options: [
 				{ id: 0, label: 'Off' },
 				{ id: 1, label: 'On' }
 			]},
-			{ key: 'fit', label: 'Fit', kind: 'enum', options: [
+			{ key: 'fit', label: 'Fit', kind: 'enum', visibleWhen: 'cameraLive', options: [
 				{ id: 'cover', label: 'Cover' },
 				{ id: 'contain', label: 'Contain' }
 			]},

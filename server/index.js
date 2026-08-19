@@ -430,12 +430,38 @@ async function start() {
 					level: msg.level || 'warning',
 					message: String(msg.message)
 				};
-				lastNotify = { payload: payload, at: Date.now() };
+				lastNotify = (payload.level === 'warning' || payload.level === 'error')
+					? { payload: payload, at: Date.now() }
+					: lastNotify;
 				const packed = JSON.stringify(payload);
 				wss.clients.forEach((client) => {
 					if (client.readyState !== 1) return;
 					if (client.role !== 'control') return;
 					if (client === ws) return;
+					client.send(packed);
+				});
+				return;
+			}
+
+			if (msg.type === 'cameraStatus') {
+				const packed = JSON.stringify({
+					type: 'cameraStatus',
+					source: msg.source || '',
+					phase: msg.phase || 'idle',
+					message: String(msg.message || ''),
+					live: !!msg.live
+				});
+				wss.clients.forEach((client) => {
+					if (client === ws || client.readyState !== 1) return;
+					client.send(packed);
+				});
+				return;
+			}
+
+			if (msg.type === 'cameraReconnect') {
+				const packed = JSON.stringify({ type: 'cameraReconnect' });
+				wss.clients.forEach((client) => {
+					if (client === ws || client.readyState !== 1) return;
 					client.send(packed);
 				});
 				return;
