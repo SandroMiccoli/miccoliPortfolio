@@ -271,51 +271,26 @@
 		function attempt(constraints, label) {
 			if (my !== bootId) return Promise.reject(new Error('stale'));
 			setPhase('connecting', 'Opening ' + (label || 'USB camera') + '…');
-			return getUserMediaTimed(constraints, GUM_TRY_MS);
+			return getUserMediaTimed(constraints, GUM_MS);
 		}
 
-		function tryList(list) {
-			const ranked = rankCaptureDevices(list, preferredId);
-			const named = ranked.filter(function (dev) {
-				return (preferredId && dev.deviceId === preferredId) || PREFER_CAM.test(dev.label);
+		const sized = {
+			audio: false,
+			video: { width: { ideal: 640 }, height: { ideal: 480 } }
+		};
+		if (preferredId) {
+			return attempt({
+				audio: false,
+				video: {
+					deviceId: { exact: preferredId },
+					width: { ideal: 640 },
+					height: { ideal: 480 }
+				}
+			}, 'selected camera').catch(function () {
+				return attempt(sized, 'USB 640×480');
 			});
-			const ordered = named.length ? named : ranked;
-			let chain = Promise.reject(new Error('start'));
-			if (!named.length) {
-				chain = chain.catch(function () {
-					return attempt({
-						audio: false,
-						video: { width: { ideal: 640 }, height: { ideal: 480 } }
-					}, 'USB 640×480');
-				});
-			}
-			ordered.slice(0, 3).forEach(function (dev) {
-				chain = chain.catch(function () {
-					return attempt({
-						audio: false,
-						video: {
-							deviceId: { exact: dev.deviceId },
-							width: { ideal: 640 },
-							height: { ideal: 480 }
-						}
-					}, labelOf(dev, 0));
-				});
-			});
-			if (named.length) {
-				chain = chain.catch(function () {
-					return attempt({
-						audio: false,
-						video: { width: { ideal: 640 }, height: { ideal: 480 } }
-					}, 'USB 640×480');
-				});
-			}
-			return chain;
 		}
-
-		if (!navigator.mediaDevices.enumerateDevices) {
-			return tryList([]);
-		}
-		return navigator.mediaDevices.enumerateDevices().then(tryList);
+		return attempt(sized, 'USB 640×480');
 	}
 
 	function waitForFrame(node, my) {
@@ -434,10 +409,9 @@
 		failed = false;
 		currentKey = key;
 		lastAttemptKey = key;
-		setPhase(
-			'connecting',
-			isControl() ? 'Opening this phone\'s camera…' : 'Opening USB camera on the display…'
-		);
+		if (isControl()) {
+			setPhase('connecting', 'Opening this phone\'s camera…');
+		}
 		const node = ensureVideo();
 
 		function attach(media) {
@@ -678,11 +652,6 @@
 		},
 		probeDisplay: function () {
 			if (isControl()) return;
-			readDevices('display').then(function (cams) {
-				if (root.SynthSync && root.SynthSync.sendCameras) {
-					root.SynthSync.sendCameras(cams);
-				}
-			});
 			if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 				navigator.mediaDevices.addEventListener('devicechange', function () {
 					readDevices('display').then(function (cams) {
