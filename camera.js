@@ -35,7 +35,10 @@
 	const listeners = [];
 	const MAX_BLIT_W = 1280;
 	const GUM_MS = 8000;
+	const GUM_TRY_MS = 4500;
 	const FRAME_MS = 10000;
+	const SKIP_CAM = /bcm2835|rpi-hevc|hevc-dec|codec|isp\b|metadata|dummy|loopback|vivid|pisp/i;
+	const PREFER_CAM = /logitech|c270|c920|c922|uvc|usb|webcam|hd camera|0825/i;
 
 	function isControl() {
 		return !!(document.body && document.body.classList.contains('synth-control'));
@@ -180,13 +183,41 @@
 		return 'Camera ' + (index + 1);
 	}
 
+	function isSkipCam(label) {
+		return SKIP_CAM.test(String(label || ''));
+	}
+
+	function rankCaptureDevices(list, preferredId) {
+		const raw = (list || []).filter(function (item) {
+			return item.kind === 'videoinput' && item.deviceId && !isSkipCam(item.label);
+		});
+		const seenGroup = {};
+		const out = [];
+		raw.forEach(function (item, i) {
+			const gid = item.groupId || ('solo-' + i);
+			if (seenGroup[gid]) return;
+			seenGroup[gid] = true;
+			out.push(item);
+		});
+		out.sort(function (a, b) {
+			if (preferredId && a.deviceId === preferredId) return -1;
+			if (preferredId && b.deviceId === preferredId) return 1;
+			const ap = PREFER_CAM.test(a.label) ? 1 : 0;
+			const bp = PREFER_CAM.test(b.label) ? 1 : 0;
+			return bp - ap;
+		});
+		return out;
+	}
+
 	function readDevices(kind) {
 		if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
 			return Promise.resolve([]);
 		}
 		return navigator.mediaDevices.enumerateDevices().then(function (list) {
 			const cams = (list || []).filter(function (item) {
-				return item.kind === 'videoinput' && item.deviceId;
+				if (item.kind !== 'videoinput' || !item.deviceId) return false;
+				if (kind !== 'phone' && isSkipCam(item.label)) return false;
+				return true;
 			}).map(function (item, i) {
 				return { id: item.deviceId, label: labelOf(item, i) };
 			});
@@ -228,12 +259,63 @@
 		});
 	}
 
-	function getUserMediaTimed(constraints) {
+	function getUserMediaTimed(constraints, ms) {
 		return withTimeout(
 			navigator.mediaDevices.getUserMedia(constraints),
-			GUM_MS,
+			ms == null ? GUM_MS : ms,
 			'Camera did not start in time'
 		);
+	}
+
+	function openDisplayStream(preferredId, my) {
+		function attempt(constraints, label) {
+			if (my !== bootId) return Promise.reject(new Error('stale'));
+			setPhase('connecting', 'Opening ' + (label || 'USB camera') + '…');
+			return getUserMediaTimed(constraints, GUM_TRY_MS);
+		}
+
+		function tryList(list) {
+			const ranked = rankCaptureDevices(list, preferredId);
+			const named = ranked.filter(function (dev) {
+				return (preferredId && dev.deviceId === preferredId) || PREFER_CAM.test(dev.label);
+			});
+			const ordered = named.length ? named : ranked;
+			let chain = Promise.reject(new Error('start'));
+			if (!named.length) {
+				chain = chain.catch(function () {
+					return attempt({
+						audio: false,
+						video: { width: { ideal: 640 }, height: { ideal: 480 } }
+					}, 'USB 640×480');
+				});
+			}
+			ordered.slice(0, 3).forEach(function (dev) {
+				chain = chain.catch(function () {
+					return attempt({
+						audio: false,
+						video: {
+							deviceId: { exact: dev.deviceId },
+							width: { ideal: 640 },
+							height: { ideal: 480 }
+						}
+					}, labelOf(dev, 0));
+				});
+			});
+			if (named.length) {
+				chain = chain.catch(function () {
+					return attempt({
+						audio: false,
+						video: { width: { ideal: 640 }, height: { ideal: 480 } }
+					}, 'USB 640×480');
+				});
+			}
+			return chain;
+		}
+
+		if (!navigator.mediaDevices.enumerateDevices) {
+			return tryList([]);
+		}
+		return navigator.mediaDevices.enumerateDevices().then(tryList);
 	}
 
 	function waitForFrame(node, my) {
@@ -373,12 +455,10 @@
 			return waitForFrame(node, my);
 		}
 
-		return getUserMediaTimed(constraintsFor(deviceId, facing)).catch(function (err) {
-			if (err && (err.name === 'TimeoutError' || err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
-				throw err;
-			}
-			return getUserMediaTimed({ video: true, audio: false });
-		}).then(function (media) {
+		return (isControl()
+			? getUserMediaTimed(constraintsFor(deviceId, facing))
+			: openDisplayStream(deviceId, my)
+		).then(function (media) {
 			if (my !== bootId) {
 				stopTracks(media);
 				return false;
@@ -391,7 +471,9 @@
 			failed = true;
 			const name = err && err.name;
 			if (name === 'TimeoutError') {
-				failMessage = 'Camera did not start. On the Pi, Chromium needs PipeWire even if ffmpeg works. Then tap Reconnect.';
+				failMessage = isControl()
+					? 'Camera did not start in time. Tap Reconnect.'
+					: 'USB camera did not start. Chromium may be hitting a Pi codec node instead of the C270. Tap Reconnect.';
 			} else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
 				failMessage = 'Camera permission denied. On the Pi, add --use-fake-ui-for-media-stream to Chromium.';
 			} else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
