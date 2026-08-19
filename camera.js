@@ -124,8 +124,8 @@
 			'position:fixed',
 			'right:8px',
 			'bottom:8px',
-			'width:160px',
-			'height:90px',
+			isControl() ? 'width:90px' : 'width:160px',
+			isControl() ? 'height:160px' : 'height:90px',
 			'opacity:0.06',
 			'pointer-events:none',
 			'z-index:1',
@@ -165,11 +165,14 @@
 		remoteImage = new Image();
 		remoteImage.onload = function () {
 			if (!remoteCanvas || !remoteCtx) return;
-			if (remoteCanvas.width !== remoteImage.width || remoteCanvas.height !== remoteImage.height) {
-				remoteCanvas.width = remoteImage.width;
-				remoteCanvas.height = remoteImage.height;
+			const iw = remoteImage.naturalWidth || remoteImage.width;
+			const ih = remoteImage.naturalHeight || remoteImage.height;
+			if (iw < 2 || ih < 2) return;
+			if (remoteCanvas.width !== iw || remoteCanvas.height !== ih) {
+				remoteCanvas.width = iw;
+				remoteCanvas.height = ih;
 			}
-			remoteCtx.drawImage(remoteImage, 0, 0);
+			remoteCtx.drawImage(remoteImage, 0, 0, iw, ih);
 			const wasLive = remoteReady;
 			remoteReady = true;
 			if (!wasLive) {
@@ -269,6 +272,7 @@
 		const visW = rotate ? vh : vw;
 		const visH = rotate ? vw : vh;
 		const scale = Math.max(cw / visW, ch / visH);
+		sendCtx.setTransform(1, 0, 0, 1, 0, 0);
 		sendCtx.fillStyle = '#000';
 		sendCtx.fillRect(0, 0, cw, ch);
 		sendCtx.save();
