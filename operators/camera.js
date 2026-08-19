@@ -46,6 +46,19 @@
 			root.SynthBlend.param
 		],
 		create: function (engine) {
+			let gfx = null;
+
+			function dest(w, h) {
+				w = Math.max(2, w | 0);
+				h = Math.max(2, h | 0);
+				if (!gfx || gfx.width !== w || gfx.height !== h) {
+					if (gfx && gfx.remove) gfx.remove();
+					gfx = createGraphics(w, h);
+					gfx.pixelDensity(1);
+				}
+				return gfx;
+			}
+
 			return {
 				process: function (ctx) {
 					const source = ctx.parameters.source || 'display';
@@ -56,26 +69,30 @@
 						});
 					}
 					const cam = root.SynthCamera;
-					const tex = cam ? cam.texture(source) : null;
-					if (!tex) {
+					const src = cam && cam.frame ? cam.frame(source) : null;
+					if (!src || !src.el || src.w < 2) {
 						engine.drawTo(ctx.output, engine.shaders.copy, {
 							u_input: ctx.input,
 							u_gain: ctx.hasInput ? 1 : 0
 						});
 						return;
 					}
-					const size = cam.size(source);
+					const g = dest(src.w, src.h);
+					g.clear();
+					g.drawingContext.drawImage(src.el, 0, 0, src.w, src.h);
 					engine.drawTo(ctx.output, engine.shaders.camera, {
 						u_input: ctx.input,
 						u_hasInput: ctx.hasInput ? 1 : 0,
 						u_blendMode: root.SynthBlend.toUniform(ctx.parameters.blendMode),
-						u_video: tex,
-						u_texSize: size,
+						u_texSize: [src.w, src.h],
 						u_mirror: ctx.parameters.mirror ? 1 : 0,
-						u_cover: ctx.parameters.fit === 'contain' ? 0 : 1
+						u_cover: ctx.parameters.fit === 'contain' ? 0 : 1,
+						u_video: g
 					});
 				},
 				dispose: function () {
+					if (gfx && gfx.remove) gfx.remove();
+					gfx = null;
 					if (root.SynthCamera) root.SynthCamera.stop();
 				}
 			};

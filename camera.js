@@ -29,6 +29,9 @@
 		live: false,
 		source: 'display'
 	};
+	let lastCfg = { deviceId: '', facing: '' };
+	let bootId = 0;
+	let restartTimer = 0;
 	const listeners = [];
 	const MAX_BLIT_W = 1280;
 	const GUM_MS = 8000;
@@ -114,14 +117,15 @@
 		video.disablePictureInPicture = true;
 		video.style.cssText = [
 			'position:fixed',
-			'left:0',
-			'bottom:0',
-			'width:32px',
-			'height:24px',
-			'opacity:0.02',
+			'right:8px',
+			'bottom:8px',
+			'width:160px',
+			'height:90px',
+			'opacity:0.06',
 			'pointer-events:none',
-			'z-index:0',
-			'border:0'
+			'z-index:1',
+			'border:0',
+			'object-fit:cover'
 		].join(';');
 		document.body.appendChild(video);
 		return video;
@@ -232,10 +236,14 @@
 		);
 	}
 
-	function waitForFrame(node) {
+	function waitForFrame(node, my) {
 		return new Promise(function (resolve, reject) {
 			let poll = 0;
 			let settled = false;
+
+			function stale() {
+				return my !== bootId;
+			}
 
 			function cleanup() {
 				window.clearTimeout(watchdog);
@@ -252,6 +260,10 @@
 				if (settled) return;
 				settled = true;
 				cleanup();
+				if (stale()) {
+					resolve(false);
+					return;
+				}
 				starting = false;
 				ready = true;
 				failed = false;
@@ -270,6 +282,10 @@
 				if (settled) return;
 				settled = true;
 				cleanup();
+				if (stale()) {
+					reject(err || new Error(message));
+					return;
+				}
 				starting = false;
 				failed = true;
 				failMessage = message;
@@ -306,6 +322,8 @@
 
 	function startLocal(deviceId, facing) {
 		const key = String(deviceId || '') + ':' + String(facing || '');
+		lastCfg = { deviceId: deviceId || '', facing: facing || '' };
+		if (restartTimer) return Promise.resolve(false);
 		if (stream && currentKey === key && ready) return Promise.resolve(true);
 		if (starting && currentKey === key) return Promise.resolve(false);
 		if (failed && lastAttemptKey === key) {
@@ -328,6 +346,7 @@
 		}
 
 		stopLocal();
+		const my = ++bootId;
 		starting = true;
 		ready = false;
 		failed = false;
@@ -340,6 +359,10 @@
 		const node = ensureVideo();
 
 		function attach(media) {
+			if (my !== bootId) {
+				stopTracks(media);
+				return false;
+			}
 			stream = media;
 			node.srcObject = media;
 			const play = node.play();
@@ -347,7 +370,7 @@
 				play.catch(function () { /* autoplay may wait for metadata */ });
 			}
 			setPhase('connecting', 'Camera granted. Waiting for the first frame…');
-			return waitForFrame(node);
+			return waitForFrame(node, my);
 		}
 
 		return getUserMediaTimed(constraintsFor(deviceId, facing)).catch(function (err) {
@@ -355,7 +378,14 @@
 				throw err;
 			}
 			return getUserMediaTimed({ video: true, audio: false });
-		}).then(attach).catch(function (err) {
+		}).then(function (media) {
+			if (my !== bootId) {
+				stopTracks(media);
+				return false;
+			}
+			return attach(media);
+		}).catch(function (err) {
+			if (my !== bootId) return;
 			if (failed && failMessage && phase === 'error') throw err;
 			starting = false;
 			failed = true;
@@ -441,6 +471,7 @@
 	}
 
 	function reconnect(fromRemote) {
+		bootId += 1;
 		lastToast = '';
 		failed = false;
 		failMessage = '';
@@ -448,13 +479,29 @@
 		ready = false;
 		remoteReady = false;
 		stopLocal();
+		if (restartTimer) {
+			window.clearTimeout(restartTimer);
+			restartTimer = 0;
+		}
 		if (!fromRemote && root.SynthSync && typeof root.SynthSync.sendCameraReconnect === 'function') {
 			root.SynthSync.sendCameraReconnect();
 		}
-		setPhase('connecting', 'Reconnecting camera…');
-		if (isControl() && root.SynthState) {
-			syncControl(root.SynthState.get());
+
+		const phoneParams = isControl() && root.SynthState ? neededPhone(root.SynthState.get()) : null;
+		if (isControl() && !phoneParams) {
+			emit();
+			return;
 		}
+
+		setPhase('connecting', 'Reconnecting camera…');
+		restartTimer = window.setTimeout(function () {
+			restartTimer = 0;
+			if (isControl()) {
+				syncControl(root.SynthState.get());
+				return;
+			}
+			startLocal(lastCfg.deviceId, lastCfg.facing).catch(function () { /* status already set */ });
+		}, 250);
 		emit();
 	}
 
@@ -530,7 +577,22 @@
 				}
 				return;
 			}
+			lastCfg = { deviceId: cfg.deviceId || '', facing: '' };
+			if (restartTimer) return;
 			startLocal(cfg.deviceId || '', '').catch(function () { /* status already set */ });
+		},
+		frame: function (source) {
+			if (source === 'phone') {
+				if (!remoteReady) return null;
+				const el = ensureRemote();
+				return { el: el, w: el.width, h: el.height };
+			}
+			if (!ready || !video || video.videoWidth < 2) return null;
+			const vw = video.videoWidth;
+			const vh = video.videoHeight;
+			const w = vw > MAX_BLIT_W ? MAX_BLIT_W : vw;
+			const h = Math.max(2, Math.round(vh * (w / vw)));
+			return { el: video, w: w, h: h };
 		},
 		probeDisplay: function () {
 			if (isControl()) return;
