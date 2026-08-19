@@ -10,7 +10,6 @@
 	let failed = false;
 	let failMessage = '';
 	let currentKey = '';
-	let retryAt = 0;
 	let displayDevices = [];
 	let phoneDevices = [];
 	let remoteCanvas = null;
@@ -20,9 +19,20 @@
 	let sendTimer = 0;
 	let sendCanvas = null;
 	let sendCtx = null;
-	let lastWarn = '';
+	let lastToast = '';
+	let lastAttemptKey = '';
+	let phase = 'idle';
+	let statusMessage = 'Pick Display or Phone, then wait for a live signal.';
+	let remoteStatus = {
+		phase: 'idle',
+		message: '',
+		live: false,
+		source: 'display'
+	};
 	const listeners = [];
 	const MAX_BLIT_W = 1280;
+	const GUM_MS = 8000;
+	const FRAME_MS = 10000;
 
 	function isControl() {
 		return !!(document.body && document.body.classList.contains('synth-control'));
@@ -34,13 +44,36 @@
 		});
 	}
 
-	function warn(message) {
-		if (!message || message === lastWarn) return;
-		lastWarn = message;
-		if (root.SynthNotify) root.SynthNotify.show('warning', message);
+	function toast(level, message) {
+		if (!message || message === lastToast) return;
+		lastToast = message;
+		if (root.SynthNotify) root.SynthNotify.show(level, message);
 		if (root.SynthSync && typeof root.SynthSync.sendNotify === 'function') {
-			root.SynthSync.sendNotify('warning', message);
+			root.SynthSync.sendNotify(level, message);
 		}
+	}
+
+	function sendStatus() {
+		if (!root.SynthSync || typeof root.SynthSync.sendCameraStatus !== 'function') return;
+		root.SynthSync.sendCameraStatus({
+			source: isControl() ? 'phone' : 'display',
+			phase: phase,
+			message: statusMessage,
+			live: !!ready
+		});
+	}
+
+	function setPhase(next, message) {
+		const msg = message || statusMessage;
+		const changed = phase !== next || statusMessage !== msg;
+		phase = next;
+		statusMessage = msg;
+		if (!changed) return;
+		emit();
+		sendStatus();
+		if (next === 'connecting' || next === 'waiting') toast('info', msg);
+		else if (next === 'live') toast('success', msg);
+		else if (next === 'error') toast('warning', msg);
 	}
 
 	function stopTracks(media) {
@@ -79,8 +112,6 @@
 		video.playsInline = true;
 		video.controls = false;
 		video.disablePictureInPicture = true;
-		// Keep a real on-screen box. Chromium often refuses to decode / upload
-		// a 2px off-screen <video> to WebGL even when the camera LED is on.
 		video.style.cssText = [
 			'position:fixed',
 			'left:0',
@@ -130,7 +161,11 @@
 				remoteCanvas.height = remoteImage.height;
 			}
 			remoteCtx.drawImage(remoteImage, 0, 0);
+			const wasLive = remoteReady;
 			remoteReady = true;
+			if (!wasLive) {
+				setPhase('live', 'Receiving phone camera');
+			}
 		};
 		return remoteCanvas;
 	}
@@ -172,6 +207,31 @@
 		return video;
 	}
 
+	function withTimeout(promise, ms, message) {
+		return new Promise(function (resolve, reject) {
+			const timer = window.setTimeout(function () {
+				const err = new Error(message);
+				err.name = 'TimeoutError';
+				reject(err);
+			}, ms);
+			promise.then(function (value) {
+				window.clearTimeout(timer);
+				resolve(value);
+			}, function (err) {
+				window.clearTimeout(timer);
+				reject(err);
+			});
+		});
+	}
+
+	function getUserMediaTimed(constraints) {
+		return withTimeout(
+			navigator.mediaDevices.getUserMedia(constraints),
+			GUM_MS,
+			'Camera did not start in time'
+		);
+	}
+
 	function waitForFrame(node) {
 		return new Promise(function (resolve, reject) {
 			let poll = 0;
@@ -195,7 +255,8 @@
 				starting = false;
 				ready = true;
 				failed = false;
-				lastWarn = '';
+				lastToast = '';
+				setPhase('live', isControl() ? 'Phone camera live' : 'Display camera live');
 				readDevices(isControl() ? 'phone' : 'display').then(function (cams) {
 					if (!isControl() && root.SynthSync && root.SynthSync.sendCameras) {
 						root.SynthSync.sendCameras(cams);
@@ -212,18 +273,17 @@
 				starting = false;
 				failed = true;
 				failMessage = message;
-				retryAt = Date.now() + 2500;
-				warn(failMessage);
 				stopLocal();
+				setPhase('error', failMessage);
 				reject(err || new Error(failMessage));
 			}
 
 			const watchdog = window.setTimeout(function () {
 				fail(
-					'Camera timed out. Check the device, cable, and Chromium camera permission.',
+					'Camera opened but sent no frames. Check the cable, close other apps using it, then tap Reconnect.',
 					new Error('Camera timed out')
 				);
-			}, 12000);
+			}, FRAME_MS);
 
 			function check() {
 				if (node.videoWidth >= 2 && node.videoHeight >= 2 && node.readyState >= 2) {
@@ -248,17 +308,22 @@
 		const key = String(deviceId || '') + ':' + String(facing || '');
 		if (stream && currentKey === key && ready) return Promise.resolve(true);
 		if (starting && currentKey === key) return Promise.resolve(false);
-		if (failed && Date.now() < retryAt) return Promise.resolve(false);
+		if (failed && lastAttemptKey === key) {
+			if (phase !== 'error') setPhase('error', failMessage || 'Camera failed. Tap Reconnect.');
+			return Promise.resolve(false);
+		}
 		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 			failed = true;
-			failMessage = 'Camera API not available in this browser';
-			warn(failMessage);
+			failMessage = isControl()
+				? 'Camera API not available. Open the HTTPS control URL (port 8443).'
+				: 'Camera API not available in this Chromium. On the Pi, PipeWire must be running.';
+			setPhase('error', failMessage);
 			return Promise.reject(new Error(failMessage));
 		}
 		if (!window.isSecureContext && isControl()) {
 			failed = true;
-			failMessage = 'Phone camera needs HTTPS. Use Display for the Pi USB cam, or open the HTTPS control URL.';
-			warn(failMessage);
+			failMessage = 'Phone camera needs HTTPS. Use Display for the USB cam, or open the HTTPS control URL.';
+			setPhase('error', failMessage);
 			return Promise.reject(new Error(failMessage));
 		}
 
@@ -267,6 +332,11 @@
 		ready = false;
 		failed = false;
 		currentKey = key;
+		lastAttemptKey = key;
+		setPhase(
+			'connecting',
+			isControl() ? 'Opening this phone\'s camera…' : 'Opening USB camera on the display…'
+		);
 		const node = ensureVideo();
 
 		function attach(media) {
@@ -276,28 +346,33 @@
 			if (play && typeof play.catch === 'function') {
 				play.catch(function () { /* autoplay may wait for metadata */ });
 			}
+			setPhase('connecting', 'Camera granted. Waiting for the first frame…');
 			return waitForFrame(node);
 		}
 
-		return navigator.mediaDevices.getUserMedia(constraintsFor(deviceId, facing)).catch(function () {
-			return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+		return getUserMediaTimed(constraintsFor(deviceId, facing)).catch(function (err) {
+			if (err && (err.name === 'TimeoutError' || err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+				throw err;
+			}
+			return getUserMediaTimed({ video: true, audio: false });
 		}).then(attach).catch(function (err) {
-			if (failed && failMessage) throw err;
+			if (failed && failMessage && phase === 'error') throw err;
 			starting = false;
 			failed = true;
-			retryAt = Date.now() + 2500;
 			const name = err && err.name;
-			if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+			if (name === 'TimeoutError') {
+				failMessage = 'Camera did not start. On the Pi, Chromium needs PipeWire even if ffmpeg works. Then tap Reconnect.';
+			} else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
 				failMessage = 'Camera permission denied. On the Pi, add --use-fake-ui-for-media-stream to Chromium.';
 			} else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-				failMessage = 'No camera found. On the Pi, check the USB webcam with v4l2-ctl --list-devices.';
+				failMessage = 'No camera found. ffmpeg can work while Chromium cannot — on Lite, install and start PipeWire.';
 			} else if (name === 'NotReadableError' || name === 'TrackStartError') {
-				failMessage = 'Camera is busy or blocked. Close other apps using it, and confirm the pi user is in the video group.';
+				failMessage = 'Camera is busy. Close other apps, confirm the pi user is in the video group, then Reconnect.';
 			} else {
 				failMessage = (err && err.message) || 'Camera failed';
 			}
-			warn(failMessage);
 			stopLocal();
+			setPhase('error', failMessage);
 			throw err;
 		});
 	}
@@ -338,34 +413,102 @@
 		return null;
 	}
 
+	function viewFor(source) {
+		source = source || 'display';
+		if (isControl() && source === 'display') {
+			const live = !!remoteStatus.live;
+			return {
+				phase: remoteStatus.phase || 'idle',
+				message: remoteStatus.message || 'Waiting for the display to open the USB camera…',
+				live: live,
+				hasDevices: displayDevices.length > 0 || live
+			};
+		}
+		if (source === 'phone' && !isControl()) {
+			return {
+				phase: remoteReady ? 'live' : 'waiting',
+				message: remoteReady ? 'Receiving phone camera' : 'Waiting for frames from the phone…',
+				live: remoteReady,
+				hasDevices: remoteReady
+			};
+		}
+		return {
+			phase: phase,
+			message: statusMessage,
+			live: !!ready,
+			hasDevices: (isControl() ? phoneDevices : displayDevices).length > 0 || !!ready
+		};
+	}
+
+	function reconnect(fromRemote) {
+		lastToast = '';
+		failed = false;
+		failMessage = '';
+		lastAttemptKey = '';
+		ready = false;
+		remoteReady = false;
+		stopLocal();
+		if (!fromRemote && root.SynthSync && typeof root.SynthSync.sendCameraReconnect === 'function') {
+			root.SynthSync.sendCameraReconnect();
+		}
+		setPhase('connecting', 'Reconnecting camera…');
+		if (isControl() && root.SynthState) {
+			syncControl(root.SynthState.get());
+		}
+		emit();
+	}
+
+	function syncControl(state) {
+		if (!isControl()) return;
+		const params = neededPhone(state);
+		if (!params) {
+			if (currentKey || ready || starting) stopLocal();
+			return;
+		}
+		startLocal(params.deviceId, params.deviceId ? '' : 'environment').then(function () {
+			startSender();
+		}).catch(function () { /* status already set */ });
+	}
+
 	root.SynthCamera = {
 		onChange: function (fn) {
 			if (typeof fn === 'function') listeners.push(fn);
 		},
 		signature: function () {
-			return (isControl() ? 'c' : 'd') + ':' + displayDevices.map(function (d) {
-				return d.id;
-			}).join(',') + ':' + phoneDevices.map(function (d) {
-				return d.id;
-			}).join(',');
+			const local = viewFor(isControl() ? 'phone' : 'display');
+			const remote = isControl() ? viewFor('display') : viewFor('phone');
+			return [
+				isControl() ? 'c' : 'd',
+				local.phase,
+				local.live ? '1' : '0',
+				remote.phase,
+				remote.live ? '1' : '0',
+				displayDevices.map(function (d) { return d.id; }).join(','),
+				phoneDevices.map(function (d) { return d.id; }).join(',')
+			].join(':');
 		},
+		view: viewFor,
 		deviceOptions: function (source) {
 			if (source === 'phone') {
-				if (!isControl()) {
-					return [{ id: '', label: 'From phone' }];
-				}
-				const list = phoneDevices.length ? phoneDevices : [{ id: '', label: 'This phone' }];
-				if (phoneDevices.length && phoneDevices[0].id) {
-					return [{ id: '', label: 'Default' }].concat(phoneDevices);
-				}
-				return list;
+				if (!isControl()) return [];
+				if (!phoneDevices.length) return ready ? [{ id: '', label: 'This phone' }] : [];
+				return [{ id: '', label: 'Default' }].concat(phoneDevices);
 			}
-			const list = displayDevices;
-			if (!list.length) return [{ id: '', label: 'Default USB' }];
-			return [{ id: '', label: 'Default USB' }].concat(list);
+			if (!displayDevices.length) return ready ? [{ id: '', label: 'Default USB' }] : [];
+			return [{ id: '', label: 'Default USB' }].concat(displayDevices);
 		},
 		setDisplayDevices: function (list) {
 			displayDevices = Array.isArray(list) ? list : [];
+			emit();
+		},
+		setRemoteStatus: function (payload) {
+			if (!payload || payload.source === 'phone') return;
+			remoteStatus = {
+				phase: payload.phase || 'idle',
+				message: payload.message || '',
+				live: !!payload.live,
+				source: payload.source || 'display'
+			};
 			emit();
 		},
 		setRemoteFrame: function (url) {
@@ -373,17 +516,8 @@
 			ensureRemote();
 			remoteImage.src = url;
 		},
-		syncControl: function (state) {
-			if (!isControl()) return;
-			const params = neededPhone(state);
-			if (!params) {
-				stopLocal();
-				return;
-			}
-			startLocal(params.deviceId, params.deviceId ? '' : 'environment').then(function () {
-				startSender();
-			}).catch(function () { /* warned */ });
-		},
+		syncControl: syncControl,
+		reconnect: reconnect,
 		ensure: function (cfg) {
 			cfg = cfg || {};
 			const source = cfg.source || 'display';
@@ -391,9 +525,12 @@
 			if (source === 'phone') {
 				if (currentKey) stopLocal();
 				ensureRemote();
+				if (!remoteReady) {
+					setPhase('waiting', 'Waiting for frames from the phone…');
+				}
 				return;
 			}
-			startLocal(cfg.deviceId || '', '').catch(function () { /* warned */ });
+			startLocal(cfg.deviceId || '', '').catch(function () { /* status already set */ });
 		},
 		probeDisplay: function () {
 			if (isControl()) return;
@@ -416,7 +553,8 @@
 			if (source === 'phone') {
 				return remoteReady ? ensureRemote() : null;
 			}
-			return ready ? blitLocal() : null;
+			if (!ready) return null;
+			return blitLocal() || video;
 		},
 		size: function (source) {
 			if (source === 'phone' && remoteReady && remoteCanvas) {
@@ -430,6 +568,14 @@
 			if (source === 'phone') return remoteReady;
 			return !!(ready && video && video.videoWidth >= 2);
 		},
-		stop: stopLocal
+		stop: function () {
+			stopLocal();
+			failed = false;
+			if (phase === 'idle') return;
+			phase = 'idle';
+			statusMessage = 'Camera stopped.';
+			emit();
+			sendStatus();
+		}
 	};
 })(window);

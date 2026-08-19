@@ -2188,8 +2188,54 @@ body.synth-control .synth-toasts {
 	border-left-color: var(--warn);
 }
 
-.synth-toast--error {
-	border-left-color: var(--bad);
+.synth-toast--info {
+	border-left-color: var(--fg);
+}
+
+.synth-cam-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0 0 16px;
+}
+
+.synth-cam-status {
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	background: var(--fill);
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.synth-cam-status[data-phase="connecting"],
+.synth-cam-status[data-phase="waiting"] {
+	color: var(--fg);
+	border-color: color-mix(in srgb, #ededed 28%, transparent);
+}
+
+.synth-cam-status[data-phase="live"] {
+	color: var(--ok);
+	border-color: color-mix(in srgb, var(--ok) 45%, transparent);
+}
+
+.synth-cam-status[data-phase="error"] {
+	color: var(--bad);
+	border-color: color-mix(in srgb, var(--bad) 50%, transparent);
+}
+
+.synth-cam-status__msg {
+	margin: 0;
+}
+
+.synth-cam-reconnect {
+	min-height: 44px;
+	width: 100%;
+}
+
+.synth-field[hidden],
+.synth-field[data-visible-when][hidden] {
+	display: none !important;
 }
 
 /* Debug HUD on the renderer */

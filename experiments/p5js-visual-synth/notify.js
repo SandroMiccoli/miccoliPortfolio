@@ -1,4 +1,11 @@
 (function (root) {
+	const DURATIONS = {
+		info: 3200,
+		success: 2600,
+		warning: 5600,
+		error: 8000
+	};
+
 	function ensureRoot() {
 		let el = document.getElementById('synth-toasts');
 		if (el) return el;
@@ -12,11 +19,26 @@
 
 	function show(level, message) {
 		if (!message) return;
-		const root = ensureRoot();
+		const hold = ensureRoot();
+		const kind = level === 'error' || level === 'warning' || level === 'success' || level === 'info'
+			? level
+			: 'warning';
+		hold.setAttribute('aria-live', kind === 'error' || kind === 'warning' ? 'assertive' : 'polite');
+
+		const existing = hold.querySelectorAll('.synth-toast');
+		for (let i = 0; i < existing.length; i += 1) {
+			const msg = existing[i].querySelector('.synth-toast__msg');
+			if (msg && msg.textContent === message) {
+				existing[i].parentNode.removeChild(existing[i]);
+			}
+		}
+
 		const toast = document.createElement('div');
-		const kind = level === 'error' || level === 'warning' || level === 'success' ? level : 'warning';
 		toast.className = 'synth-toast synth-toast--' + kind;
-		const label = kind === 'error' ? 'Error' : kind === 'warning' ? 'Warning' : 'OK';
+		const label = kind === 'error' ? 'Error'
+			: kind === 'warning' ? 'Warning'
+			: kind === 'success' ? 'OK'
+			: 'Camera';
 		const tag = document.createElement('span');
 		tag.className = 'synth-toast__kind';
 		tag.textContent = label;
@@ -25,19 +47,20 @@
 		text.textContent = message;
 		toast.appendChild(tag);
 		toast.appendChild(text);
-		root.appendChild(toast);
+		hold.appendChild(toast);
 
 		requestAnimationFrame(function () {
 			toast.classList.add('is-in');
 		});
 
+		const stay = DURATIONS[kind] || DURATIONS.warning;
 		setTimeout(function () {
 			toast.classList.remove('is-in');
 			toast.classList.add('is-out');
-		}, 3600);
+		}, stay);
 		setTimeout(function () {
 			if (toast.parentNode) toast.parentNode.removeChild(toast);
-		}, 4200);
+		}, stay + 600);
 	}
 
 	root.SynthNotify = { show: show };

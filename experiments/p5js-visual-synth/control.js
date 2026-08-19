@@ -95,6 +95,12 @@
 			},
 			onCameras: function (devices) {
 				if (window.SynthCamera) SynthCamera.setDisplayDevices(devices);
+			},
+			onCameraStatus: function (info) {
+				if (window.SynthCamera) SynthCamera.setRemoteStatus(info);
+			},
+			onCameraReconnect: function () {
+				if (window.SynthCamera) SynthCamera.reconnect(true);
 			}
 		});
 	});

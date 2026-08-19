@@ -540,7 +540,16 @@
 				return chip;
 			}
 			chip.addEventListener('click', function () {
-				patchOps(root.SynthPipeline.add(ops(), def.type, libInsertAt));
+				const seen = {};
+				ops().forEach(function (op) {
+					seen[op.id] = true;
+				});
+				const next = root.SynthPipeline.add(ops(), def.type, libInsertAt);
+				const added = next.filter(function (op) {
+					return !seen[op.id];
+				})[0];
+				if (added) expandedId = added.id;
+				patchOps(next);
 				closeSheet();
 			});
 			return chip;
@@ -1582,6 +1591,51 @@
 			}, vars));
 		}
 
+		function cameraView(op) {
+			if (!root.SynthCamera || !root.SynthCamera.view) {
+				return { phase: 'idle', message: '', live: false, hasDevices: false };
+			}
+			const source = (op.parameters && op.parameters.source) || 'display';
+			return root.SynthCamera.view(source);
+		}
+
+		function makeCamPanel() {
+			const wrap = el('div', 'synth-cam-panel');
+			const status = el('div', 'synth-cam-status');
+			status.dataset.phase = 'idle';
+			status.appendChild(el('p', 'synth-cam-status__msg', 'Waiting for camera…'));
+			wrap.appendChild(status);
+			const reconnect = el('button', 'synth-btn synth-cam-reconnect', 'Reconnect');
+			reconnect.type = 'button';
+			reconnect.addEventListener('click', function () {
+				if (root.SynthCamera && root.SynthCamera.reconnect) {
+					root.SynthCamera.reconnect();
+				}
+			});
+			wrap.appendChild(reconnect);
+			return wrap;
+		}
+
+		function paintCamStatus(card, op) {
+			if (!card || op.type !== 'camera') return;
+			const view = op.bypassed
+				? { phase: 'idle', message: 'Bypassed. Enable the operator to open the camera.', live: false, hasDevices: false }
+				: cameraView(op);
+			const status = card.querySelector('.synth-cam-status');
+			if (status) {
+				status.dataset.phase = view.phase || 'idle';
+				const msg = status.querySelector('.synth-cam-status__msg');
+				if (msg) msg.textContent = view.message || 'Waiting for camera…';
+			}
+			card.querySelectorAll('[data-visible-when]').forEach(function (node) {
+				const when = node.dataset.visibleWhen;
+				let show = true;
+				if (when === 'cameraDevices') show = !!view.hasDevices;
+				if (when === 'cameraLive') show = !!view.live;
+				node.hidden = !show;
+			});
+		}
+
 		function buildOpCard(op, index, total) {
 			const def = root.SynthRegistry.get(op.type) || {};
 			const color = def.color || '#8E8E8E';
@@ -1688,11 +1742,13 @@
 				if (spec.kind === 'color') {
 					const field = makeColorField(op, spec);
 					colors[op.id + ':' + spec.key] = field;
+					if (spec.visibleWhen) field.wrap.dataset.visibleWhen = spec.visibleWhen;
 					inner.appendChild(field.wrap);
 					return;
 				}
 				if (spec.kind === 'enum') {
 					const field = el('div', 'synth-field');
+					if (spec.visibleWhen) field.dataset.visibleWhen = spec.visibleWhen;
 					const fieldTop = el('div', 'synth-field__top');
 					fieldTop.appendChild(el('span', '', spec.label));
 					field.appendChild(fieldTop);
@@ -1717,6 +1773,9 @@
 					});
 					field.appendChild(row);
 					inner.appendChild(field);
+					if (spec.key === 'source' && def.type === 'camera') {
+						inner.appendChild(makeCamPanel());
+					}
 					return;
 				}
 
@@ -1729,11 +1788,13 @@
 					spec: spec
 				});
 				field.wrap.dataset.param = spec.key;
+				if (spec.visibleWhen) field.wrap.dataset.visibleWhen = spec.visibleWhen;
 				sliders[op.id + ':' + spec.key] = field;
 				inner.appendChild(field.wrap);
 			});
 			body.appendChild(inner);
 			card.appendChild(body);
+			paintCamStatus(card, op);
 			return card;
 		}
 
@@ -1983,6 +2044,7 @@
 							String(op.parameters[key]) === String(btn.dataset.enumValue)
 						);
 					});
+					paintCamStatus(card, op);
 				});
 			}
 

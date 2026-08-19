@@ -6,7 +6,7 @@
 	const pending = [];
 
 	function enqueue(payload) {
-		if (!payload || (payload.type !== 'notify' && payload.type !== 'cameras')) return;
+		if (!payload || (payload.type !== 'notify' && payload.type !== 'cameras' && payload.type !== 'cameraStatus')) return;
 		pending.push(payload);
 		if (pending.length > 24) pending.shift();
 	}
@@ -84,6 +84,10 @@
 				handlers.onCameras(msg.devices || []);
 			} else if (msg.type === 'cameraFrame' && handlers.onCameraFrame) {
 				handlers.onCameraFrame(msg.url);
+			} else if (msg.type === 'cameraStatus' && handlers.onCameraStatus) {
+				handlers.onCameraStatus(msg);
+			} else if (msg.type === 'cameraReconnect' && handlers.onCameraReconnect) {
+				handlers.onCameraReconnect();
 			}
 		});
 
@@ -133,6 +137,19 @@
 		sendCameraFrame: function (url) {
 			if (!url) return;
 			send({ type: 'cameraFrame', url: url });
+		},
+		sendCameraStatus: function (info) {
+			if (!info) return;
+			send({
+				type: 'cameraStatus',
+				source: info.source || '',
+				phase: info.phase || 'idle',
+				message: info.message || '',
+				live: !!info.live
+			});
+		},
+		sendCameraReconnect: function () {
+			send({ type: 'cameraReconnect' });
 		},
 		connected: function () {
 			return connected;

@@ -328,6 +328,12 @@
 			},
 			onCameraFrame: function (url) {
 				if (window.SynthCamera) SynthCamera.setRemoteFrame(url);
+			},
+			onCameraStatus: function (info) {
+				if (window.SynthCamera) SynthCamera.setRemoteStatus(info);
+			},
+			onCameraReconnect: function () {
+				if (window.SynthCamera) SynthCamera.reconnect(true);
 			}
 		});
 
