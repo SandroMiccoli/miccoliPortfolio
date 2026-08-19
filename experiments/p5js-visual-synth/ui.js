@@ -392,13 +392,14 @@
 		}
 
 		function makeSlider(label, min, max, step, onChange) {
-			const wrap = el('div', 'synth-field');
+			const bipolar = min < 0 && max > 0;
+			const wrap = el('div', bipolar ? 'synth-field synth-field--bipolar' : 'synth-field');
 			const topRow = el('div', 'synth-field__top');
 			topRow.appendChild(el('span', '', label));
 			const valueEl = el('span', 'synth-field__value', '');
 			topRow.appendChild(valueEl);
 
-			const slider = el('div', 'synth-slider');
+			const slider = el('div', bipolar ? 'synth-slider synth-slider--bipolar' : 'synth-slider');
 			slider.setAttribute('role', 'slider');
 			slider.setAttribute('aria-label', label);
 			slider.setAttribute('aria-valuemin', String(min));
@@ -408,6 +409,7 @@
 			const fill = el('div', 'synth-slider__fill');
 			const thumb = el('div', 'synth-slider__thumb');
 			track.appendChild(fill);
+			if (bipolar) track.appendChild(el('div', 'synth-slider__zero'));
 			track.appendChild(thumb);
 			slider.appendChild(track);
 			wrap.appendChild(topRow);
@@ -424,18 +426,45 @@
 				return Math.min(max, Math.max(min, stepped));
 			}
 
+			function posFromValue(value) {
+				if (!bipolar) return (value - min) / (max - min || 1);
+				if (value < 0) return 0.5 * (value - min) / (0 - min || 1);
+				return 0.5 + 0.5 * value / (max || 1);
+			}
+
+			function formatDisplay(value) {
+				const text = formatValue(value, step);
+				if (bipolar && value > 0) return '+' + text;
+				return text;
+			}
+
 			function render() {
-				const t = (current - min) / (max - min || 1);
-				fill.style.width = (t * 100) + '%';
+				const t = posFromValue(current);
+				if (bipolar) {
+					const zero = 0.5;
+					if (t >= zero) {
+						fill.style.left = (zero * 100) + '%';
+						fill.style.width = ((t - zero) * 100) + '%';
+					} else {
+						fill.style.left = (t * 100) + '%';
+						fill.style.width = ((zero - t) * 100) + '%';
+					}
+				} else {
+					fill.style.left = '0';
+					fill.style.width = (t * 100) + '%';
+				}
 				thumb.style.left = (t * 100) + '%';
-				valueEl.textContent = formatValue(current, step);
+				valueEl.textContent = formatDisplay(current);
 				slider.setAttribute('aria-valuenow', String(current));
+				slider.setAttribute('aria-valuetext', formatDisplay(current));
 			}
 
 			function valueFromX(clientX) {
 				const rect = track.getBoundingClientRect();
-				const t = rect.width ? (clientX - rect.left) / rect.width : 0;
-				return clamp(min + t * (max - min));
+				const t = rect.width ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
+				if (!bipolar) return clamp(min + t * (max - min));
+				if (t < 0.5) return clamp(min + (t / 0.5) * (0 - min));
+				return clamp((t - 0.5) / 0.5 * max);
 			}
 
 			function commit(value, fromUser) {
@@ -514,14 +543,16 @@
 			patch({ opParam: { id: id, key: key, value: value } });
 		}
 
-		function insertBtn(index) {
-			const wrap = el('div', 'synth-insert');
+		function insertBtn(index, kind) {
+			const isAdd = kind === 'add';
+			const wrap = el('div', isAdd ? 'synth-insert synth-insert--add' : 'synth-insert synth-insert--node');
 			const btn = el('button', 'synth-insert__btn');
 			btn.type = 'button';
 			btn.setAttribute('aria-label', 'Add operator here');
 			btn.dataset.tip = 'Add operator';
 			btn.dataset.tipDesc = 'Open the library and insert a new operator at this point in the stack.';
 			btn.appendChild(root.SynthIcons.svg('plus'));
+			if (isAdd) btn.appendChild(el('span', 'synth-insert__label', 'Add operator'));
 			btn.addEventListener('click', function () {
 				openLibrary(index);
 			});
@@ -666,10 +697,10 @@
 				patchOps(root.SynthPipeline.remove(ops(), op.id));
 			}));
 
-			head.appendChild(tools);
 			card.appendChild(head);
 
 			const body = el('div', 'synth-op__body');
+			body.appendChild(tools);
 			const params = def.params || [];
 			params.forEach(function (spec) {
 				if (spec.show === 'afterInput' && index === 0) return;
@@ -712,14 +743,17 @@
 				delete sliders[key];
 			});
 			stack.innerHTML = '';
-			stack.appendChild(insertBtn(0));
+			stack.classList.toggle('is-empty', !pipeline.length);
 			if (!pipeline.length) {
-				stack.appendChild(el('p', 'synth-stack__empty', 'Tap + to add an operator.'));
+				stack.appendChild(el('p', 'synth-stack__empty', 'Tap Add operator to start the chain.'));
+				stack.appendChild(insertBtn(0, 'add'));
 				return;
 			}
+			stack.appendChild(insertBtn(0, 'node'));
 			pipeline.forEach(function (op, index) {
 				stack.appendChild(buildOpCard(op, index, pipeline.length));
-				stack.appendChild(insertBtn(index + 1));
+				const last = index === pipeline.length - 1;
+				stack.appendChild(insertBtn(index + 1, last ? 'add' : 'node'));
 			});
 		}
 
