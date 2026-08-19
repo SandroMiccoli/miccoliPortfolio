@@ -97,11 +97,21 @@
 						const output = isScreen ? dest : (writePing ? ping : pong);
 						if (!isScreen) writePing = !writePing;
 
+						const ctx = {
+							time: time,
+							nowMs: opts.nowMs != null ? opts.nowMs : Date.now(),
+							clock: opts.clock,
+							fft: opts.fft
+						};
+						const parameters = root.SynthModulate
+							? root.SynthModulate.resolveOp(op, ctx)
+							: (op.parameters || {});
+
 						rt.process({
 							input: read || dummy,
 							hasInput: !!read,
 							output: output,
-							parameters: op.parameters || {},
+							parameters: parameters,
 							time: time,
 							width: w,
 							height: h,

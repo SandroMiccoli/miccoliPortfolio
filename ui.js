@@ -71,12 +71,15 @@
 		const getState = options.getState;
 		const patch = options.patch;
 		const capturePipe = options.capturePipe;
+		const setLivePreview = options.setLivePreview;
 		let lastSignature = null;
 		let lastGridSig = null;
 		let sliding = false;
 		let renaming = false;
 		let expandedId = null;
 		let libInsertAt = 0;
+		let liveOn = false;
+		let liveFrame = '';
 		const sliders = {};
 
 		function activePipe() {
@@ -105,6 +108,16 @@
 		previewFrame.appendChild(previewImg);
 		previewFrame.appendChild(previewEmpty);
 		previewFrame.appendChild(previewName);
+		const liveBtn = el('button', 'synth-preview__live', 'Live');
+		liveBtn.type = 'button';
+		liveBtn.setAttribute('aria-pressed', 'false');
+		liveBtn.setAttribute('aria-label', 'Toggle live preview');
+		liveBtn.addEventListener('click', function () {
+			const next = !liveOn;
+			setLiveMode(next);
+			if (typeof setLivePreview === 'function') setLivePreview(next);
+		});
+		previewFrame.appendChild(liveBtn);
 		preview.appendChild(previewFrame);
 		rootEl.appendChild(preview);
 
@@ -222,10 +235,14 @@
 
 		top.appendChild(iconBtn(
 			'question',
-			'PIPE and operators',
-			'A PIPE is a reusable chain of operators. The grid picks a PIPE; the stack below edits it.',
+			'About Visual Synth',
+			'What this instrument is, and how operator families work.',
 			openTypesHelp
 		));
+		const helpSlot = document.getElementById('synth-help-slot');
+		if (helpSlot) {
+			helpSlot.appendChild(top.lastElementChild);
+		}
 
 		function startRename(pipe) {
 			if (!pipe || renaming) return;
@@ -311,6 +328,77 @@
 		);
 		activeTools.appendChild(deletePipeBtn);
 
+		const clockBar = el('div', 'synth-clock');
+		const tapBtn = el('button', 'synth-clock__tap');
+		tapBtn.type = 'button';
+		tapBtn.setAttribute('aria-label', 'Tap tempo');
+		const bpmVal = el('span', 'synth-clock__bpm', '120');
+		const readout = el('span', 'synth-clock__readout');
+		readout.appendChild(bpmVal);
+		readout.appendChild(el('span', 'synth-clock__unit', 'BPM'));
+		tapBtn.appendChild(el('span', 'synth-clock__hint', 'Tap'));
+		tapBtn.appendChild(readout);
+		clockBar.appendChild(tapBtn);
+
+		const viz = el('div', 'synth-clock__viz');
+		viz.setAttribute('aria-hidden', 'true');
+		const beatCells = [];
+		for (let b = 0; b < 4; b += 1) {
+			const cell = el('span', 'synth-clock__beat');
+			if (b === 0) cell.classList.add('is-down');
+			viz.appendChild(cell);
+			beatCells.push(cell);
+		}
+		clockBar.appendChild(viz);
+
+		const syncBtn = iconBtn(
+			'sync',
+			'Sync',
+			'Jump the clock back to beat 1 of the 4/4 bar.',
+			function () {
+				const clock = root.SynthClock.fromState(getState());
+				patch({ clock: root.SynthClock.sync(clock) });
+			}
+		);
+		syncBtn.classList.add('synth-clock__sync');
+		clockBar.appendChild(syncBtn);
+		pipesSec.appendChild(clockBar);
+
+		let lastBeat = -1;
+
+		tapBtn.addEventListener('pointerdown', function (event) {
+			if (event.button !== 0 && event.pointerType === 'mouse') return;
+			event.preventDefault();
+			const prev = root.SynthClock.fromState(getState());
+			const next = root.SynthClock.tap(prev);
+			if (next.bpm !== prev.bpm || Math.abs(next.originMs - prev.originMs) > 1) {
+				patch({ clock: { bpm: next.bpm, originMs: next.originMs } });
+			}
+			tapBtn.classList.add('is-hit');
+			const g = getGsap();
+			if (g && !prefersReduced()) {
+				g.fromTo(tapBtn, { scale: 0.97 }, {
+					scale: 1,
+					duration: dur(0.16),
+					ease: 'power2.out'
+				});
+			}
+			window.setTimeout(function () {
+				tapBtn.classList.remove('is-hit');
+			}, 140);
+		});
+
+		function liveOp(id) {
+			return ops().find(function (item) {
+				return item.id === id;
+			}) || null;
+		}
+
+		function liveMod(id, key) {
+			const op = liveOp(id);
+			return (op && op.modulations && op.modulations[key]) || null;
+		}
+
 		function closeSheet() {
 			hideTip();
 			const g = getGsap();
@@ -352,14 +440,10 @@
 		}
 
 		function openTypesHelp() {
-			openSheet('Operator types');
+			openSheet('Visual Synth');
 			sheetBody.innerHTML = '';
-			const intro = el(
-				'p',
-				'synth-help__lead',
-				'A PIPE is a reusable visual processing chain. Pick one in the grid, then edit its ordered operators. Each operator reads what came before, does one job, and passes a new image down.'
-			);
-			sheetBody.appendChild(intro);
+			sheetBody.appendChild(el('p', 'synth-help__lead', 'Visual Synth is a visual instrument. You build PIPEs: ordered stacks of operators that process an image the way a synthesizer processes sound. Order is the patch.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick a PIPE in the grid, then edit its operators. Each operator reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
 			const cats = root.SynthCategories;
 			['generator', 'effect', 'color', 'compositing', 'output'].forEach(function (id) {
 				const cat = cats[id];
@@ -459,13 +543,39 @@
 			return chip;
 		}
 
-		function makeSlider(label, min, max, step, onChange) {
+		function makeSlider(label, min, max, step, onChange, options) {
+			options = options || {};
+			const canMod = !!options.modulate && !!root.SynthModulate;
+			const opId = options.opId;
+			const paramKey = options.paramKey;
+			const spec = options.spec;
 			const bipolar = min < 0 && max > 0;
 			const wrap = el('div', bipolar ? 'synth-field synth-field--bipolar' : 'synth-field');
+			if (options.className) wrap.classList.add(options.className);
+
 			const topRow = el('div', 'synth-field__top');
-			topRow.appendChild(el('span', '', label));
+			const lead = el('span', 'synth-field__lead');
+			const labelEl = el(canMod ? 'button' : 'span', canMod ? 'synth-field__name' : '', label);
+			if (canMod) {
+				labelEl.type = 'button';
+				labelEl.setAttribute('aria-label', 'Modulate ' + label);
+			}
+			lead.appendChild(labelEl);
+			topRow.appendChild(lead);
 			const valueEl = el('span', 'synth-field__value', '');
 			topRow.appendChild(valueEl);
+
+			let modBtn = null;
+			if (canMod) {
+				modBtn = el('button', 'synth-icon synth-icon--tiny synth-field__mod');
+				modBtn.type = 'button';
+				modBtn.setAttribute('aria-label', 'Toggle modulation');
+				modBtn.dataset.tip = 'Modulate';
+				modBtn.dataset.tipDesc = 'Drive this parameter from a timeline, the BPM clock, or the microphone.';
+				modBtn.appendChild(root.SynthIcons.svg('wave'));
+				bindTip(modBtn);
+				lead.appendChild(modBtn);
+			}
 
 			const slider = el('div', bipolar ? 'synth-slider synth-slider--bipolar' : 'synth-slider');
 			slider.setAttribute('role', 'slider');
@@ -475,19 +585,37 @@
 			slider.tabIndex = 0;
 			const track = el('div', 'synth-slider__track');
 			const fill = el('div', 'synth-slider__fill');
-			const thumb = el('div', 'synth-slider__thumb');
+			const thumb = el('div', 'synth-slider__thumb synth-slider__thumb--value');
+			const inThumb = el('div', 'synth-slider__thumb synth-slider__thumb--in');
+			const outThumb = el('div', 'synth-slider__thumb synth-slider__thumb--out');
+			const playhead = el('div', 'synth-slider__playhead');
 			track.appendChild(fill);
 			if (bipolar) track.appendChild(el('div', 'synth-slider__zero'));
 			track.appendChild(thumb);
+			track.appendChild(inThumb);
+			track.appendChild(outThumb);
+			track.appendChild(playhead);
 			slider.appendChild(track);
 			wrap.appendChild(topRow);
 			wrap.appendChild(slider);
 
 			let current = min;
+			let inMark = min;
+			let outMark = max;
+			let liveValue = min;
+			let modOn = false;
+			let dragTarget = 'value';
 			let pointerId = null;
 			let startX = 0;
 			let startY = 0;
 			let intent = null;
+			let speedSlider = null;
+			let beatsEl = null;
+			let panel = null;
+			let modeRow = null;
+			let timeRow = null;
+			let bpmRow = null;
+			let fftRow = null;
 
 			function clamp(value) {
 				const stepped = Math.round((value - min) / step) * step + min;
@@ -506,7 +634,30 @@
 				return text;
 			}
 
+			function place(node, value) {
+				node.style.left = (posFromValue(value) * 100) + '%';
+			}
+
+			function renderFill(from, to) {
+				const a = posFromValue(from);
+				const b = posFromValue(to);
+				const left = Math.min(a, b);
+				const right = Math.max(a, b);
+				fill.style.left = (left * 100) + '%';
+				fill.style.width = ((right - left) * 100) + '%';
+			}
+
 			function render() {
+				if (modOn) {
+					renderFill(inMark, outMark);
+					place(inThumb, inMark);
+					place(outThumb, outMark);
+					place(playhead, liveValue);
+					valueEl.textContent = formatDisplay(liveValue);
+					slider.setAttribute('aria-valuenow', String(liveValue));
+					slider.setAttribute('aria-valuetext', formatDisplay(liveValue));
+					return;
+				}
 				const t = posFromValue(current);
 				if (bipolar) {
 					const zero = 0.5;
@@ -527,12 +678,23 @@
 				slider.setAttribute('aria-valuetext', formatDisplay(current));
 			}
 
-			function valueFromX(clientX) {
+			function tFromX(clientX) {
 				const rect = track.getBoundingClientRect();
-				const t = rect.width ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
+				return rect.width ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
+			}
+
+			function valueFromX(clientX) {
+				const t = tFromX(clientX);
 				if (!bipolar) return clamp(min + t * (max - min));
 				if (t < 0.5) return clamp(min + (t / 0.5) * (0 - min));
 				return clamp((t - 0.5) / 0.5 * max);
+			}
+
+			function nearestHandle(clientX) {
+				const t = tFromX(clientX);
+				const inT = posFromValue(inMark);
+				const outT = posFromValue(outMark);
+				return Math.abs(t - inT) <= Math.abs(t - outT) ? 'in' : 'out';
 			}
 
 			function commit(value, fromUser) {
@@ -541,12 +703,36 @@
 				if (fromUser) onChange(current);
 			}
 
+			function commitMark(which, value, fromUser) {
+				if (which === 'in') inMark = clamp(value);
+				else outMark = clamp(value);
+				render();
+				if (fromUser && opId && paramKey) {
+					patch({
+						opMod: {
+							id: opId,
+							key: paramKey,
+							modulation: { inMark: inMark, outMark: outMark }
+						}
+					});
+				}
+			}
+
+			function applyDrag(clientX, fromUser) {
+				if (modOn && (dragTarget === 'in' || dragTarget === 'out')) {
+					commitMark(dragTarget, valueFromX(clientX), fromUser);
+					return;
+				}
+				commit(valueFromX(clientX), fromUser);
+			}
+
 			slider.addEventListener('pointerdown', function (event) {
 				if (event.button !== 0 && event.pointerType === 'mouse') return;
 				pointerId = event.pointerId;
 				startX = event.clientX;
 				startY = event.clientY;
 				intent = null;
+				dragTarget = modOn ? nearestHandle(event.clientX) : 'value';
 			});
 
 			window.addEventListener('pointermove', function (event) {
@@ -565,14 +751,12 @@
 				}
 				if (intent !== 'slide') return;
 				event.preventDefault();
-				commit(valueFromX(event.clientX), true);
+				applyDrag(event.clientX, true);
 			}, { passive: false });
 
 			window.addEventListener('pointerup', function (event) {
 				if (event.pointerId !== pointerId) return;
-				if (intent === null) {
-					commit(valueFromX(event.clientX), true);
-				}
+				if (intent === null) applyDrag(event.clientX, true);
 				pointerId = null;
 				intent = null;
 				sliding = false;
@@ -586,6 +770,7 @@
 			});
 
 			slider.addEventListener('keydown', function (event) {
+				if (modOn) return;
 				let next = current;
 				if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next = current + step;
 				else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next = current - step;
@@ -596,13 +781,192 @@
 				sliding = false;
 			});
 
+			function setSourceUi(source) {
+				if (!panel) return;
+				panel.querySelectorAll('[data-src]').forEach(function (btn) {
+					btn.classList.toggle('is-active', btn.dataset.src === source);
+				});
+				if (modeRow) modeRow.hidden = source === 'fft';
+				if (timeRow) timeRow.hidden = source !== 'time';
+				if (bpmRow) bpmRow.hidden = source !== 'bpm';
+				if (fftRow) fftRow.hidden = source !== 'fft';
+			}
+
+			function setModeUi(mode) {
+				if (!panel) return;
+				panel.querySelectorAll('[data-mode]').forEach(function (btn) {
+					btn.classList.toggle('is-active', btn.dataset.mode === mode);
+				});
+			}
+
+			function setBandUi(band) {
+				if (!panel) return;
+				panel.querySelectorAll('[data-band]').forEach(function (btn) {
+					btn.classList.toggle('is-active', btn.dataset.band === band);
+				});
+			}
+
+			function patchMod(partial) {
+				if (!opId || !paramKey) return;
+				patch({ opMod: { id: opId, key: paramKey, modulation: partial } });
+			}
+
+			function toggleMod() {
+				const existing = liveMod(opId, paramKey);
+				if (existing && existing.enabled) {
+					patchMod({ enabled: false });
+					return;
+				}
+				if (existing) {
+					patchMod({ enabled: true });
+					return;
+				}
+				const op = liveOp(opId);
+				const value = op && op.parameters ? op.parameters[paramKey] : current;
+				patch({
+					opMod: {
+						id: opId,
+						key: paramKey,
+						modulation: root.SynthModulate.defaults(spec, value)
+					}
+				});
+			}
+
+			if (canMod) {
+				labelEl.addEventListener('click', toggleMod);
+				modBtn.addEventListener('click', toggleMod);
+
+				panel = el('div', 'synth-mod');
+				panel.hidden = true;
+
+				const srcRow = el('div', 'synth-mod__row');
+				[
+					{ id: 'time', icon: 'timer', name: 'Speed', desc: 'Cycle in real seconds.' },
+					{ id: 'bpm', icon: 'metronome', name: 'BPM', desc: 'Cycle in musical beats.' },
+					{ id: 'fft', icon: 'mic', name: 'FFT', desc: 'Follow the phone microphone.' }
+				].forEach(function (src) {
+					const btn = iconBtn(src.icon, src.name, src.desc, function () {
+						patchMod({ source: src.id, enabled: true });
+						if (src.id === 'fft' && root.SynthFft) {
+							root.SynthFft.start(true).catch(function () {
+								if (root.SynthNotify) {
+									root.SynthNotify.show('warning', 'Microphone unavailable');
+								}
+							});
+						}
+					});
+					btn.dataset.src = src.id;
+					srcRow.appendChild(btn);
+				});
+				panel.appendChild(srcRow);
+
+				modeRow = el('div', 'synth-mod__row');
+				[
+					{ id: 'loop', icon: 'repeat', name: 'Loop', desc: 'Jump back to In when the cycle ends.' },
+					{ id: 'bounce', icon: 'bounce', name: 'Bounce', desc: 'Travel In to Out, then reverse.' },
+					{ id: 'random', icon: 'dice', name: 'Random', desc: 'Hold a random value, then jump when the cycle restarts (beat 1 in BPM, or when the timer ends).' }
+				].forEach(function (mode) {
+					const btn = iconBtn(mode.icon, mode.name, mode.desc, function () {
+						patchMod({ playMode: mode.id });
+					});
+					btn.dataset.mode = mode.id;
+					modeRow.appendChild(btn);
+				});
+				panel.appendChild(modeRow);
+
+				timeRow = el('div', 'synth-mod__time');
+				speedSlider = makeSlider('Seconds', root.SynthModulate.DURATION_MIN, root.SynthModulate.DURATION_MAX, 0.25, function (value) {
+					patchMod({ duration: value });
+				}, { className: 'synth-mod__speed' });
+				timeRow.appendChild(speedSlider.wrap);
+				panel.appendChild(timeRow);
+
+				bpmRow = el('div', 'synth-mod__bpm');
+				bpmRow.hidden = true;
+				const halfBtn = el('button', 'synth-btn synth-mod__beat-btn', '/2');
+				halfBtn.type = 'button';
+				halfBtn.setAttribute('aria-label', 'Halve beats');
+				halfBtn.addEventListener('click', function () {
+					const mod = liveMod(opId, paramKey) || {};
+					patchMod({ beats: root.SynthModulate.halfBeats(mod.beats) });
+				});
+				beatsEl = el('span', 'synth-mod__beats', '4 beats');
+				const doubleBtn = el('button', 'synth-btn synth-mod__beat-btn', 'x2');
+				doubleBtn.type = 'button';
+				doubleBtn.setAttribute('aria-label', 'Double beats');
+				doubleBtn.addEventListener('click', function () {
+					const mod = liveMod(opId, paramKey) || {};
+					patchMod({ beats: root.SynthModulate.doubleBeats(mod.beats) });
+				});
+				bpmRow.appendChild(halfBtn);
+				bpmRow.appendChild(beatsEl);
+				bpmRow.appendChild(doubleBtn);
+				panel.appendChild(bpmRow);
+
+				fftRow = el('div', 'synth-mod__row synth-mod__fft');
+				fftRow.hidden = true;
+				[
+					{ id: 'low', label: 'Low' },
+					{ id: 'mid', label: 'Mid' },
+					{ id: 'high', label: 'High' }
+				].forEach(function (band) {
+					const btn = el('button', 'synth-btn', band.label);
+					btn.type = 'button';
+					btn.dataset.band = band.id;
+					btn.addEventListener('click', function () {
+						patchMod({ band: band.id });
+					});
+					fftRow.appendChild(btn);
+				});
+				panel.appendChild(fftRow);
+
+				wrap.appendChild(panel);
+			}
+
+			function setMod(mod) {
+				const on = !!(mod && mod.enabled);
+				modOn = on;
+				wrap.classList.toggle('is-mod', on);
+				slider.classList.toggle('is-mod', on);
+				if (modBtn) {
+					modBtn.classList.toggle('is-active', on);
+					modBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+				}
+				if (panel) panel.hidden = !on;
+				if (on) {
+					inMark = clamp(mod.inMark);
+					outMark = clamp(mod.outMark);
+					setSourceUi(mod.source || 'time');
+					setModeUi(mod.playMode || 'loop');
+					setBandUi(mod.band || 'low');
+					if (speedSlider) speedSlider.setValue(mod.duration);
+					if (beatsEl) {
+						const beats = mod.beats || 4;
+						beatsEl.textContent = beats + (beats === 1 ? ' beat' : ' beats');
+					}
+				}
+				render();
+			}
+
 			render();
 			return {
 				wrap: wrap,
 				step: step,
 				setValue: function (value) {
 					current = clamp(value);
-					render();
+					if (!modOn) render();
+				},
+				setMod: setMod,
+				updateLive: function (ctx) {
+					if (!modOn || !spec) return;
+					const mod = liveMod(opId, paramKey);
+					const value = root.SynthModulate.evaluate(mod, spec, ctx, opId + ':' + paramKey);
+					if (value === undefined) return;
+					liveValue = value;
+					place(playhead, liveValue);
+					valueEl.textContent = formatDisplay(liveValue);
+					slider.setAttribute('aria-valuenow', String(liveValue));
+					slider.setAttribute('aria-valuetext', formatDisplay(liveValue));
 				}
 			};
 		}
@@ -853,6 +1217,11 @@
 
 				const field = makeSlider(spec.label, spec.min, spec.max, spec.step, function (value) {
 					setParam(op.id, spec.key, value);
+				}, {
+					modulate: true,
+					opId: op.id,
+					paramKey: spec.key,
+					spec: spec
 				});
 				field.wrap.dataset.param = spec.key;
 				sliders[op.id + ':' + spec.key] = field;
@@ -925,6 +1294,12 @@
 
 		function refreshPreview(pipe) {
 			previewName.textContent = pipe ? pipe.name : 'PIPE';
+			if (liveOn && liveFrame) {
+				if (previewImg.getAttribute('src') !== liveFrame) previewImg.src = liveFrame;
+				previewImg.hidden = false;
+				previewEmpty.hidden = true;
+				return;
+			}
 			const url = pipe && pipe.thumbnail;
 			if (url) {
 				if (previewImg.getAttribute('src') !== url) previewImg.src = url;
@@ -935,6 +1310,32 @@
 				previewImg.hidden = true;
 				previewEmpty.hidden = false;
 			}
+		}
+
+		function setLiveMode(on) {
+			liveOn = !!on;
+			liveBtn.classList.toggle('is-on', liveOn);
+			liveBtn.setAttribute('aria-pressed', liveOn ? 'true' : 'false');
+			preview.classList.toggle('is-live', liveOn);
+			if (!liveOn) {
+				liveFrame = '';
+				previewEmpty.textContent = 'Waiting for output';
+				refreshPreview(activePipe());
+				return;
+			}
+			previewEmpty.textContent = 'Waiting for live';
+			if (!liveFrame) {
+				previewEmpty.hidden = false;
+			}
+		}
+
+		function setPreviewFrame(url) {
+			if (!url) return;
+			liveFrame = url;
+			if (!liveOn) return;
+			if (previewImg.getAttribute('src') !== url) previewImg.src = url;
+			previewImg.hidden = false;
+			previewEmpty.hidden = true;
 		}
 
 		function makePipeTile(pipe, activeId) {
@@ -1045,7 +1446,10 @@
 
 					Object.keys(op.parameters || {}).forEach(function (key) {
 						const slider = sliders[op.id + ':' + key];
-						if (slider) slider.setValue(op.parameters[key]);
+						if (!slider) return;
+						const mod = (op.modulations || {})[key];
+						if (slider.setMod) slider.setMod(mod);
+						if (!(mod && mod.enabled)) slider.setValue(op.parameters[key]);
 					});
 
 					card.querySelectorAll('[data-enum-key]').forEach(function (btn) {
@@ -1063,6 +1467,50 @@
 			debugToggle.classList.toggle('is-active', dbgOn);
 			debugToggle.setAttribute('aria-pressed', dbgOn ? 'true' : 'false');
 			debugStats.hidden = !dbgOn;
+
+			if (root.SynthClock) {
+				bpmVal.textContent = String(Math.round(root.SynthClock.fromState(s).bpm));
+			}
+		}
+
+		function tick() {
+			if (!root.SynthClock) return;
+			const s = getState();
+			const clock = root.SynthClock.fromState(s);
+			const nowMs = Date.now();
+			const beat = root.SynthClock.beatInBar(clock, nowMs);
+			bpmVal.textContent = String(Math.round(clock.bpm));
+			tapBtn.setAttribute('aria-valuenow', String(Math.round(clock.bpm)));
+			beatCells.forEach(function (cell, i) {
+				cell.classList.toggle('is-on', i === beat);
+			});
+			if (beat !== lastBeat) {
+				lastBeat = beat;
+				const onCell = beatCells[beat];
+				const g = getGsap();
+				if (onCell && g && !prefersReduced()) {
+					g.fromTo(onCell, { scale: 1.18 }, {
+						scale: 1,
+						duration: dur(0.14),
+						ease: 'power2.out'
+					});
+				}
+			}
+
+			const pipeline = ops();
+			if (root.SynthModulate && root.SynthFft && root.SynthModulate.usesFft(pipeline)) {
+				root.SynthFft.ensure();
+			}
+
+			const ctx = {
+				nowMs: nowMs,
+				clock: clock,
+				fft: root.SynthFft ? root.SynthFft.levels() : null
+			};
+			Object.keys(sliders).forEach(function (id) {
+				const slider = sliders[id];
+				if (slider && slider.updateLive) slider.updateLive(ctx);
+			});
 		}
 
 		function refreshStats(stats) {
@@ -1091,7 +1539,13 @@
 		});
 
 		refresh();
-		return { refresh: refresh, refreshStats: refreshStats };
+		return {
+			refresh: refresh,
+			refreshStats: refreshStats,
+			setPreviewFrame: setPreviewFrame,
+			setLiveMode: setLiveMode,
+			tick: tick
+		};
 	}
 
 	root.SynthUI = { mount: mount };

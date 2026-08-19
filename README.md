@@ -222,6 +222,8 @@ The first-level view is a **grid of PIPEs**. Click a tile to activate it: that P
 │                   PIPE GRID                   │
 │  [PIPE 01] [PIPE 02] [PIPE 03] [New PIPE]     │
 └───────────────────────────────────────────────┘
+│  [ TAP  120 BPM ]  [beat viz]  [SYNC]         │
+└───────────────────────────────────────────────┘
 
                   ACTIVE PIPE
                        ↓
@@ -235,7 +237,19 @@ The first-level view is a **grid of PIPEs**. Click a tile to activate it: that P
 └───────────────────────────────────────────────┘
 ```
 
+The bar under the grid is the **clock**. Tap the BPM pad in time to set tempo (4/4); that does not reset the bar. The square visualizer lights each beat clockwise. **SYNC** jumps back to beat 1 without changing the tempo.
+
 Operators stay collapsed so the whole chain fits on a phone: name, color, and a chevron. Expanded rows show a heavier header, tools, and parameters.
+
+Tap a parameter name (or the wave icon) to modulate it. The slider grows In/Out handles: the modulator always outputs 0..1 and remaps that into the handle range. Swap the handles to invert direction.
+
+Sources:
+
+- **Speed** (wall clock): cycle length in seconds. Loop, bounce (ping-pong), or random on each cycle.
+- **BPM**: cycle length in beats, starting at 4. `/2` and `x2` jump 1, 2, 4, 8, 16, 32. Same play modes.
+- **FFT**: phone microphone. Low / mid / high bands drive the parameter. Play modes do not apply.
+
+The stored slider value stays as a fallback. Modulation is resolved at draw time, so the GPU never writes back into the PIPE document. FFT levels travel over WebSocket from the phone; they are not saved in state.
 
 ```text
         +
@@ -500,6 +514,9 @@ The phone never receives video. It only sends PIPE patches over WebSocket. Thumb
 | `core/registry.js` | Operator catalog |
 | `core/pipeline.js` | Ordered operator-list helpers |
 | `core/pipes.js` | PIPE create / duplicate / rename / active |
+| `core/clock.js` | TAP BPM, 4/4 phase, SYNC |
+| `core/modulate.js` | Timeline / BPM / FFT parameter modulator |
+| `core/fft.js` | Microphone analyser and remote FFT bus |
 | `core/executor.js` | Generic `for op in operators` runner + framebuffers |
 | `operators/*.js` | Operator modules (MVP + placeholders) |
 | `shaders.js` / `engine.js` | GLSL sources, compile, blit, thumbnail capture |
