@@ -61,7 +61,14 @@
 
 		SynthState.subscribe(function () {
 			if (uiApi) uiApi.refresh();
+			if (window.SynthCamera) SynthCamera.syncControl(SynthState.get());
 		});
+
+		if (window.SynthCamera) {
+			SynthCamera.onChange(function () {
+				if (uiApi) uiApi.refresh();
+			});
+		}
 
 		SynthSync.connect({
 			role: 'control',
@@ -85,6 +92,9 @@
 			},
 			onFft: function (msg) {
 				if (window.SynthFft) SynthFft.setRemote(msg);
+			},
+			onCameras: function (devices) {
+				if (window.SynthCamera) SynthCamera.setDisplayDevices(devices);
 			}
 		});
 	});

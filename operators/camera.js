@@ -7,14 +7,33 @@
 		category: 'generator',
 		categoryLabel: cat.label,
 		color: cat.color,
-		help: 'Uses the display device camera as a live texture. Mirror flips the image. Cover fills the frame; Contain letterboxes. After another operator, Blending Mode composites the camera with whatever came before.',
+		help: 'Live camera texture. Display uses the USB webcam on the Pi. Phone uses the control phone camera and sends frames over the network. Mirror flips the image. Cover fills the frame; Contain letterboxes.',
 		implemented: true,
 		defaults: {
+			source: 'display',
+			deviceId: '',
 			mirror: 1,
 			fit: 'cover',
 			blendMode: 'normal'
 		},
 		params: [
+			{
+				key: 'source',
+				label: 'Source',
+				kind: 'enum',
+				randomize: false,
+				options: [
+					{ id: 'display', label: 'Display' },
+					{ id: 'phone', label: 'Phone' }
+				]
+			},
+			{
+				key: 'deviceId',
+				label: 'Device',
+				kind: 'enum',
+				randomize: false,
+				optionsFrom: 'cameraDevices'
+			},
 			{ key: 'mirror', label: 'Mirror', kind: 'enum', options: [
 				{ id: 0, label: 'Off' },
 				{ id: 1, label: 'On' }
@@ -26,27 +45,17 @@
 			root.SynthBlend.param
 		],
 		create: function (engine) {
-			let held = false;
-			let warned = false;
-
-			function hold() {
-				if (held || !root.SynthCamera) return;
-				held = true;
-				root.SynthCamera.retain(function (err) {
-					if (warned) return;
-					warned = true;
-					if (root.SynthNotify) {
-						root.SynthNotify.show('warning', (err && err.message) || 'Camera unavailable');
-					}
-				});
-			}
-
 			return {
 				process: function (ctx) {
-					hold();
+					const source = ctx.parameters.source || 'display';
+					if (root.SynthCamera) {
+						root.SynthCamera.ensure({
+							source: source,
+							deviceId: ctx.parameters.deviceId || ''
+						});
+					}
 					const cam = root.SynthCamera;
-					const ready = cam && cam.ready();
-					const tex = ready ? cam.texture() : null;
+					const tex = cam ? cam.texture(source) : null;
 					if (!tex) {
 						engine.drawTo(ctx.output, engine.shaders.copy, {
 							u_input: ctx.input,
@@ -54,21 +63,19 @@
 						});
 						return;
 					}
-					const tw = tex.width || (tex.elt && tex.elt.videoWidth) || 1;
-					const th = tex.height || (tex.elt && tex.elt.videoHeight) || 1;
+					const size = cam.size(source);
 					engine.drawTo(ctx.output, engine.shaders.camera, {
 						u_input: ctx.input,
 						u_hasInput: ctx.hasInput ? 1 : 0,
 						u_blendMode: root.SynthBlend.toUniform(ctx.parameters.blendMode),
 						u_video: tex,
-						u_texSize: [tw, th],
+						u_texSize: size,
 						u_mirror: ctx.parameters.mirror ? 1 : 0,
 						u_cover: ctx.parameters.fit === 'contain' ? 0 : 1
 					});
 				},
 				dispose: function () {
-					if (held && root.SynthCamera) root.SynthCamera.release();
-					held = false;
+					if (root.SynthCamera) root.SynthCamera.stop();
 				}
 			};
 		}

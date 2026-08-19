@@ -1,7 +1,9 @@
 const http = require('http');
+const https = require('https');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 
@@ -259,21 +261,51 @@ function readCpuTemp() {
 	}
 }
 
-function originFor(host, port) {
-	if (port === 80) return 'http://' + host;
-	return 'http://' + host + ':' + port;
+function originFor(host, port, secure) {
+	const proto = secure ? 'https' : 'http';
+	if ((!secure && port === 80) || (secure && port === 443)) return proto + '://' + host;
+	return proto + '://' + host + ':' + port;
 }
 
-function makeInfo(port) {
+function makeInfo(port, httpsPort) {
 	const ip = lanAddress();
 	const mdns = originFor(mdnsHost(), port);
 	const ipOrigin = ip ? originFor(ip, port) : '';
+	const httpsOrigin = httpsPort && ip ? originFor(ip, httpsPort, true) : '';
 	return {
 		hostname: os.hostname(),
 		url: mdns,
 		ipOrigin: ipOrigin,
-		controlUrl: (ipOrigin || mdns) + '/control.html'
+		controlUrl: (ipOrigin || mdns) + '/control.html',
+		httpsControlUrl: httpsOrigin ? httpsOrigin + '/control.html' : ''
 	};
+}
+
+function ensureCerts() {
+	const dir = path.join(__dirname, 'certs');
+	const keyPath = path.join(dir, 'key.pem');
+	const certPath = path.join(dir, 'cert.pem');
+	if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+		return {
+			key: fs.readFileSync(keyPath),
+			cert: fs.readFileSync(certPath)
+		};
+	}
+	try {
+		fs.mkdirSync(dir, { recursive: true });
+		execFileSync('openssl', [
+			'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
+			'-keyout', keyPath, '-out', certPath, '-days', '3650',
+			'-subj', '/CN=visual-synth.local'
+		], { stdio: 'ignore' });
+		return {
+			key: fs.readFileSync(keyPath),
+			cert: fs.readFileSync(certPath)
+		};
+	} catch (err) {
+		console.warn('HTTPS skipped (openssl not available). Phone camera needs a secure origin.');
+		return null;
+	}
 }
 
 function listen(server, port) {
@@ -298,9 +330,22 @@ async function start() {
 	app.use(express.static(ROOT));
 
 	const server = http.createServer(app);
-	const wss = new WebSocketServer({ server });
+	const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
 	let latestStats = { fps: null, tempC: readCpuTemp() };
 	let livePreview = false;
+	let cameras = [];
+	let lastNotify = null;
+	let httpsPort = 0;
+
+	function attachUpgrade(httpServer) {
+		httpServer.on('upgrade', (req, socket, head) => {
+			wss.handleUpgrade(req, socket, head, (ws) => {
+				wss.emit('connection', ws, req);
+			});
+		});
+	}
+
+	attachUpgrade(server);
 
 	function broadcastState() {
 		const packed = JSON.stringify({ type: 'state', state: state });
@@ -336,9 +381,13 @@ async function start() {
 			if (msg.type === 'hello') {
 				ws.role = msg.role || '';
 				ws.send(JSON.stringify({ type: 'state', state: state }));
-				ws.send(JSON.stringify(Object.assign({ type: 'info' }, makeInfo(port))));
+				ws.send(JSON.stringify(Object.assign({ type: 'info' }, makeInfo(port, httpsPort))));
 				ws.send(JSON.stringify({ type: 'stats', fps: latestStats.fps, tempC: latestStats.tempC }));
 				ws.send(JSON.stringify({ type: 'live', enabled: livePreview }));
+				ws.send(JSON.stringify({ type: 'cameras', devices: cameras }));
+				if (lastNotify && ws.role === 'control' && Date.now() - lastNotify.at < 60000) {
+					ws.send(JSON.stringify(lastNotify.payload));
+				}
 				return;
 			}
 
@@ -353,6 +402,22 @@ async function start() {
 				return;
 			}
 
+			if (msg.type === 'cameras') {
+				cameras = Array.isArray(msg.devices) ? msg.devices : [];
+				broadcast({ type: 'cameras', devices: cameras });
+				return;
+			}
+
+			if (msg.type === 'cameraFrame' && msg.url) {
+				const packed = JSON.stringify({ type: 'cameraFrame', url: msg.url });
+				wss.clients.forEach((client) => {
+					if (client !== ws && client.role === 'display' && client.readyState === 1) {
+						client.send(packed);
+					}
+				});
+				return;
+			}
+
 			if (msg.type === 'patch' && msg.patch) {
 				state = applyPatch(state, msg.patch);
 				broadcastState();
@@ -360,7 +425,19 @@ async function start() {
 			}
 
 			if (msg.type === 'notify' && msg.message) {
-				broadcast({ type: 'notify', level: msg.level || 'warning', message: msg.message }, ws);
+				const payload = {
+					type: 'notify',
+					level: msg.level || 'warning',
+					message: String(msg.message)
+				};
+				lastNotify = { payload: payload, at: Date.now() };
+				const packed = JSON.stringify(payload);
+				wss.clients.forEach((client) => {
+					if (client.readyState !== 1) return;
+					if (client.role !== 'control') return;
+					if (client === ws) return;
+					client.send(packed);
+				});
 				return;
 			}
 
@@ -394,11 +471,27 @@ async function start() {
 		}
 	}
 
-	const info = makeInfo(port);
+	const ssl = ensureCerts();
+	if (ssl) {
+		const secure = https.createServer(ssl, app);
+		attachUpgrade(secure);
+		const preferredHttps = Number(process.env.HTTPS_PORT) || 8443;
+		try {
+			httpsPort = await listen(secure, preferredHttps);
+		} catch (err) {
+			console.warn('HTTPS listen failed on ' + preferredHttps + ': ' + err.message);
+			httpsPort = 0;
+		}
+	}
+
+	const info = makeInfo(port, httpsPort);
 	console.log('Visual Synth');
 	console.log('  local   ' + originFor('127.0.0.1', port));
 	console.log('  lan     ' + (info.ipOrigin || info.url));
 	console.log('  control ' + info.controlUrl);
+	if (info.httpsControlUrl) {
+		console.log('  https   ' + info.httpsControlUrl + '  (phone camera)');
+	}
 }
 
 start().catch((err) => {

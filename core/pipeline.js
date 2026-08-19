@@ -20,6 +20,7 @@
 
 	function randomParam(spec) {
 		if (!spec) return undefined;
+		if (spec.randomize === false) return undefined;
 		if (spec.kind === 'enum' && spec.options && spec.options.length) {
 			return spec.options[Math.floor(Math.random() * spec.options.length)].id;
 		}
