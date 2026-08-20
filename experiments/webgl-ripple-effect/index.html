@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>WebGL — Ripple Effect</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body data-mode="fullscreen">
+	<nav class="mode-switch" role="tablist" aria-label="Visualization">
+		<button type="button" class="mode-switch__btn is-active" data-mode="fullscreen" role="tab" aria-selected="true">Full screen image</button>
+		<button type="button" class="mode-switch__btn" data-mode="cards" role="tab" aria-selected="false">Cards</button>
+	</nav>
+
+	<canvas id="canvas" class="ripple-canvas ripple-canvas--page"></canvas>
+	<p id="hint">Click and drag</p>
+	<p id="error" hidden>WebGL2 is required for this experiment.</p>
+	<input id="image-input" type="file" accept="image/*" hidden>
+
+	<section id="cards-view" class="cards-view" hidden>
+		<header class="cards-view__header">
+			<p class="cards-view__eyebrow"><span class="cards-view__mark" aria-hidden="true"></span>Case studies</p>
+			<div class="cards-view__title-row">
+				<h1 class="cards-view__title">Outcomes, told<br>by the teams</h1>
+				<button type="button" class="cards-view__all">View all studies</button>
+			</div>
+		</header>
+
+		<div class="cards-stage">
+			<div class="cards-row">
+				<article class="study-card" data-slot="0">
+				<div class="study-card__media">
+					<canvas class="ripple-canvas"></canvas>
+				</div>
+				<div class="study-card__body">
+					<div class="study-card__logo"></div>
+					<p class="study-card__copy"></p>
+					<div class="study-card__stat">
+						<p class="study-card__value"></p>
+						<p class="study-card__label"></p>
+					</div>
+				</div>
+			</article>
+			<article class="study-card" data-slot="1">
+				<div class="study-card__media">
+					<canvas class="ripple-canvas"></canvas>
+				</div>
+				<div class="study-card__body">
+					<div class="study-card__logo"></div>
+					<p class="study-card__copy"></p>
+					<div class="study-card__stat">
+						<p class="study-card__value"></p>
+						<p class="study-card__label"></p>
+					</div>
+				</div>
+				</article>
+			</div>
+		</div>
+
+		<footer class="cards-view__nav">
+			<div class="cards-dots" role="tablist" aria-label="Case study pages"></div>
+			<div class="cards-arrows">
+				<button type="button" class="cards-arrow" data-dir="-1" aria-label="Previous">
+					<span aria-hidden="true"></span>
+				</button>
+				<button type="button" class="cards-arrow" data-dir="1" aria-label="Next">
+					<span aria-hidden="true"></span>
+				</button>
+			</div>
+		</footer>
+	</section>
+
+	<script type="module" src="main.js"></script>
+</body>
+</html>
