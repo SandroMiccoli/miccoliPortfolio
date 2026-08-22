@@ -12,7 +12,7 @@
 			id: 'effect',
 			label: 'Effects / Filters',
 			color: '#4AAE72',
-			about: 'Transforms the incoming image. Warp bends space. Kaleidoscope mirrors it. Bloom glows bright areas. An effect never starts a new picture on its own.'
+			about: 'Transforms the incoming image. Warp bends space. Kaleidoscope mirrors it. Bloom glows bright areas. Edge traces outlines. An effect never starts a new picture on its own.'
 		},
 		color: {
 			id: 'color',
@@ -101,6 +101,33 @@
 		random: function () {
 			const n = Math.floor(Math.random() * 0xffffff);
 			return '#' + n.toString(16).padStart(6, '0').toUpperCase();
+		}
+	};
+
+	const XYZ_AXES = ['X', 'Y', 'Z'];
+
+	root.SynthParams = {
+		axes: XYZ_AXES,
+		axisKey: function (spec, axis) {
+			return spec.key + String(axis).toUpperCase();
+		},
+		axisSpec: function (spec, axis) {
+			const letter = String(axis).toUpperCase();
+			return {
+				key: spec.key + letter,
+				label: letter,
+				kind: 'range',
+				min: spec.min,
+				max: spec.max,
+				step: spec.step,
+				unit: spec.unit
+			};
+		},
+		expand: function (spec) {
+			if (!spec || spec.kind !== 'xyz') return spec ? [spec] : [];
+			return XYZ_AXES.map(function (axis) {
+				return root.SynthParams.axisSpec(spec, axis);
+			});
 		}
 	};
 

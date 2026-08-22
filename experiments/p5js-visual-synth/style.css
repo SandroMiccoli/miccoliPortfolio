@@ -1477,6 +1477,55 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	box-shadow: none;
 }
 
+.synth-xyz {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-bottom: 10px;
+}
+
+.synth-xyz__head {
+	font-size: 10px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--fg) 78%, var(--muted));
+}
+
+.synth-xyz__axes {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+	align-items: start;
+}
+
+.synth-xyz__axis {
+	gap: 2px;
+	margin-bottom: 0;
+}
+
+.synth-xyz__axis .synth-field__top {
+	gap: 4px;
+}
+
+.synth-xyz__axis .synth-field__value {
+	font-size: 11px;
+}
+
+.synth-xyz__axis .synth-field__mod {
+	width: 24px;
+	min-width: 24px;
+	height: 24px;
+	min-height: 24px;
+}
+
+.synth-xyz__mods:empty {
+	display: none;
+}
+
+.synth-op .synth-xyz .synth-slider {
+	padding: 0 5px;
+}
+
 .synth-op .synth-field {
 	gap: 2px;
 	margin-bottom: 10px;

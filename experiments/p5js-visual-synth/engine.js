@@ -57,10 +57,13 @@
 
 		if (target && typeof target.begin === 'function') {
 			target.begin();
-			resetShader();
-			clear();
-			blit();
-			target.end();
+			try {
+				resetShader();
+				clear();
+				blit();
+			} finally {
+				target.end();
+			}
 			return;
 		}
 		blit();
@@ -93,7 +96,7 @@
 		init: function () {
 			const src = root.SYNTH_SHADERS;
 			const vert = src.vert;
-			['lines', 'noise', 'camera', 'warp', 'lookup', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'copy'].forEach(function (name) {
+			['lines', 'noise', 'camera', 'warp', 'lookup', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy'].forEach(function (name) {
 				shaders[name] = compile(vert, src[name]);
 			});
 			liveExecutor = root.SynthExecutor.create(root.SynthEngine);
