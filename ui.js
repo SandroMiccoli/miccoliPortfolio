@@ -1014,6 +1014,40 @@
 			};
 		}
 
+		function makeXyzField(op, spec) {
+			const wrap = el('div', 'synth-xyz');
+			wrap.setAttribute('role', 'group');
+			wrap.setAttribute('aria-label', spec.label);
+			if (spec.visibleWhen) wrap.dataset.visibleWhen = spec.visibleWhen;
+			wrap.appendChild(el('div', 'synth-xyz__head', spec.label));
+			const axes = el('div', 'synth-xyz__axes');
+			const mods = el('div', 'synth-xyz__mods');
+			const letters = (root.SynthParams && root.SynthParams.axes) || ['X', 'Y', 'Z'];
+			letters.forEach(function (axis) {
+				const axisSpec = root.SynthParams
+					? root.SynthParams.axisSpec(spec, axis)
+					: { key: spec.key + axis, label: axis, kind: 'range', min: spec.min, max: spec.max, step: spec.step };
+				const field = makeSlider(axisSpec.label, spec.min, spec.max, spec.step, function (value) {
+					setParam(op.id, axisSpec.key, value);
+				}, {
+					modulate: true,
+					opId: op.id,
+					paramKey: axisSpec.key,
+					spec: axisSpec,
+					className: 'synth-xyz__axis'
+				});
+				field.wrap.dataset.param = axisSpec.key;
+				field.wrap.dataset.axis = axis.toLowerCase();
+				sliders[op.id + ':' + axisSpec.key] = field;
+				const panel = field.wrap.querySelector('.synth-mod');
+				if (panel) mods.appendChild(panel);
+				axes.appendChild(field.wrap);
+			});
+			wrap.appendChild(axes);
+			wrap.appendChild(mods);
+			return { wrap: wrap };
+		}
+
 		function setParam(id, key, value) {
 			patch({ opParam: { id: id, key: key, value: value } });
 		}
@@ -1744,6 +1778,10 @@
 					colors[op.id + ':' + spec.key] = field;
 					if (spec.visibleWhen) field.wrap.dataset.visibleWhen = spec.visibleWhen;
 					inner.appendChild(field.wrap);
+					return;
+				}
+				if (spec.kind === 'xyz') {
+					inner.appendChild(makeXyzField(op, spec).wrap);
 					return;
 				}
 				if (spec.kind === 'enum') {

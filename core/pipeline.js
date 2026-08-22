@@ -38,6 +38,13 @@
 		const out = clone(def.defaults || {});
 		(def.params || []).forEach(function (spec) {
 			if (!spec || !spec.key) return;
+			if (spec.kind === 'xyz' && root.SynthParams) {
+				root.SynthParams.expand(spec).forEach(function (axis) {
+					const value = randomParam(axis);
+					if (value !== undefined) out[axis.key] = value;
+				});
+				return;
+			}
 			const value = randomParam(spec);
 			if (value !== undefined) out[spec.key] = value;
 		});

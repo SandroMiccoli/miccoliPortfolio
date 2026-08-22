@@ -155,7 +155,15 @@
 		if (!def) return null;
 		const params = def.params || [];
 		for (let i = 0; i < params.length; i += 1) {
-			if (params[i] && params[i].key === key) return params[i];
+			const spec = params[i];
+			if (!spec) continue;
+			if (spec.key === key) return spec;
+			if (spec.kind === 'xyz' && root.SynthParams) {
+				const axes = root.SynthParams.expand(spec);
+				for (let a = 0; a < axes.length; a += 1) {
+					if (axes[a].key === key) return axes[a];
+				}
+			}
 		}
 		return null;
 	}

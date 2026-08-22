@@ -135,10 +135,11 @@ Generators
 Effects / Filters
     Warp           (MVP)
     Bloom          (MVP)
+    Kaleidoscope
+    Edge
     Displace
     Blur
     Feedback
-    Kaleidoscope
 
 Color
     Lookup         (MVP)
