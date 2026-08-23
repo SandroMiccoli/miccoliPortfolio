@@ -23,6 +23,21 @@
 			}
 			return true;
 		}
+		if (a && b && typeof a === 'object' && typeof b === 'object') {
+			const keys = {};
+			Object.keys(a).forEach(function (key) {
+				if (key !== 'id') keys[key] = true;
+			});
+			Object.keys(b).forEach(function (key) {
+				if (key !== 'id') keys[key] = true;
+			});
+			const list = Object.keys(keys);
+			if (!list.length) return false;
+			for (let i = 0; i < list.length; i += 1) {
+				if (!sameValue(a[list[i]], b[list[i]])) return false;
+			}
+			return true;
+		}
 		if (typeof a === 'number' && typeof b === 'number') {
 			return Math.abs(a - b) < 1e-4;
 		}
@@ -38,7 +53,7 @@
 		const def = root.SynthRegistry ? root.SynthRegistry.get(type) : null;
 		const keys = [];
 		((def && def.params) || []).forEach(function (spec) {
-			if (!spec || !spec.key || spec.kind === 'palette') return;
+			if (!spec || !spec.key || spec.kind === 'palette' || spec.kind === 'ramp') return;
 			if (SKIP[spec.key]) return;
 			if (spec.kind === 'xyz' && root.SynthParams) {
 				root.SynthParams.expand(spec).forEach(function (axis) {
@@ -53,6 +68,7 @@
 				if (keys.indexOf(key) < 0) keys.push(key);
 			});
 		}
+		if (type === 'ramp' && keys.indexOf('stops') < 0) keys.push('stops');
 		return keys;
 	}
 

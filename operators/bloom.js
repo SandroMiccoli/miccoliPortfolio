@@ -1,5 +1,5 @@
 (function (root) {
-	const color = '#5B7FD4';
+	const cat = root.SynthCategories.filter;
 	const LEVELS = 4;
 
 	function makeFbo(w, h) {
@@ -16,9 +16,9 @@
 	root.SynthRegistry.register({
 		type: 'bloom',
 		name: 'Bloom',
-		category: 'effect',
-		categoryLabel: 'Effects / Filters',
-		color: color,
+		category: cat.id,
+		categoryLabel: cat.label,
+		color: cat.color,
 		help: 'Extracts bright regions, blurs them through a dual-filter pyramid, and composites the glow back. Threshold picks what counts as bright. Radius spreads the haze. Intensity is the mix.',
 		implemented: true,
 		defaults: {

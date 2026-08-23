@@ -115,13 +115,29 @@ This distinction is fundamental:
 
 **Kaleidoscope** — radial mirroring.
 
+**Displace** — self-mapped pixel offset.
+
+**Feedback** — decaying trail.
+
+### Filters
+
 **Bloom** — glow around bright areas.
+
+**Blur** — two-pass Gaussian.
 
 **Edge** — Sobel outlines from luminance gradients.
 
 ### Color
 
 **Color Lookup** — maps luminance to a palette.
+
+**Color Ramp** — maps luminance through authored color notches, with phase, period, and linear/step interpolation.
+
+**HSV** — hue, saturation, and value grade.
+
+**Levels** — input/output range and gamma.
+
+**Contrast** — contrast, brightness, and pivot.
 
 ### Output
 
@@ -312,14 +328,6 @@ Video
 Displace
 Blur
 Feedback
-```
-
-## Color
-
-```text
-Hue / Saturation
-Levels
-Contrast
 ```
 
 ## Compositing

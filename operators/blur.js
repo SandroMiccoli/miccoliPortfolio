@@ -1,5 +1,5 @@
 (function (root) {
-	const color = '#5B7FD4';
+	const cat = root.SynthCategories.filter;
 
 	function makeFbo(w, h) {
 		const opts = {
@@ -15,9 +15,9 @@
 	root.SynthRegistry.register({
 		type: 'blur',
 		name: 'Blur',
-		category: 'effect',
-		categoryLabel: 'Effects / Filters',
-		color: color,
+		category: cat.id,
+		categoryLabel: cat.label,
+		color: cat.color,
 		help: 'A two-pass Gaussian blur on the incoming image. Radius is the spread. Mix is dry to wet. Unlike Bloom, it blurs everything, not only the bright parts.',
 		implemented: true,
 		defaults: {

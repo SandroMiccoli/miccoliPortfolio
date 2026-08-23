@@ -24,7 +24,7 @@
 		if (spec.kind === 'enum' && spec.options && spec.options.length) {
 			return spec.options[Math.floor(Math.random() * spec.options.length)].id;
 		}
-		if (spec.kind === 'palette') return undefined;
+		if (spec.kind === 'palette' || spec.kind === 'ramp') return undefined;
 		if (spec.kind === 'color') {
 			return root.SynthColor ? root.SynthColor.random() : '#FFFFFF';
 		}
@@ -143,6 +143,27 @@
 			p.exposure = clamp(p.exposure, 0.55, 1.45);
 			p.saturation = clamp(p.saturation, 0.55, 1.7);
 		}
+		if (inst.type === 'ramp') {
+			p.period = clamp(p.period, 0.7, 2.2);
+			p.phase = clamp(p.phase, 0, 0.35);
+		}
+		if (inst.type === 'hsv') {
+			p.hue = clamp(p.hue, -90, 90);
+			p.saturation = clamp(p.saturation, 0.45, 1.6);
+			p.value = clamp(p.value, 0.7, 1.35);
+		}
+		if (inst.type === 'levels') {
+			p.inBlack = clamp(p.inBlack, 0, 0.22);
+			p.inWhite = clamp(p.inWhite, 0.78, 1);
+			p.gamma = clamp(p.gamma, 0.7, 1.45);
+			p.outBlack = clamp(p.outBlack, 0, 0.12);
+			p.outWhite = clamp(p.outWhite, 0.88, 1);
+		}
+		if (inst.type === 'contrast') {
+			p.contrast = clamp(p.contrast, 0.75, 1.85);
+			p.brightness = clamp(p.brightness, -0.12, 0.12);
+			p.pivot = clamp(p.pivot, 0.38, 0.62);
+		}
 		if (inst.type === 'bloom') {
 			p.intensity = clamp(p.intensity, 0.4, 1.8);
 			p.threshold = clamp(p.threshold, 0.12, 0.55);
@@ -197,7 +218,8 @@
 		if (chance(0.28)) types.push('feedback');
 		if (chance(0.32)) types.push('blur');
 		if (chance(0.42)) types.push('edge');
-		if (chance(0.88)) types.push('lookup');
+		if (chance(0.88)) types.push(chance(0.42) ? 'ramp' : 'lookup');
+		if (chance(0.4)) types.push(pick(['hsv', 'levels', 'contrast']));
 		if (chance(0.55)) types.push('bloom');
 		types.push('screen');
 
@@ -206,6 +228,9 @@
 			if (dropLast(types, 'blur', 0)) continue;
 			if (dropLast(types, 'feedback', 0)) continue;
 			if (dropLast(types, 'displace', 0)) continue;
+			if (dropLast(types, 'hsv', 0)) continue;
+			if (dropLast(types, 'levels', 0)) continue;
+			if (dropLast(types, 'contrast', 0)) continue;
 			if (dropLast(types, 'bloom', 0)) continue;
 			if (dropLast(types, 'edge', 0)) continue;
 			if (types.length > 2 && isGenerator(types[0]) && isGenerator(types[1])) {
@@ -216,7 +241,7 @@
 		}
 
 		while (types.length < 3) {
-			const fill = types.indexOf('lookup') < 0 ? 'lookup' : 'warp';
+			const fill = types.indexOf('lookup') < 0 && types.indexOf('ramp') < 0 ? 'lookup' : 'warp';
 			types.splice(types.length - 1, 0, fill);
 		}
 

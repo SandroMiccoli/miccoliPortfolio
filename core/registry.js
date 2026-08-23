@@ -10,15 +10,21 @@
 		},
 		effect: {
 			id: 'effect',
-			label: 'Effects / Filters',
+			label: 'Effects',
 			color: '#4AAE72',
-			about: 'Transforms the incoming image. Warp and Displace bend space. Kaleidoscope mirrors it. Blur and Bloom soften or glow. Feedback keeps a decaying trail. Edge traces outlines. An effect never starts a new picture on its own.'
+			about: 'Transforms the incoming image in space. Warp and Displace bend it. Kaleidoscope mirrors it. Feedback keeps a decaying trail and transforms that trail. An effect never starts a new picture on its own.'
+		},
+		filter: {
+			id: 'filter',
+			label: 'Filters',
+			color: '#5B7FD4',
+			about: 'Processes the incoming image without remapping its geometry. Blur softens everything. Bloom glows around bright areas. Edge traces luminance outlines. A filter never starts a new picture on its own.'
 		},
 		color: {
 			id: 'color',
 			label: 'Color',
 			color: '#D4A84B',
-			about: 'Remaps brightness and color of the incoming image. Geometry stays. Values change.'
+			about: 'Remaps brightness and color of the incoming image. Color Lookup maps luminance to a palette. Color Ramp does the same through authored notches, with phase, period, and linear or step interpolation. HSV, Levels, and Contrast grade the existing color. Geometry stays. Values change.'
 		},
 		compositing: {
 			id: 'compositing',
@@ -149,7 +155,7 @@
 		},
 
 		listByCategory: function () {
-			const order = ['generator', 'effect', 'color', 'compositing', 'output'];
+			const order = ['generator', 'effect', 'filter', 'color', 'compositing', 'output'];
 			const map = {};
 			this.list().forEach(function (def) {
 				const cat = def.category || 'other';

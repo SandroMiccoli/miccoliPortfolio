@@ -1,12 +1,12 @@
 (function (root) {
-	const color = (root.SynthCategories && root.SynthCategories.effect.color) || '#4AAE72';
+	const cat = root.SynthCategories.effect;
 
 	root.SynthRegistry.register({
 		type: 'displace',
 		name: 'Displace',
-		category: 'effect',
-		categoryLabel: 'Effects / Filters',
-		color: color,
+		category: cat.id,
+		categoryLabel: cat.label,
+		color: cat.color,
 		help: 'Offsets the incoming image using itself as a map. Luma slides pixels along Angle. Chroma uses red and green as X and Y. Center is the value that stays still. Wrap repeats the edges instead of clamping them.',
 		implemented: true,
 		defaults: {

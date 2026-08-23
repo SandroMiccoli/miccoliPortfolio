@@ -1,12 +1,12 @@
 (function (root) {
-	const color = (root.SynthCategories && root.SynthCategories.effect.color) || '#4AAE72';
+	const cat = root.SynthCategories.effect;
 
 	root.SynthRegistry.register({
 		type: 'warp',
 		name: 'Warp',
-		category: 'effect',
-		categoryLabel: 'Effects / Filters',
-		color: color,
+		category: cat.id,
+		categoryLabel: cat.label,
+		color: cat.color,
 		help: 'Warps the incoming texture in space. It does not generate its own image. Amount and frequency control how far UVs travel.',
 		implemented: true,
 		defaults: {
