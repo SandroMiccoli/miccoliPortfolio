@@ -164,12 +164,26 @@
 		return overlay && !overlay.hidden && !overlay.classList.contains('is-leaving');
 	}
 
+	function isUiChrome(target) {
+		if (!target || !target.closest) return false;
+		return !!(
+			target.closest('.synth-panel') ||
+			target.closest('.synth-picker') ||
+			target.closest('.synth-float-tip') ||
+			target.closest('#boot-overlay')
+		);
+	}
+
 	function setPanel(open) {
 		panelOpen = open;
 		const panel = document.getElementById('ui-root');
 		if (panel) panel.classList.toggle('is-open', open);
-		if (open) revealChrome(true);
-		else revealChrome();
+		if (open) {
+			revealChrome(true);
+			return;
+		}
+		revealChrome();
+		if (uiApi && uiApi.closeOverlays) uiApi.closeOverlays();
 	}
 
 	function revealChrome(keep) {
@@ -207,7 +221,7 @@
 
 		window.addEventListener('pointerdown', function (event) {
 			if (event.pointerType === 'mouse' && event.button !== 0) return;
-			if (event.target.closest && event.target.closest('.synth-panel')) return;
+			if (isUiChrome(event.target)) return;
 			if (bootIsUp()) return;
 			const x = event.clientX;
 			const w = window.innerWidth;
@@ -238,9 +252,12 @@
 			}
 			const dx = Math.abs(event.clientX - startX);
 			const dy = Math.abs(event.clientY - startY);
+			const tap = !didSwipe && dx < 12 && dy < 12;
 			const onRight = event.clientX >= window.innerWidth - EDGE;
-			if (!didSwipe && onRight && dx < 12 && dy < 12) {
+			if (tap && onRight) {
 				setPanel(!panelOpen);
+			} else if (tap && startOpen) {
+				setPanel(false);
 			}
 			startX = null;
 		});

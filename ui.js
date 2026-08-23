@@ -2332,6 +2332,9 @@
 			pop.appendChild(map);
 			pop.appendChild(tools);
 			pop.appendChild(rgbRow);
+			pop.addEventListener('pointerdown', function (event) {
+				event.stopPropagation();
+			});
 			document.body.appendChild(pop);
 
 			let hsv = [0, 1, 1];
@@ -3802,7 +3805,11 @@
 			refreshStats: refreshStats,
 			setPreviewFrame: setPreviewFrame,
 			setLiveMode: setLiveMode,
-			tick: tick
+			tick: tick,
+			closeOverlays: function () {
+				colorPicker.close();
+				hideTip();
+			}
 		};
 	}
 

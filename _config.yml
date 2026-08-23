@@ -1,0 +1,17 @@
+title: ELO
+description: Effect Linked Operators — modular visual instrument
+url: https://elo.sandromiccoli.com
+baseurl: ""
+markdown: kramdown
+plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag
+exclude:
+  - server/
+  - README.md
+  - INSTALL.md
+  - ROADMAP.md
+  - TODO.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
