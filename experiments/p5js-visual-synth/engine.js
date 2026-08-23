@@ -263,7 +263,7 @@
 		init: function () {
 			const src = root.SYNTH_SHADERS;
 			const vert = src.vert;
-			['lines', 'noise', 'camera', 'warp', 'lookup', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy', 'maskShape', 'cornerPin', 'testCard', 'shape'].forEach(function (name) {
+			['lines', 'noise', 'camera', 'warp', 'lookup', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy', 'maskShape', 'cornerPin', 'testCard', 'shape', 'gradient', 'displace', 'blur', 'feedback'].forEach(function (name) {
 				shaders[name] = compile(vert, src[name]);
 			});
 			liveExecutor = root.SynthExecutor.create(root.SynthEngine);

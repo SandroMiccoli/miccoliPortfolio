@@ -376,6 +376,29 @@ body.synth-control {
 	letter-spacing: -0.04em;
 	line-height: 0.9;
 	color: var(--fg);
+	cursor: pointer;
+}
+
+.synth-clock__edit {
+	width: 3.2em;
+	min-width: 0;
+	padding: 0 4px;
+	border: 1px solid var(--fg);
+	background: var(--bg);
+	color: var(--fg);
+	font: inherit;
+	font-size: 36px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.04em;
+	line-height: 0.9;
+	text-align: left;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+.synth-clock__edit:focus {
+	outline: none;
 }
 
 .synth-clock__unit {
@@ -1428,6 +1451,36 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	letter-spacing: 0;
 	text-transform: none;
 	font-size: 13px;
+	min-width: 2.4em;
+	text-align: right;
+	cursor: pointer;
+	border-radius: 2px;
+}
+
+.synth-field__value.is-live {
+	cursor: default;
+}
+
+.synth-field__edit {
+	width: 4.6em;
+	min-width: 0;
+	padding: 1px 4px;
+	border: 1px solid var(--fg);
+	background: var(--bg);
+	color: var(--fg);
+	font: inherit;
+	font-size: inherit;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0;
+	text-transform: none;
+	text-align: right;
+	border-radius: 2px;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+.synth-field__edit:focus {
+	outline: none;
 }
 
 .synth-slider {
@@ -1513,6 +1566,11 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	font-size: 11px;
 }
 
+.synth-xyz__axis .synth-field__edit {
+	width: 3.4em;
+	font-size: 11px;
+}
+
 .synth-xyz__axis .synth-field__mod {
 	width: 24px;
 	min-width: 24px;
@@ -1546,6 +1604,10 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 .synth-op .synth-field__value {
 	font-size: 12px;
 	color: var(--fg);
+}
+
+.synth-op .synth-field__edit {
+	font-size: 12px;
 }
 
 .synth-op .synth-slider {
@@ -2191,6 +2253,15 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	text-transform: uppercase;
 	font-variant-numeric: tabular-nums;
 	color: var(--fg);
+	cursor: pointer;
+}
+
+.synth-mod__beats-edit {
+	width: 100%;
+	text-align: center;
+	font-size: 13px;
+	letter-spacing: 0;
+	text-transform: none;
 }
 
 .synth-mod__beat-btn {

@@ -147,7 +147,9 @@
 		const step = spec.step || 1;
 		const inMark = snap(mod.inMark == null ? spec.min : mod.inMark, min, max, step);
 		const outMark = snap(mod.outMark == null ? spec.max : mod.outMark, min, max, step);
-		return snap(inMark + t * (outMark - inMark), min, max, step);
+		const value = inMark + t * (outMark - inMark);
+		if (spec.kind === 'int') return snap(value, min, max, step);
+		return clamp(value, min, max);
 	}
 
 	function specFor(type, key) {
