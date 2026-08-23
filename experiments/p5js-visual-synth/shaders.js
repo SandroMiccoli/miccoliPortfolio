@@ -206,13 +206,7 @@
 		'}'
 	].join('\n');
 
-	const LOOKUP = [
-		FILTER,
-		'uniform sampler2D u_lut;',
-		'uniform float u_hue;',
-		'uniform float u_saturation;',
-		'uniform float u_exposure;',
-		'',
+	const HSV_FN = [
 		'vec3 rgb2hsv(vec3 c) {',
 		'  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);',
 		'  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));',
@@ -226,7 +220,16 @@
 		'  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);',
 		'  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);',
 		'  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);',
-		'}',
+		'}'
+	].join('\n');
+
+	const LOOKUP = [
+		FILTER,
+		'uniform sampler2D u_lut;',
+		'uniform float u_hue;',
+		'uniform float u_saturation;',
+		'uniform float u_exposure;',
+		HSV_FN,
 		'',
 		'void main() {',
 		'  vec3 col = src().rgb;',
@@ -237,6 +240,70 @@
 		'  hsv.y = clamp(hsv.y * u_saturation, 0.0, 1.0);',
 		'  mapped = hsv2rgb(hsv) * u_exposure;',
 		'  gl_FragColor = vec4(clamp(mapped, 0.0, 1.0), 1.0);',
+		'}'
+	].join('\n');
+
+	const HSV = [
+		FILTER,
+		'uniform float u_hue;',
+		'uniform float u_saturation;',
+		'uniform float u_value;',
+		HSV_FN,
+		'',
+		'void main() {',
+		'  vec3 hsv = rgb2hsv(src().rgb);',
+		'  hsv.x = fract(hsv.x + u_hue / 360.0);',
+		'  hsv.y = clamp(hsv.y * u_saturation, 0.0, 1.0);',
+		'  hsv.z = clamp(hsv.z * u_value, 0.0, 1.0);',
+		'  gl_FragColor = vec4(hsv2rgb(hsv), 1.0);',
+		'}'
+	].join('\n');
+
+	const LEVELS = [
+		FILTER,
+		'uniform float u_inBlack;',
+		'uniform float u_inWhite;',
+		'uniform float u_gamma;',
+		'uniform float u_outBlack;',
+		'uniform float u_outWhite;',
+		'',
+		'void main() {',
+		'  vec3 col = src().rgb;',
+		'  float span = max(u_inWhite - u_inBlack, 1.0e-4);',
+		'  vec3 x = clamp((col - u_inBlack) / span, 0.0, 1.0);',
+		'  x = pow(max(x, 0.0), vec3(1.0 / max(u_gamma, 0.08)));',
+		'  col = mix(vec3(u_outBlack), vec3(u_outWhite), x);',
+		'  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
+		'}'
+	].join('\n');
+
+	const CONTRAST = [
+		FILTER,
+		'uniform float u_contrast;',
+		'uniform float u_brightness;',
+		'uniform float u_pivot;',
+		'',
+		'void main() {',
+		'  vec3 col = src().rgb;',
+		'  col = (col - u_pivot) * u_contrast + u_pivot + u_brightness;',
+		'  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
+		'}'
+	].join('\n');
+
+	const RAMP = [
+		FILTER,
+		'uniform sampler2D u_lut;',
+		'uniform float u_phase;',
+		'uniform float u_period;',
+		'',
+		'void main() {',
+		'  vec3 col = src().rgb;',
+		'  float luma = dot(col, vec3(0.299, 0.587, 0.114));',
+		'  float t = luma * u_period + u_phase;',
+		'  t = t - floor(t);',
+		'  float texel = 0.5 / 256.0;',
+		'  vec3 mapped = texture2D(u_lut, vec2(clamp(t, texel, 1.0 - texel), 0.5)).rgb;',
+		'  gl_FragColor = vec4(mapped, 1.0);',
 		'}'
 	].join('\n');
 
@@ -614,6 +681,10 @@
 		camera: CAMERA,
 		warp: WARP,
 		lookup: LOOKUP,
+		ramp: RAMP,
+		hsv: HSV,
+		levels: LEVELS,
+		contrast: CONTRAST,
 		kaleidoscope: KALEIDOSCOPE,
 		bloomBright: BLOOM_BRIGHT,
 		bloomDown: BLOOM_DOWN,

@@ -2050,6 +2050,167 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	outline-offset: 2px;
 }
 
+.synth-ramp {
+	gap: 10px;
+}
+
+.synth-op .synth-ramp {
+	margin-bottom: 16px;
+	padding-top: 4px;
+}
+
+.synth-ramp__pos {
+	font-variant-numeric: tabular-nums;
+	color: var(--muted);
+}
+
+.synth-ramp__editor {
+	position: relative;
+	padding-top: 20px;
+	outline: none;
+}
+
+.synth-ramp__editor:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 3px;
+}
+
+.synth-ramp__track {
+	display: block;
+	width: 100%;
+	height: 22px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: #111;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, #ededed 14%, transparent);
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-ramp__track:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 2px;
+}
+
+.synth-ramp__notches {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.synth-ramp__notch {
+	position: absolute;
+	top: 0;
+	z-index: 1;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	transform: translateX(-50%);
+	cursor: grab;
+	appearance: none;
+	pointer-events: auto;
+	touch-action: none;
+}
+
+.synth-ramp__notch::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 4px;
+	width: 12px;
+	height: 14px;
+	background: var(--notch-color, #ededed);
+	border: 1px solid color-mix(in srgb, #101010 45%, transparent);
+	clip-path: polygon(50% 100%, 0 0, 100% 0);
+	transform: translateX(-50%);
+	box-shadow: 0 1px 2px color-mix(in srgb, #101010 40%, transparent);
+}
+
+.synth-ramp__notch.is-active::after {
+	width: 14px;
+	height: 16px;
+	top: 2px;
+	box-shadow:
+		0 0 0 1.5px var(--fg),
+		0 1px 2px color-mix(in srgb, #101010 40%, transparent);
+}
+
+.synth-ramp__notch:focus-visible {
+	outline: none;
+}
+
+.synth-ramp__notch:focus-visible::after,
+.synth-ramp__notch:active::after {
+	box-shadow:
+		0 0 0 1.5px var(--fg),
+		0 1px 2px color-mix(in srgb, #101010 40%, transparent);
+}
+
+.synth-ramp__tools {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.synth-ramp__tool {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: color-mix(in srgb, #ededed 12%, transparent);
+	color: var(--fg);
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-ramp__tool .synth-ph {
+	width: 16px;
+	height: 16px;
+}
+
+.synth-ramp__tool:active {
+	transform: scale(0.96);
+}
+
+.synth-ramp__tool:disabled {
+	opacity: 0.32;
+	cursor: default;
+	transform: none;
+}
+
+.synth-ramp__tool:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 1px;
+}
+
+.synth-ramp__swatch {
+	flex: 1 1 auto;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 8px;
+	background: #111;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, #ededed 18%, transparent);
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-ramp__swatch.is-active {
+	box-shadow: 0 0 0 1.5px var(--fg);
+}
+
+.synth-ramp__swatch:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 2px;
+}
+
 .synth-picker {
 	position: fixed;
 	z-index: 148;
@@ -2896,7 +3057,8 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 	.synth-preview__live:active,
 	.synth-palette:active,
 	.synth-swatch__face:active,
-	.synth-palettes__add:active {
+	.synth-palettes__add:active,
+	.synth-ramp__tool:active {
 		transform: none;
 	}
 }

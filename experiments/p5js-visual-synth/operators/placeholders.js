@@ -4,9 +4,6 @@
 	const PLACEHOLDERS = [
 		{ type: 'particles', name: 'Particles', category: 'generator' },
 		{ type: 'video', name: 'Video', category: 'generator' },
-		{ type: 'hue', name: 'Hue / Saturation', category: 'color' },
-		{ type: 'levels', name: 'Levels', category: 'color' },
-		{ type: 'contrast', name: 'Contrast', category: 'color' },
 		{ type: 'blend', name: 'Blend', category: 'compositing' },
 		{ type: 'mask', name: 'Mask', category: 'compositing' },
 		{ type: 'add', name: 'Add', category: 'compositing' },
@@ -18,8 +15,8 @@
 
 	const LABELS = {
 		generator: 'Generators',
-		effect: 'Effects / Filters',
-		filter: 'Effects / Filters',
+		effect: 'Effects',
+		filter: 'Filters',
 		color: 'Color',
 		compositing: 'Compositing',
 		output: 'Output'

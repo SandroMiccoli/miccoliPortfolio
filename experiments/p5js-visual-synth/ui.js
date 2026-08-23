@@ -87,6 +87,7 @@
 		const sliders = {};
 		const outSliders = {};
 		const palettes = {};
+		const ramps = {};
 		const presetFields = {};
 		const colors = {};
 
@@ -1033,7 +1034,7 @@
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick a PIPE in the grid, then edit its operators. Each operator reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the PIPE Gallery, three tabs split the rest of the instrument. Pipeline is the operator stack. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the template card covers the PIPE so you can align corners.'));
 			const cats = root.SynthCategories;
-			['generator', 'effect', 'color', 'compositing', 'output'].forEach(function (id) {
+			['generator', 'effect', 'filter', 'color', 'compositing', 'output'].forEach(function (id) {
 				const cat = cats[id];
 				if (!cat) return;
 				const block = el('article', 'synth-help__cat');
@@ -2304,7 +2305,7 @@
 			function onDocPointer(event) {
 				if (!open) return;
 				if (pop.contains(event.target)) return;
-				if (event.target.closest && event.target.closest('.synth-swatch__face, .synth-palettes__add, .synth-palette, .synth-color__face')) return;
+				if (event.target.closest && event.target.closest('.synth-swatch__face, .synth-palettes__add, .synth-palette, .synth-color__face, .synth-ramp__notch, .synth-ramp__swatch')) return;
 				close();
 			}
 
@@ -2528,6 +2529,304 @@
 						return;
 					}
 					render(resolved);
+				}
+			};
+		}
+
+		function makeRampField(op) {
+			const Ramp = root.SynthRamp;
+			const field = el('div', 'synth-field synth-ramp');
+			const top = el('div', 'synth-field__top');
+			top.appendChild(el('span', '', 'Ramp'));
+			const posLabel = el('span', 'synth-ramp__pos', '—');
+			top.appendChild(posLabel);
+			field.appendChild(top);
+
+			const editor = el('div', 'synth-ramp__editor');
+			editor.tabIndex = 0;
+			const notches = el('div', 'synth-ramp__notches');
+			const track = el('button', 'synth-ramp__track');
+			track.type = 'button';
+			track.setAttribute('aria-label', 'Add color notch');
+			editor.appendChild(notches);
+			editor.appendChild(track);
+			field.appendChild(editor);
+
+			const tools = el('div', 'synth-ramp__tools');
+			const addBtn = el('button', 'synth-ramp__tool');
+			addBtn.type = 'button';
+			addBtn.setAttribute('aria-label', 'Add notch');
+			addBtn.appendChild(root.SynthIcons.svg('plus'));
+			const swatch = el('button', 'synth-ramp__swatch');
+			swatch.type = 'button';
+			swatch.setAttribute('aria-label', 'Edit notch color');
+			const removeBtn = el('button', 'synth-ramp__tool');
+			removeBtn.type = 'button';
+			removeBtn.setAttribute('aria-label', 'Remove notch');
+			removeBtn.appendChild(root.SynthIcons.svg('x'));
+			tools.appendChild(addBtn);
+			tools.appendChild(swatch);
+			tools.appendChild(removeBtn);
+			field.appendChild(tools);
+
+			let selectedId = null;
+			let pickingSlot = null;
+			let notchPointer = null;
+			let notchIntent = null;
+			let trackPointer = null;
+
+			function current() {
+				const found = ops().filter(function (item) {
+					return item.id === op.id;
+				})[0];
+				return Ramp
+					? Ramp.normalize((found || op).parameters || {})
+					: { stops: [], interpolate: 'linear' };
+			}
+
+			function commit(next) {
+				setParams(op.id, { stops: next.stops });
+			}
+
+			function selectedStop(resolved) {
+				const stops = (resolved && resolved.stops) || [];
+				for (let i = 0; i < stops.length; i++) {
+					if (stops[i].id === selectedId) return stops[i];
+				}
+				return stops[0] || null;
+			}
+
+			function posFromEvent(event) {
+				const rect = track.getBoundingClientRect();
+				if (!rect.width) return 0;
+				return Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+			}
+
+			function openColor(hex, anchor) {
+				pickingSlot = anchor;
+				colorPicker.open(hex, anchor, function (nextHex) {
+					if (!Ramp || !selectedId) return;
+					const next = Ramp.setStop(current(), selectedId, { color: nextHex });
+					commit(next);
+					paint(next);
+				}, function () {
+					pickingSlot = null;
+					paint(current());
+				});
+				paint(current());
+			}
+
+			function bindNotch(btn, stop) {
+				btn.addEventListener('pointerdown', function (event) {
+					if (event.button !== 0 && event.pointerType === 'mouse') return;
+					selectedId = stop.id;
+					notchPointer = {
+						id: event.pointerId,
+						startX: event.clientX,
+						startY: event.clientY,
+						stopId: stop.id
+					};
+					notchIntent = null;
+					paint(current());
+				});
+			}
+
+			function makeNotch(stop) {
+				const btn = el('button', 'synth-ramp__notch');
+				btn.type = 'button';
+				btn.dataset.stopId = stop.id;
+				btn.style.left = (stop.pos * 100) + '%';
+				btn.style.setProperty('--notch-color', stop.color);
+				btn.setAttribute('aria-label', 'Color notch at ' + stop.pos.toFixed(2));
+				bindNotch(btn, stop);
+				return btn;
+			}
+
+			function paint(resolved) {
+				const data = resolved || current();
+				if (Ramp) {
+					track.style.background = Ramp.cssGradient(data.stops, data.interpolate);
+				}
+				const ids = (data.stops || []).map(function (stop) {
+					return stop.id;
+				}).join('|');
+				if (ids !== notches.dataset.ids) {
+					notches.dataset.ids = ids;
+					notches.innerHTML = '';
+					(data.stops || []).forEach(function (stop) {
+						notches.appendChild(makeNotch(stop));
+					});
+				} else {
+					(data.stops || []).forEach(function (stop) {
+						const btn = notches.querySelector('[data-stop-id="' + stop.id + '"]');
+						if (!btn) return;
+						btn.style.left = (stop.pos * 100) + '%';
+						btn.style.setProperty('--notch-color', stop.color);
+						btn.setAttribute('aria-label', 'Color notch at ' + stop.pos.toFixed(2));
+					});
+				}
+				if (!selectedId || !(data.stops || []).some(function (stop) {
+					return stop.id === selectedId;
+				})) {
+					selectedId = data.stops && data.stops[0] ? data.stops[0].id : null;
+				}
+				const sel = selectedStop(data);
+				posLabel.textContent = sel ? Number(sel.pos).toFixed(2) : '—';
+				swatch.style.background = sel ? sel.color : '#111';
+				swatch.classList.toggle('is-active', colorPicker.isOpen() && pickingSlot === swatch);
+				notches.querySelectorAll('.synth-ramp__notch').forEach(function (btn) {
+					btn.classList.toggle('is-active', btn.dataset.stopId === selectedId);
+				});
+				const count = (data.stops || []).length;
+				addBtn.disabled = !Ramp || count >= Ramp.maxStops;
+				removeBtn.disabled = !Ramp || count <= 2;
+			}
+
+			window.addEventListener('pointermove', function (event) {
+				if (!notchPointer || event.pointerId !== notchPointer.id) return;
+				const dx = event.clientX - notchPointer.startX;
+				const dy = event.clientY - notchPointer.startY;
+				if (!notchIntent) {
+					if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+					notchIntent = Math.abs(dy) > Math.abs(dx) ? 'scroll' : 'slide';
+					if (notchIntent === 'slide') {
+						sliding = true;
+						const node = notches.querySelector('[data-stop-id="' + notchPointer.stopId + '"]');
+						try {
+							if (node) node.setPointerCapture(event.pointerId);
+						} catch (err) { /* ignore */ }
+					}
+				}
+				if (notchIntent !== 'slide' || !Ramp) return;
+				event.preventDefault();
+				selectedId = notchPointer.stopId;
+				const next = Ramp.setStop(current(), selectedId, { pos: posFromEvent(event) });
+				commit(next);
+				paint(next);
+			}, { passive: false });
+
+			window.addEventListener('pointerup', function (event) {
+				if (!notchPointer || event.pointerId !== notchPointer.id) return;
+				const stopId = notchPointer.stopId;
+				const wasTap = notchIntent === null;
+				notchPointer = null;
+				notchIntent = null;
+				sliding = false;
+				if (!wasTap || !Ramp) return;
+				selectedId = stopId;
+				const sel = selectedStop(current());
+				const node = notches.querySelector('[data-stop-id="' + stopId + '"]');
+				if (sel && node) openColor(sel.color, node);
+				else paint(current());
+			});
+
+			window.addEventListener('pointercancel', function (event) {
+				if (!notchPointer || event.pointerId !== notchPointer.id) return;
+				notchPointer = null;
+				notchIntent = null;
+				sliding = false;
+			});
+
+			track.addEventListener('pointerdown', function (event) {
+				if (event.button !== 0 && event.pointerType === 'mouse') return;
+				trackPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+			});
+
+			track.addEventListener('pointerup', function (event) {
+				if (!trackPointer || event.pointerId !== trackPointer.id) return;
+				const dx = event.clientX - trackPointer.x;
+				const dy = event.clientY - trackPointer.y;
+				trackPointer = null;
+				if (Math.abs(dx) > 8 || Math.abs(dy) > 8 || !Ramp) return;
+				const resolved = current();
+				if (resolved.stops.length >= Ramp.maxStops) return;
+				const pos = posFromEvent(event);
+				const near = resolved.stops.some(function (stop) {
+					return Math.abs(stop.pos - pos) < 0.03;
+				});
+				if (near) return;
+				const next = Ramp.addStop(resolved, pos);
+				selectedId = next.stops[next.stops.length - 1].id;
+				commit(next);
+				paint(next);
+			});
+
+			addBtn.addEventListener('click', function () {
+				if (!Ramp) return;
+				const resolved = current();
+				if (resolved.stops.length >= Ramp.maxStops) return;
+				const next = Ramp.addStop(resolved, Ramp.largestGapPos(resolved.stops));
+				selectedId = next.stops[next.stops.length - 1].id;
+				commit(next);
+				paint(next);
+			});
+
+			removeBtn.addEventListener('click', function () {
+				if (!Ramp || !selectedId) return;
+				const next = Ramp.removeStop(current(), selectedId);
+				selectedId = null;
+				colorPicker.close();
+				commit(next);
+				paint(next);
+			});
+
+			swatch.addEventListener('click', function () {
+				const sel = selectedStop(current());
+				if (!sel) return;
+				if (colorPicker.isOpen() && pickingSlot === swatch) {
+					colorPicker.close();
+					return;
+				}
+				openColor(sel.color, swatch);
+			});
+
+			editor.addEventListener('keydown', function (event) {
+				if (!Ramp || !selectedId) return;
+				const resolved = current();
+				const sel = selectedStop(resolved);
+				if (!sel) return;
+				if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+					event.preventDefault();
+					const delta = event.key === 'ArrowRight' ? 0.01 : -0.01;
+					const next = Ramp.setStop(resolved, selectedId, { pos: sel.pos + delta });
+					commit(next);
+					paint(next);
+					return;
+				}
+				if ((event.key === 'Backspace' || event.key === 'Delete') && resolved.stops.length > 2) {
+					event.preventDefault();
+					const next = Ramp.removeStop(resolved, selectedId);
+					selectedId = null;
+					colorPicker.close();
+					commit(next);
+					paint(next);
+				}
+			});
+
+			paint(current());
+
+			return {
+				wrap: field,
+				setParams: function (parameters) {
+					const resolved = Ramp ? Ramp.normalize(parameters || {}) : parameters || {};
+					if (picking || sliding) {
+						track.style.background = Ramp
+							? Ramp.cssGradient(resolved.stops, resolved.interpolate)
+							: track.style.background;
+						(resolved.stops || []).forEach(function (stop) {
+							const btn = notches.querySelector('[data-stop-id="' + stop.id + '"]');
+							if (!btn) return;
+							btn.style.left = (stop.pos * 100) + '%';
+							btn.style.setProperty('--notch-color', stop.color);
+						});
+						const sel = selectedStop(resolved);
+						if (sel) {
+							posLabel.textContent = Number(sel.pos).toFixed(2);
+							swatch.style.background = sel.color;
+						}
+						return;
+					}
+					paint(resolved);
 				}
 			};
 		}
@@ -2815,6 +3114,12 @@
 					inner.appendChild(field.wrap);
 					return;
 				}
+				if (spec.kind === 'ramp') {
+					const field = makeRampField(op);
+					ramps[op.id] = field;
+					inner.appendChild(field.wrap);
+					return;
+				}
 				if (spec.kind === 'color') {
 					const field = makeColorField(op, spec);
 					colors[op.id + ':' + spec.key] = field;
@@ -2891,6 +3196,9 @@
 			});
 			Object.keys(palettes).forEach(function (key) {
 				delete palettes[key];
+			});
+			Object.keys(ramps).forEach(function (key) {
+				delete ramps[key];
 			});
 			Object.keys(presetFields).forEach(function (key) {
 				delete presetFields[key];
@@ -3120,6 +3428,11 @@
 					const paletteField = palettes[op.id];
 					if (paletteField && paletteField.setParams) {
 						paletteField.setParams(op.parameters);
+					}
+
+					const rampField = ramps[op.id];
+					if (rampField && rampField.setParams) {
+						rampField.setParams(op.parameters);
 					}
 
 					const presetField = presetFields[op.id];

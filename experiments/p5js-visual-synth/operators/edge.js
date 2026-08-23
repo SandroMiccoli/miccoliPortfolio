@@ -1,12 +1,12 @@
 (function (root) {
-	const color = '#5B7FD4';
+	const cat = root.SynthCategories.filter;
 
 	root.SynthRegistry.register({
 		type: 'edge',
 		name: 'Edge',
-		category: 'effect',
-		categoryLabel: 'Effects / Filters',
-		color: color,
+		category: cat.id,
+		categoryLabel: cat.label,
+		color: cat.color,
 		help: 'Finds luminance gradients with a Sobel kernel and turns them into outlines. Threshold hides weak edges. Radius is the sample distance. Intensity is the gain. Mix blends back to the source. Invert flips light and dark.',
 		implemented: true,
 		defaults: {

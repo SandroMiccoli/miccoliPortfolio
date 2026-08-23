@@ -1,5 +1,5 @@
 (function (root) {
-	const color = '#5B7FD4';
+	const cat = root.SynthCategories.effect;
 
 	function makeFbo(w, h) {
 		const opts = {
@@ -15,9 +15,9 @@
 	root.SynthRegistry.register({
 		type: 'feedback',
 		name: 'Feedback',
-		category: 'effect',
-		categoryLabel: 'Effects / Filters',
-		color: color,
+		category: cat.id,
+		categoryLabel: cat.label,
+		color: cat.color,
 		help: 'Keeps a decaying trail of this operator\'s previous output and adds it back. Amount is how much trail returns. Decay fades it. Scale and Rotate transform the trail each frame, the analog-video tunnel move.',
 		implemented: true,
 		defaults: {
