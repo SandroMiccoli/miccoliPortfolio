@@ -4,7 +4,7 @@ The Pi is the renderer, web server, and WebSocket server. Chromium runs `index.h
 
 These steps assume Raspberry Pi OS **Debian 13 (Trixie) Lite** (no desktop), user **pi**, and a Raspberry Pi 4 or 5.
 
-On boot the Node server should start on port 8080, then Chromium should open fullscreen on the attached display.
+On boot the Node server should start on port 8080, then Sway should open Chromium fullscreen on the attached display.
 
 ## Hardware
 
@@ -108,50 +108,71 @@ CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 ## 6. Chromium kiosk (Lite, no desktop)
 
-Lite has no desktop session, so `~/.config/autostart/*.desktop` will not run. Start a minimal X server on **tty1** (the HDMI console) with `xinit`, then launch Chromium. You can configure this over SSH, but **do not** run `~/.xinitrc` or `chromium` directly: `$DISPLAY` will be empty and you will get `Missing X server`.
+Lite has no desktop session, so `~/.config/autostart/*.desktop` will not run. The HDMI session is **Sway** (Wayland) on **tty1**. Sway is the compositor; it launches Chromium. Configure this over SSH by writing the two files below, then restart the unit. **Do not** run `sway` or `chromium` from SSH: there is no seat, and you will get TTY / DRM permission errors.
+
+This path is the one that hides the mouse cursor. `cursor: none` in CSS and p5 `noCursor()` do not apply on Chromium until a real `mousemove`. On a kiosk with no mouse, that event never comes, so the pointer stays. Chromium on Wayland also draws its **own** cursor buffer, so an invisible Xcursor theme and `cage` cannot hide it. Sway can: `seat * hide_cursor 1` hides the pointer after 1 ms with no movement, even if Chromium sends an arrow.
+
+`~/.xinitrc` is **not** used here. That file is only for an X11 / `xinit` session. Do not put Chromium flags in `.xinitrc` and expect this kiosk to read them.
+
+Two files matter. Chromium flags live in the Sway config, **not** in `ExecStart`.
+
+| File | Role |
+| --- | --- |
+| `/home/pi/.config/sway/config` | Session: hide cursor, launch Chromium |
+| `/etc/systemd/system/elo-kiosk.service` | Start Sway on tty1 after the Node server |
 
 ### Packages and groups
 
 ```bash
 sudo apt update
-sudo apt install -y --no-install-recommends chromium xserver-xorg xinit x11-xserver-utils
+sudo apt install -y chromium sway
 sudo usermod -aG video,render,input,tty pi
 which chromium   # expect /usr/bin/chromium
+which sway       # expect /usr/bin/sway
 ```
 
 Log out of SSH (or reboot) so the new groups apply.
 
-Allow `pi` to start X:
+On Lite, `apt install sway` often **does not** install recommends (`swaybg`, `swaybar`, fonts). Keep the Sway config minimal: no `bar { }`, no `font …`, no `output * bg …`. Those lines need extra packages and will show a Sway “errors in config” banner on boot.
+
+### File 1 — `/home/pi/.config/sway/config`
+
+Create the directory, then write **exactly** this file (no extra lines):
 
 ```bash
-echo -e "allowed_users=anybody\nneeds_root_rights=yes" | sudo tee /etc/X11/Xwrapper.config
+mkdir -p /home/pi/.config/sway
 ```
 
-### `/home/pi/.xinitrc`
+`/home/pi/.config/sway/config`:
 
-```sh
-#!/bin/sh
-export DISPLAY=:0
-xset s off
-xset -dpms
-xset s noblank
-exec chromium --kiosk --app=http://127.0.0.1:8080/ \
-  --noerrdialogs --disable-infobars \
-  --disable-session-crashed-bubble \
-  --check-for-update-interval=31536000 \
-  --autoplay-policy=no-user-gesture-required \
-  --use-fake-ui-for-media-stream \
-  --enable-media-stream \
-  --disable-features=WebRtcPipeWireCamera \
-  --ignore-gpu-blocklist --use-gl=egl \
-  --ozone-platform=x11
+```
+default_border none
+seat * hide_cursor 1
+exec /usr/bin/chromium --kiosk --app=http://127.0.0.1:8080/ --noerrdialogs --disable-infobars --disable-session-crashed-bubble --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --ignore-gpu-blocklist --ozone-platform=wayland --use-fake-ui-for-media-stream --enable-media-stream --disable-features=WebRtcPipeWireCamera
 ```
 
 ```bash
-chmod +x /home/pi/.xinitrc
+chown pi:pi /home/pi/.config/sway /home/pi/.config/sway/config
 ```
 
-### systemd unit
+What each line does:
+
+- `default_border none` — no window chrome around Chromium
+- `seat * hide_cursor 1` — hide the pointer after 1 ms idle (the cursor fix). If someone plugs a mouse and moves it, the pointer can flash, then hide again
+- `exec /usr/bin/chromium …` — same kiosk / camera flags as before. `--ozone-platform=wayland` must stay. `--use-fake-ui-for-media-stream --enable-media-stream` auto-accepts the camera prompt. `--disable-features=WebRtcPipeWireCamera` forces V4L2 for USB webcams
+
+Do **not** add:
+
+- `output * bg #000000 solid_color` — in Sway, `#` starts a comment, so this line is a parse error. Quoted `'#000000'` still needs `swaybg`, which Lite often lacks
+- `bar { mode invisible }` — needs `swaybar`
+- `font pango:monospace …` — needs a font package
+- `titlebar_*` / `for_window` — unused on this kiosk; Chromium `--kiosk` is already fullscreen
+
+Write the file as user `pi` when you can. `root:root` with mode `644` also works; `chown pi:pi` avoids confusion.
+
+### File 2 — `/etc/systemd/system/elo-kiosk.service`
+
+`ExecStart` is **only** Sway. Do not put `cage` or `chromium` on this line. Do not write `ExecStart=/usr/bin/sway -- /usr/bin/chromium …` — Sway is not cage.
 
 `/etc/systemd/system/elo-kiosk.service`:
 
@@ -170,8 +191,13 @@ TTYReset=yes
 TTYVHangup=yes
 StandardInput=tty
 StandardOutput=journal
-Environment=HOME=/home/pi
-ExecStart=/usr/bin/xinit /home/pi/.xinitrc -- :0 vt1
+PAMName=login
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=XDG_SESSION_TYPE=wayland
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=PIPEWIRE_RUNTIME_DIR=/run/user/1000
+Environment=XDG_CURRENT_DESKTOP=sway
+ExecStart=/usr/bin/sway
 Restart=on-failure
 RestartSec=3
 
@@ -179,7 +205,9 @@ RestartSec=3
 WantedBy=multi-user.target
 ```
 
-The console login on tty1 must get out of the way so X can own the HDMI output:
+`PAMName=login` plus the `XDG_*` / PipeWire variables give Chromium a user session so the USB camera and bus work. `uid` **1000** is user `pi` on a stock image; if `id -u pi` is not `1000`, change every `/run/user/1000` to that uid.
+
+The console login on tty1 must get out of the way so Sway can own the HDMI output:
 
 ```bash
 sudo systemctl disable getty@tty1
@@ -187,7 +215,18 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now elo.service elo-kiosk.service
 ```
 
-On boot the Node server starts on 8080, then Chromium opens fullscreen on the attached display. The QR overlay shows for 10 seconds and fades out. There is no side tab; press **U** or click the right edge to toggle the control panel. The QR button and cursor appear only while the pointer is moving. Do not pass `-nocursor` to `xinit`, or the pointer can never reappear.
+On boot the Node server starts on 8080, then Sway starts Chromium fullscreen on the attached display. The QR overlay shows for 10 seconds and fades out. The mouse cursor stays hidden. There is no side tab; press **U** or click the right edge to toggle the control panel. The QR button appears while the pointer is moving (if a mouse is plugged in).
+
+After any edit to either file:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart elo-kiosk
+```
+
+Watch the Pi screen, not the SSH session. Logs: `journalctl -u elo-kiosk -e`.
+
+Do not run `sway --validate` over SSH to debug the config. That command tries to open the HDMI seat and fails with TTY / DRM errors even when the file is valid. If Sway shows “errors in config” on the display, the file has a parse problem (usually `#` or a `bar` / `font` / `output * bg` line). Keep the three-line config above.
 
 ### One-shot test from SSH
 
@@ -196,15 +235,21 @@ sudo systemd-run --unit=elo-kiosk-test \
   --uid=pi --gid=pi \
   --property=TTYPath=/dev/tty1 \
   --property=StandardInput=tty \
+  --property=PAMName=login \
   --setenv=HOME=/home/pi \
-  /usr/bin/xinit /home/pi/.xinitrc -- :0 vt1
+  --setenv=XDG_RUNTIME_DIR=/run/user/1000 \
+  --setenv=XDG_SESSION_TYPE=wayland \
+  --setenv=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+  --setenv=PIPEWIRE_RUNTIME_DIR=/run/user/1000 \
+  --setenv=XDG_CURRENT_DESKTOP=sway \
+  /usr/bin/sway
 ```
 
-Watch the Pi screen, not the SSH session. Stop with `sudo systemctl stop elo-kiosk-test`. Logs: `journalctl -u elo-kiosk -e`.
+Stop with `sudo systemctl stop elo-kiosk-test`.
 
-### Wayland kiosk (cage)
+### Other kiosk stacks (not recommended)
 
-If the HDMI session is **cage** instead of xinit, put the same Chromium flags on `ExecStart` in `elo-kiosk.service`, including `--disable-features=WebRtcPipeWireCamera`. Example:
+**cage** — single-app Wayland compositor. Same Chromium flags work, including camera. It cannot hide Chromium’s cursor (`XCURSOR_THEME`, `WLR_NO_HARDWARE_CURSORS`, and CSS `cursor: none` all fail until a mouse move). Only use this if you do not care about the pointer.
 
 ```ini
 ExecStart=/usr/bin/cage -- /usr/bin/chromium --kiosk --app=http://127.0.0.1:8080/ \
@@ -218,7 +263,9 @@ ExecStart=/usr/bin/cage -- /usr/bin/chromium --kiosk --app=http://127.0.0.1:8080
   --ozone-platform=wayland
 ```
 
-Give the unit a user session so Chromium can talk to the bus (`XDG_RUNTIME_DIR=/run/user/1000`, and typically `DBUS_SESSION_BUS_ADDRESS` / `PIPEWIRE_RUNTIME_DIR` for that same user). Restart with `sudo systemctl daemon-reload && sudo systemctl restart elo-kiosk`.
+Keep the same `PAMName` / `XDG_*` / PipeWire environment as the Sway unit. There is no `~/.config/sway/config` on this path.
+
+**xinit** — X11 session. `ExecStart=/usr/bin/xinit /home/pi/.xinitrc -- :0 vt1`. Chromium flags then live in `/home/pi/.xinitrc`, not in Sway. Cursor hide is `unclutter-xfixes` (X11 only). Do not mix this with the Sway unit: one compositor on tty1.
 
 ## 7. Phone control
 
@@ -251,18 +298,17 @@ If `video` is missing: `sudo usermod -aG video pi` then reboot.
 --use-fake-ui-for-media-stream --enable-media-stream
 ```
 
-3. Raspberry Pi OS Chromium enables **PipeWire camera** by default. In a Lite kiosk (xinit or cage) that path often never opens the USB device: `getUserMedia` times out, the webcam LED stays off, `ffmpeg -f v4l2 -i /dev/video0` still works, and `wpctl status` shows the camera while Chromium never appears as a **video** client (audio only).
+3. Raspberry Pi OS Chromium enables **PipeWire camera** by default. In a Lite kiosk (Sway, cage, or xinit) that path often never opens the USB device: `getUserMedia` times out, the webcam LED stays off, `ffmpeg -f v4l2 -i /dev/video0` still works, and `wpctl status` shows the camera while Chromium never appears as a **video** client (audio only).
 
-Force V4L2 — the same path ffmpeg uses. Add this Chromium flag (if `--disable-features` already exists, append `WebRtcPipeWireCamera` with a comma, do not add a second flag):
+Force V4L2 — the same path ffmpeg uses. Keep this Chromium flag on the `exec` line in `/home/pi/.config/sway/config` (if `--disable-features` already exists, append `WebRtcPipeWireCamera` with a comma, do not add a second flag):
 
 ```
 --disable-features=WebRtcPipeWireCamera
 ```
 
-Then:
+Then restart the kiosk (no `daemon-reload` unless you also edited the unit):
 
 ```bash
-sudo systemctl daemon-reload
 sudo systemctl restart elo-kiosk
 ```
 
@@ -280,12 +326,14 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 
 | Symptom | What to try |
 | --- | --- |
-| Black screen / no animation | Confirm WebGL in `chrome://gpu`. Keep `--ignore-gpu-blocklist --use-gl=egl`. |
-| Missing X server / `$DISPLAY` empty | Do not run `.xinitrc` or Chromium from SSH. Start `elo-kiosk.service` (or the `systemd-run` test). Disable `getty@tty1`. |
+| Black screen / no animation | Confirm WebGL in `chrome://gpu`. Keep `--ignore-gpu-blocklist --ozone-platform=wayland` on the Sway `exec` line. |
+| Sway “errors in config” on boot | Use the three-line `/home/pi/.config/sway/config` above. Do not use `#000000` unquoted (`#` is a comment). Do not add `bar`, `font`, or `output * bg` on Lite. |
+| Mouse cursor stays on screen | CSS / `noCursor()` will not hide it without a mouse move. Use Sway `seat * hide_cursor 1`. `cage`, `XCURSOR_THEME`, and `~/.xinitrc` do not apply to this kiosk. |
+| HDMI never starts / TTY errors | Do not run `sway` or `chromium` from SSH. Start `elo-kiosk.service`. Disable `getty@tty1`. |
 | `elo.local` does not open | Use `http://elo.local:8080` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
 | Port already in use | Another process is on 8080. Stop it, or start with `PORT=8081 npm start` and update the kiosk URL. |
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
-| Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream`, then restart the kiosk. |
-| USB camera times out / LED never on, `ffmpeg` works | Chromium is using PipeWire for the camera. Add `--disable-features=WebRtcPipeWireCamera` to the kiosk Chromium args, `daemon-reload`, restart `elo-kiosk`. |
+| Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream` on the Sway `exec` line, then restart the kiosk. |
+| USB camera times out / LED never on, `ffmpeg` works | Chromium is using PipeWire for the camera. Keep `--disable-features=WebRtcPipeWireCamera` on the Sway `exec` line, then `systemctl restart elo-kiosk`. |
 | Phone camera does nothing | Open the printed **https** control URL (port 8443) and accept the certificate. HTTP blocks the phone camera. |
 | CDN scripts fail offline | Vendor GSAP / `qrcode.min.js` next to `index.html`. |
