@@ -34,6 +34,9 @@
 		if (applyingRemote) return;
 		SynthState.patch(patch);
 		SynthSync.sendPatch(patch);
+		if (patch.presets && window.SynthPresets) {
+			SynthPresets.syncDisk(SynthState.get().presets);
+		}
 	}
 
 	document.addEventListener('DOMContentLoaded', function () {

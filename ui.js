@@ -78,11 +78,16 @@
 		let picking = false;
 		let renaming = false;
 		let expandedId = null;
+		let expandedMaskId = null;
+		let lastMaskSig = null;
+		let activeStage = 'pipeline';
 		let libInsertAt = 0;
 		let liveOn = false;
 		let liveFrame = '';
 		const sliders = {};
+		const outSliders = {};
 		const palettes = {};
+		const presetFields = {};
 		const colors = {};
 
 		function activePipe() {
@@ -130,7 +135,7 @@
 
 		const pipesSec = el('section', 'synth-pipes');
 		const pipesHead = el('header', 'synth-sec__head');
-		pipesHead.appendChild(el('h2', 'synth-sec__label', 'PIPE'));
+		pipesHead.appendChild(el('h2', 'synth-sec__label', 'PIPE Gallery'));
 		pipesSec.appendChild(pipesHead);
 		const grid = el('div', 'synth-pipe-grid');
 		grid.setAttribute('aria-label', 'PIPE grid');
@@ -245,6 +250,486 @@
 		const helpSlot = document.getElementById('synth-help-slot');
 		if (helpSlot) {
 			helpSlot.appendChild(top.lastElementChild);
+		}
+
+		const stageTabs = el('div', 'synth-stage-tabs');
+		stageTabs.setAttribute('role', 'tablist');
+		stageTabs.setAttribute('aria-label', 'Output stages');
+		const tabBtns = {};
+		const stagePanels = {};
+		[
+			{ id: 'pipeline', label: 'Pipeline' },
+			{ id: 'mask', label: 'Mask' },
+			{ id: 'mapping', label: 'Mapping' }
+		].forEach(function (tab) {
+			const btn = el('button', 'synth-stage-tab', tab.label);
+			btn.type = 'button';
+			btn.setAttribute('role', 'tab');
+			btn.setAttribute('aria-selected', tab.id === 'pipeline' ? 'true' : 'false');
+			btn.dataset.stage = tab.id;
+			btn.addEventListener('click', function () {
+				setActiveStage(tab.id);
+			});
+			tabBtns[tab.id] = btn;
+			stageTabs.appendChild(btn);
+		});
+
+		const stagePipeline = el('div', 'synth-stage-panel');
+		stagePipeline.dataset.stage = 'pipeline';
+		stagePipeline.setAttribute('role', 'tabpanel');
+		stagePipeline.appendChild(activeBar);
+		stagePipeline.appendChild(stack);
+		stagePanels.pipeline = stagePipeline;
+
+		const stageMask = el('section', 'synth-stage-panel synth-sec synth-sec--mask');
+		stageMask.dataset.stage = 'mask';
+		stageMask.setAttribute('role', 'tabpanel');
+		stageMask.hidden = true;
+		stagePanels.mask = stageMask;
+
+		const maskHead = el('header', 'synth-sec__head');
+		const maskToggles = el('div', 'synth-map__mask-toggles');
+		const maskToggle = el('button', 'synth-btn synth-toggle', 'On');
+		maskToggle.type = 'button';
+		maskToggle.setAttribute('aria-pressed', 'true');
+		maskToggle.addEventListener('click', function () {
+			const masks = outputState().masks;
+			patch({ output: { masks: { enabled: !masks.enabled } } });
+		});
+		const maskInvert = el('button', 'synth-btn', 'Invert');
+		maskInvert.type = 'button';
+		maskInvert.setAttribute('aria-pressed', 'false');
+		maskInvert.addEventListener('click', function () {
+			const masks = outputState().masks;
+			patch({ output: { masks: { invert: !masks.invert } } });
+		});
+		maskToggles.appendChild(maskToggle);
+		maskToggles.appendChild(maskInvert);
+		maskHead.appendChild(maskToggles);
+		stageMask.appendChild(maskHead);
+
+		const maskAdd = el('div', 'synth-map__add');
+		const addRect = el('button', 'synth-btn synth-map__add-btn');
+		addRect.type = 'button';
+		addRect.appendChild(root.SynthIcons.svg('square'));
+		addRect.appendChild(el('span', '', 'Rect'));
+		addRect.addEventListener('click', function () {
+			addOutputMask('rect');
+		});
+		const addCircle = el('button', 'synth-btn synth-map__add-btn');
+		addCircle.type = 'button';
+		addCircle.appendChild(root.SynthIcons.svg('circle'));
+		addCircle.appendChild(el('span', '', 'Circle'));
+		addCircle.addEventListener('click', function () {
+			addOutputMask('circle');
+		});
+		maskAdd.appendChild(addRect);
+		maskAdd.appendChild(addCircle);
+		stageMask.appendChild(maskAdd);
+
+		const maskList = el('div', 'synth-map-list');
+		stageMask.appendChild(maskList);
+
+		const stageMap = el('section', 'synth-stage-panel synth-sec synth-sec--map');
+		stageMap.dataset.stage = 'mapping';
+		stageMap.setAttribute('role', 'tabpanel');
+		stageMap.hidden = true;
+		stagePanels.mapping = stageMap;
+
+		const mapHead = el('header', 'synth-sec__head');
+		mapHead.appendChild(el('h2', 'synth-sec__label', 'Corner Pin'));
+		const mapToggle = el('button', 'synth-btn synth-toggle', 'On');
+		mapToggle.type = 'button';
+		mapToggle.setAttribute('aria-pressed', 'true');
+		mapToggle.addEventListener('click', function () {
+			const mapping = outputState().mapping;
+			patch({ output: { mapping: { enabled: !mapping.enabled } } });
+		});
+		mapHead.appendChild(mapToggle);
+		stageMap.appendChild(mapHead);
+
+		const mapTools = el('div', 'synth-map__tools');
+		const mapEdit = el('button', 'synth-btn', 'Edit');
+		mapEdit.type = 'button';
+		mapEdit.setAttribute('aria-pressed', 'false');
+		mapEdit.addEventListener('click', function () {
+			const mapping = outputState().mapping;
+			patch({ output: { mapping: { edit: !mapping.edit } } });
+		});
+		const mapReset = el('button', 'synth-btn', 'Reset');
+		mapReset.type = 'button';
+		mapReset.addEventListener('click', function () {
+			if (!root.SynthOutput) return;
+			patch({ output: { mapping: { corners: root.SynthOutput.identityCorners(), edit: outputState().mapping.edit } } });
+		});
+		mapTools.appendChild(mapEdit);
+		mapTools.appendChild(mapReset);
+		stageMap.appendChild(mapTools);
+
+		const mapPad = makeMapPad();
+		stageMap.appendChild(mapPad.wrap);
+
+		const cardRow = el('div', 'synth-map__tools');
+		cardRow.appendChild(el('p', 'synth-map__mode', 'Template card'));
+		const cardToggle = el('button', 'synth-btn synth-toggle', 'Off');
+		cardToggle.type = 'button';
+		cardToggle.setAttribute('aria-pressed', 'false');
+		cardToggle.addEventListener('click', function () {
+			const mapping = outputState().mapping;
+			patch({ output: { mapping: { template: !mapping.template } } });
+		});
+		cardRow.appendChild(cardToggle);
+		stageMap.appendChild(cardRow);
+		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the PIPE so you can pin corners to the display.'));
+
+		rootEl.insertBefore(stageTabs, debug);
+		rootEl.insertBefore(stagePipeline, debug);
+		rootEl.insertBefore(stageMask, debug);
+		rootEl.insertBefore(stageMap, debug);
+
+		function setActiveStage(id) {
+			activeStage = id === 'mask' || id === 'mapping' ? id : 'pipeline';
+			Object.keys(tabBtns).forEach(function (key) {
+				const on = key === activeStage;
+				tabBtns[key].classList.toggle('is-active', on);
+				tabBtns[key].setAttribute('aria-selected', on ? 'true' : 'false');
+			});
+			Object.keys(stagePanels).forEach(function (key) {
+				stagePanels[key].hidden = key !== activeStage;
+			});
+		}
+
+		setActiveStage('pipeline');
+
+		function outputState() {
+			return root.SynthOutput
+				? root.SynthOutput.fromState(getState())
+				: { mapping: { enabled: true, edit: false, corners: { tl: { x: 0, y: 0 }, tr: { x: 1, y: 0 }, br: { x: 1, y: 1 }, bl: { x: 0, y: 1 } } }, masks: { enabled: true, invert: false, items: [] } };
+		}
+
+		function addOutputMask(type) {
+			if (!root.SynthOutput) return;
+			const result = root.SynthOutput.addMask(outputState().masks, type);
+			expandedMaskId = result.added.id;
+			if (root.SynthOutputOverlayApi) root.SynthOutputOverlayApi.setSelected(expandedMaskId);
+			patch({ output: { masks: result.masks } });
+		}
+
+		function makeMapPad() {
+			const NS = 'http://www.w3.org/2000/svg';
+			const keys = ['tl', 'tr', 'br', 'bl'];
+			const wrap = el('div', 'synth-map-pad');
+			wrap.setAttribute('role', 'application');
+			wrap.setAttribute('aria-label', 'Corner pin');
+			const svg = document.createElementNS(NS, 'svg');
+			svg.setAttribute('viewBox', '0 0 1 1');
+			svg.setAttribute('preserveAspectRatio', 'none');
+			svg.setAttribute('class', 'synth-map-pad__svg');
+			const poly = document.createElementNS(NS, 'polygon');
+			poly.setAttribute('class', 'synth-map-pad__quad');
+			svg.appendChild(poly);
+			wrap.appendChild(svg);
+			const handleEls = {};
+			let dragKey = null;
+			let pointerId = null;
+			let liveCorners = null;
+
+			function destFromEvent(event) {
+				const rect = wrap.getBoundingClientRect();
+				return {
+					x: Math.min(1.15, Math.max(-0.15, (event.clientX - rect.left) / Math.max(rect.width, 1))),
+					y: Math.min(1.15, Math.max(-0.15, (event.clientY - rect.top) / Math.max(rect.height, 1)))
+				};
+			}
+
+			function paintCorners(corners) {
+				const c = corners || outputState().mapping.corners;
+				const pts = keys.map(function (key) {
+					const pt = c[key];
+					handleEls[key].style.left = (pt.x * 100) + '%';
+					handleEls[key].style.top = (pt.y * 100) + '%';
+					return pt.x + ',' + pt.y;
+				});
+				poly.setAttribute('points', pts.join(' '));
+			}
+
+			function canEdit() {
+				return !!(outputState().mapping && outputState().mapping.edit);
+			}
+
+			function applyDrag(event) {
+				if (!dragKey || !root.SynthOutput) return;
+				const dest = destFromEvent(event);
+				liveCorners = liveCorners || JSON.parse(JSON.stringify(outputState().mapping.corners));
+				liveCorners[dragKey] = { x: dest.x, y: dest.y };
+				paintCorners(liveCorners);
+				const mapping = root.SynthOutput.setCorner(outputState().mapping, dragKey, dest.x, dest.y);
+				mapping.edit = true;
+				patch({ output: { mapping: mapping } });
+			}
+
+			function endDrag(event) {
+				if (event.pointerId !== pointerId) return;
+				if (handleEls[dragKey]) handleEls[dragKey].classList.remove('is-drag');
+				dragKey = null;
+				pointerId = null;
+				liveCorners = null;
+				sliding = false;
+			}
+
+			keys.forEach(function (key) {
+				const btn = el('button', 'synth-map-pad__h');
+				btn.type = 'button';
+				btn.dataset.corner = key;
+				btn.setAttribute('aria-label', key.toUpperCase() + ' corner');
+				btn.addEventListener('pointerdown', function (event) {
+					if (!canEdit()) return;
+					if (event.button !== 0 && event.pointerType === 'mouse') return;
+					dragKey = key;
+					pointerId = event.pointerId;
+					sliding = true;
+					liveCorners = JSON.parse(JSON.stringify(outputState().mapping.corners));
+					btn.classList.add('is-drag');
+					try {
+						btn.setPointerCapture(event.pointerId);
+					} catch (err) { /* ignore */ }
+					event.preventDefault();
+					applyDrag(event);
+				});
+				btn.addEventListener('pointermove', function (event) {
+					if (event.pointerId !== pointerId) return;
+					event.preventDefault();
+					applyDrag(event);
+				});
+				btn.addEventListener('pointerup', endDrag);
+				btn.addEventListener('pointercancel', endDrag);
+				handleEls[key] = btn;
+				wrap.appendChild(btn);
+			});
+
+			return {
+				wrap: wrap,
+				setCorners: paintCorners,
+				setLocked: function (locked) {
+					wrap.classList.toggle('is-locked', !!locked);
+				}
+			};
+		}
+
+		function maskSignature(masks) {
+			return (masks.items || []).map(function (item) {
+				return item.id + ':' + item.type;
+			}).join('|');
+		}
+
+		function setMaskOpen(card, open, animate) {
+			if (!card) return;
+			const body = card.querySelector('.synth-op__body');
+			const caret = card.querySelector('.synth-op__caret');
+			const ident = card.querySelector('.synth-op__ident');
+			if (ident) ident.setAttribute('aria-expanded', open ? 'true' : 'false');
+			card.classList.toggle('is-open', open);
+			if (body) {
+				if (open) body.removeAttribute('inert');
+				else body.setAttribute('inert', '');
+				body.setAttribute('aria-hidden', open ? 'false' : 'true');
+			}
+			const g = getGsap();
+			const instant = !animate || prefersReduced();
+			if (caret && g) {
+				if (instant) g.set(caret, { rotation: open ? 180 : 0 });
+				else g.to(caret, { rotation: open ? 180 : 0, duration: dur(0.22), ease: 'power2.out' });
+			}
+			if (!body) return;
+			if (!g) {
+				body.style.display = open ? 'block' : 'none';
+				return;
+			}
+			g.set(body, { overflow: 'hidden', display: 'block' });
+			const vars = { height: open ? 'auto' : 0, autoAlpha: open ? 1 : 0 };
+			if (instant) g.set(body, vars);
+			else g.to(body, Object.assign({
+				duration: open ? dur(0.32) : dur(0.22),
+				ease: open ? 'power2.out' : 'power2.in'
+			}, vars));
+		}
+
+		function patchMask(id, partial) {
+			if (!root.SynthOutput) return;
+			patch({ output: { masks: root.SynthOutput.updateMask(outputState().masks, id, partial) } });
+		}
+
+		function buildMaskCard(item) {
+			const card = el('article', 'synth-op synth-mask');
+			card.dataset.id = item.id;
+			card.style.setProperty('--op-color', '#8E8E8E');
+			const head = el('header', 'synth-op__head');
+			const ident = el('button', 'synth-op__ident synth-mask__ident');
+			ident.type = 'button';
+			ident.setAttribute('aria-expanded', 'false');
+			const mark = el('span', 'synth-mask__mark');
+			mark.appendChild(root.SynthIcons.svg(item.type === 'circle' ? 'circle' : 'square'));
+			ident.appendChild(mark);
+			ident.appendChild(el('span', 'synth-mask__name', item.name));
+			const caret = el('span', 'synth-op__caret');
+			caret.appendChild(root.SynthIcons.svg('caret-down'));
+			ident.appendChild(caret);
+			ident.addEventListener('click', function () {
+				const next = expandedMaskId === item.id ? null : item.id;
+				const prev = expandedMaskId;
+				expandedMaskId = next;
+				if (root.SynthOutputOverlayApi) root.SynthOutputOverlayApi.setSelected(next);
+				if (prev && prev !== next) {
+					setMaskOpen(maskList.querySelector('[data-id="' + prev + '"]'), false, true);
+				}
+				setMaskOpen(card, next === item.id, true);
+			});
+			head.appendChild(ident);
+
+			const tools = el('div', 'synth-op__tools');
+			const bypassBtn = iconBtn(
+				item.enabled === false ? 'eye-slash' : 'eye',
+				'Bypass',
+				'Skip this mask. Other masks stay active.',
+				function () {
+					const current = outputState().masks.items.filter(function (entry) {
+						return entry.id === item.id;
+					})[0];
+					if (!current || !root.SynthOutput) return;
+					patch({
+						output: {
+							masks: root.SynthOutput.setMaskEnabled(outputState().masks, item.id, current.enabled === false)
+						}
+					});
+				}
+			);
+			bypassBtn.classList.add('synth-icon--bypass');
+			if (item.enabled === false) bypassBtn.classList.add('is-active');
+			tools.appendChild(bypassBtn);
+			tools.appendChild(iconBtn('trash', 'Delete', 'Remove this mask from the stack.', function () {
+				if (expandedMaskId === item.id) expandedMaskId = null;
+				if (!root.SynthOutput) return;
+				patch({ output: { masks: root.SynthOutput.removeMask(outputState().masks, item.id) } });
+			}));
+			card.appendChild(head);
+
+			const body = el('div', 'synth-op__body');
+			const inner = el('div', 'synth-op__body-inner');
+			inner.appendChild(tools);
+
+			function addSlider(label, key, min, max, step) {
+				const field = makeSlider(label, min, max, step, function (value) {
+					const partial = {};
+					partial[key] = value;
+					patchMask(item.id, partial);
+				}, { value: item[key] });
+				outSliders[item.id + ':' + key] = field;
+				inner.appendChild(field.wrap);
+			}
+
+			addSlider('X', 'x', 0, 1, 0.01);
+			addSlider('Y', 'y', 0, 1, 0.01);
+			if (item.type === 'circle') {
+				addSlider('Radius', 'r', 0.02, 0.8, 0.01);
+			} else {
+				addSlider('Width', 'w', 0.04, 1, 0.01);
+				addSlider('Height', 'h', 0.04, 1, 0.01);
+			}
+			addSlider('Feather', 'feather', 0, 0.4, 0.01);
+
+			const invertField = el('div', 'synth-field');
+			invertField.appendChild(el('div', 'synth-field__top', 'Hole'));
+			const invertBtn = el('button', 'synth-btn', item.invert ? 'On' : 'Off');
+			invertBtn.type = 'button';
+			invertBtn.dataset.maskInvert = '1';
+			invertBtn.classList.toggle('is-active', !!item.invert);
+			invertBtn.setAttribute('aria-pressed', item.invert ? 'true' : 'false');
+			invertBtn.addEventListener('click', function () {
+				const current = outputState().masks.items.filter(function (entry) {
+					return entry.id === item.id;
+				})[0];
+				if (!current) return;
+				patchMask(item.id, { invert: !current.invert });
+			});
+			invertField.appendChild(invertBtn);
+			inner.appendChild(invertField);
+
+			body.appendChild(inner);
+			card.appendChild(body);
+			return card;
+		}
+
+		function rebuildMasks(masks) {
+			Object.keys(outSliders).forEach(function (key) {
+				delete outSliders[key];
+			});
+			maskList.innerHTML = '';
+			const items = (masks && masks.items) || [];
+			if (!items.length) {
+				maskList.appendChild(el('p', 'synth-map-list__empty', 'Add shapes to reveal the image. Stack them, then mark one as a hole to punch through.'));
+				return;
+			}
+			items.forEach(function (item) {
+				maskList.appendChild(buildMaskCard(item));
+			});
+			maskList.querySelectorAll('.synth-mask').forEach(function (card) {
+				setMaskOpen(card, card.dataset.id === expandedMaskId, false);
+			});
+		}
+
+		function refreshOutput() {
+			const out = outputState();
+			const mapping = out.mapping;
+			const masks = out.masks;
+			mapToggle.textContent = mapping.enabled ? 'On' : 'Off';
+			mapToggle.classList.toggle('is-active', mapping.enabled);
+			mapToggle.setAttribute('aria-pressed', mapping.enabled ? 'true' : 'false');
+			mapTools.classList.toggle('is-bypass', !mapping.enabled);
+			mapPad.wrap.classList.toggle('is-bypass', !mapping.enabled);
+			mapEdit.textContent = mapping.edit ? 'Done' : 'Edit';
+			mapEdit.classList.toggle('is-active', !!mapping.edit);
+			mapEdit.setAttribute('aria-pressed', mapping.edit ? 'true' : 'false');
+			if (mapPad.setLocked) mapPad.setLocked(!mapping.edit);
+			if (!sliding) mapPad.setCorners(mapping.corners);
+			cardToggle.textContent = mapping.template ? 'On' : 'Off';
+			cardToggle.classList.toggle('is-active', !!mapping.template);
+			cardToggle.setAttribute('aria-pressed', mapping.template ? 'true' : 'false');
+
+			maskToggle.textContent = masks.enabled ? 'On' : 'Off';
+			maskToggle.classList.toggle('is-active', masks.enabled);
+			maskToggle.setAttribute('aria-pressed', masks.enabled ? 'true' : 'false');
+			maskInvert.classList.toggle('is-active', !!masks.invert);
+			maskInvert.setAttribute('aria-pressed', masks.invert ? 'true' : 'false');
+			maskList.classList.toggle('is-bypass', !masks.enabled);
+
+			const sig = maskSignature(masks);
+			if (sig !== lastMaskSig) {
+				lastMaskSig = sig;
+				rebuildMasks(masks);
+			}
+			if (!sliding) {
+				(masks.items || []).forEach(function (item) {
+					const card = maskList.querySelector('[data-id="' + item.id + '"]');
+					if (!card) return;
+					card.classList.toggle('is-bypass', item.enabled === false);
+					const bypassBtn = card.querySelector('.synth-icon--bypass');
+					if (bypassBtn) {
+						bypassBtn.classList.toggle('is-active', item.enabled === false);
+						bypassBtn.innerHTML = '';
+						bypassBtn.appendChild(root.SynthIcons.svg(item.enabled === false ? 'eye-slash' : 'eye'));
+					}
+					['x', 'y', 'r', 'w', 'h', 'feather'].forEach(function (key) {
+						const slider = outSliders[item.id + ':' + key];
+						if (slider && item[key] != null) slider.setValue(item[key]);
+					});
+					const holeBtn = card.querySelector('[data-mask-invert]');
+					if (holeBtn) {
+						holeBtn.textContent = item.invert ? 'On' : 'Off';
+						holeBtn.classList.toggle('is-active', !!item.invert);
+						holeBtn.setAttribute('aria-pressed', item.invert ? 'true' : 'false');
+					}
+				});
+			}
 		}
 
 		function startRename(pipe) {
@@ -447,6 +932,7 @@
 			sheetBody.innerHTML = '';
 			sheetBody.appendChild(el('p', 'synth-help__lead', 'Visual Synth is a visual instrument. You build PIPEs: ordered stacks of operators that process an image the way a synthesizer processes sound. Order is the patch.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick a PIPE in the grid, then edit its operators. Each operator reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the PIPE Gallery, three tabs split the rest of the instrument. Pipeline is the operator stack. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the template card covers the PIPE so you can align corners.'));
 			const cats = root.SynthCategories;
 			['generator', 'effect', 'color', 'compositing', 'output'].forEach(function (id) {
 				const cat = cats[id];
@@ -639,7 +1125,7 @@
 
 			wrap.appendChild(slider);
 
-			let current = min;
+			let current = options.value != null ? options.value : min;
 			let inMark = min;
 			let outMark = max;
 			let liveValue = min;
@@ -991,6 +1477,7 @@
 				render();
 			}
 
+			current = clamp(current);
 			render();
 			return {
 				wrap: wrap,
@@ -1049,11 +1536,241 @@
 		}
 
 		function setParam(id, key, value) {
-			patch({ opParam: { id: id, key: key, value: value } });
+			patch({ opParam: { id: id, key: key, value: value, presetId: null } });
 		}
 
-		function setParams(id, parameters) {
-			patch({ opParam: { id: id, parameters: parameters } });
+		function setParams(id, parameters, presetId) {
+			patch({
+				opParam: {
+					id: id,
+					parameters: parameters,
+					presetId: presetId || null
+				}
+			});
+		}
+
+		function relayoutOpBody(opId) {
+			const card = stack.querySelector('[data-id="' + opId + '"]');
+			if (!card || !card.classList.contains('is-open')) return;
+			const body = card.querySelector('.synth-op__body');
+			if (!body) return;
+			const g = getGsap();
+			if (g) g.set(body, { height: 'auto', overflow: 'hidden' });
+			else body.style.height = 'auto';
+		}
+
+		function userPresets() {
+			return (getState().presets || []);
+		}
+
+		function patchPresets(next) {
+			patch({ presets: next });
+		}
+
+		function makePresetField(op) {
+			const Presets = root.SynthPresets;
+			const field = el('div', 'synth-field synth-presets');
+			const top = el('div', 'synth-field__top');
+			const title = el('span', '', 'Presets');
+			top.appendChild(title);
+			field.appendChild(top);
+			const grid = el('div', 'synth-presets__grid');
+			grid.setAttribute('role', 'listbox');
+			grid.setAttribute('aria-label', 'Operator presets');
+			field.appendChild(grid);
+			const tools = el('div', 'synth-presets__tools');
+			field.appendChild(tools);
+			const form = el('div', 'synth-preset-form');
+			form.hidden = true;
+			field.appendChild(form);
+			let lastSig = '';
+			let formMode = null;
+
+			function hideForm() {
+				formMode = null;
+				form.hidden = true;
+				form.innerHTML = '';
+				grid.hidden = false;
+				title.textContent = 'Presets';
+				relayoutOpBody(op.id);
+			}
+
+			function showForm(mode, preset) {
+				const live = liveOp(op.id) || op;
+				formMode = mode;
+				form.hidden = false;
+				form.innerHTML = '';
+				grid.hidden = true;
+				tools.hidden = true;
+				title.textContent = mode === 'rename' ? 'Rename preset' : 'Save preset';
+
+				form.appendChild(el(
+					'p',
+					'synth-preset-form__hint',
+					mode === 'rename'
+						? 'Change the name of this preset.'
+						: 'Session only, or save to disk to keep it after Visual Synth closes.'
+				));
+				const input = el('input', 'synth-pipe-rename synth-preset-form__name');
+				input.type = 'text';
+				input.maxLength = 32;
+				input.value = mode === 'rename' && preset
+					? preset.name
+					: Presets.nextName(live.type, userPresets());
+				input.setAttribute('aria-label', 'Preset name');
+				form.appendChild(input);
+				const actions = el('div', 'synth-preset-form__actions');
+
+				function finish(nextPresets, presetId, message) {
+					hideForm();
+					const next = {};
+					if (nextPresets) next.presets = nextPresets;
+					if (presetId) next.opParam = { id: live.id, presetId: presetId };
+					if (Object.keys(next).length) patch(next);
+					if (message && root.SynthNotify) root.SynthNotify.show('success', message);
+				}
+
+				if (mode === 'rename' && preset) {
+					const saveBtn = el('button', 'synth-btn synth-btn--fill', 'Rename');
+					saveBtn.type = 'button';
+					function commitRename() {
+						const name = input.value.trim() || preset.name;
+						finish(Presets.upsert(userPresets(), Object.assign({}, preset, { name: name })), preset.id);
+					}
+					saveBtn.addEventListener('click', commitRename);
+					actions.appendChild(saveBtn);
+					input.addEventListener('keydown', function (event) {
+						if (event.key === 'Enter') {
+							event.preventDefault();
+							commitRename();
+						}
+					});
+				} else {
+					function commit(persisted) {
+						const now = liveOp(op.id) || live;
+						const name = input.value.trim() || Presets.nextName(now.type, userPresets());
+						const created = Presets.create(now.type, name, now.parameters, persisted);
+						finish(
+							Presets.upsert(userPresets(), created),
+							created.id,
+							persisted ? 'Preset saved to disk' : 'Preset saved for this session'
+						);
+					}
+					const sessionBtn = el('button', 'synth-btn', 'Save');
+					sessionBtn.type = 'button';
+					sessionBtn.addEventListener('click', function () {
+						commit(false);
+					});
+					const diskBtn = el('button', 'synth-btn synth-btn--fill', 'Save to disk');
+					diskBtn.type = 'button';
+					diskBtn.addEventListener('click', function () {
+						commit(true);
+					});
+					actions.appendChild(sessionBtn);
+					actions.appendChild(diskBtn);
+					input.addEventListener('keydown', function (event) {
+						if (event.key === 'Enter') {
+							event.preventDefault();
+							commit(false);
+						}
+					});
+				}
+
+				const cancel = el('button', 'synth-btn', 'Cancel');
+				cancel.type = 'button';
+				cancel.addEventListener('click', function () {
+					hideForm();
+					paint(liveOp(op.id) || op);
+				});
+				actions.appendChild(cancel);
+				form.appendChild(actions);
+				relayoutOpBody(op.id);
+				input.focus();
+				input.select();
+			}
+
+			function paint(current) {
+				if (!Presets) return;
+				if (formMode) {
+					relayoutOpBody(op.id);
+					return;
+				}
+				const live = current || liveOp(op.id) || op;
+				const items = Presets.catalog(live.type, userPresets());
+				const active = Presets.findActive(live, userPresets());
+				const sig = items.map(function (item) {
+					return item.id + ':' + item.name + ':' + (item.persisted ? '1' : '0');
+				}).join('|') + '#' + (active ? active.id : '') + '#' + (live.presetId || '');
+				if (sig === lastSig && grid.childNodes.length) {
+					relayoutOpBody(op.id);
+					return;
+				}
+				lastSig = sig;
+				grid.hidden = false;
+				grid.innerHTML = '';
+				items.forEach(function (preset) {
+					const btn = el('button', 'synth-preset');
+					btn.type = 'button';
+					btn.setAttribute('role', 'option');
+					const selected = !!(active && active.id === preset.id);
+					btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+					btn.classList.toggle('is-active', selected);
+					if (preset.persisted && !preset.builtin) btn.classList.add('is-disk');
+					btn.appendChild(el('span', 'synth-preset__name', preset.name));
+					if (preset.persisted && !preset.builtin) {
+						const mark = el('span', 'synth-preset__disk');
+						mark.appendChild(root.SynthIcons.svg('disk'));
+						btn.appendChild(mark);
+					}
+					btn.addEventListener('click', function () {
+						const now = liveOp(op.id) || live;
+						setParams(now.id, Presets.applyTo(now, preset), preset.id);
+					});
+					grid.appendChild(btn);
+				});
+				const add = el('button', 'synth-preset synth-preset--add');
+				add.type = 'button';
+				add.setAttribute('aria-label', 'Save current parameters as a preset');
+				add.appendChild(root.SynthIcons.svg('plus'));
+				add.addEventListener('click', function () {
+					showForm('save');
+				});
+				grid.appendChild(add);
+
+				tools.innerHTML = '';
+				if (!active || active.builtin) {
+					tools.hidden = true;
+					relayoutOpBody(op.id);
+					return;
+				}
+				tools.hidden = false;
+				if (!active.persisted) {
+					const disk = el('button', 'synth-btn', 'Save to disk');
+					disk.type = 'button';
+					disk.addEventListener('click', function () {
+						patchPresets(Presets.persist(userPresets(), active.id));
+						if (root.SynthNotify) root.SynthNotify.show('success', 'Preset saved to disk');
+					});
+					tools.appendChild(disk);
+				}
+				const rename = el('button', 'synth-btn', 'Rename');
+				rename.type = 'button';
+				rename.addEventListener('click', function () {
+					showForm('rename', active);
+				});
+				tools.appendChild(rename);
+				const del = el('button', 'synth-btn', 'Delete');
+				del.type = 'button';
+				del.addEventListener('click', function () {
+					patch({ opParam: { id: op.id, presetId: null } });
+					patchPresets(Presets.remove(userPresets(), active.id));
+				});
+				tools.appendChild(del);
+				relayoutOpBody(op.id);
+			}
+
+			paint(op);
+			return { wrap: field, paint: paint, closeForm: hideForm };
 		}
 
 		function lookupParams(op) {
@@ -1670,6 +2387,16 @@
 			});
 		}
 
+		function paintVisibleParams(card, op) {
+			if (!card || !op) return;
+			card.querySelectorAll('[data-visible-when]').forEach(function (node) {
+				const when = node.dataset.visibleWhen || '';
+				if (when.indexOf('param:') !== 0) return;
+				const parts = when.slice(6).split('=');
+				node.hidden = String((op.parameters || {})[parts[0]]) !== parts[1];
+			});
+		}
+
 		function buildOpCard(op, index, total) {
 			const def = root.SynthRegistry.get(op.type) || {};
 			const color = def.color || '#8E8E8E';
@@ -1764,6 +2491,11 @@
 			const body = el('div', 'synth-op__body');
 			const inner = el('div', 'synth-op__body-inner');
 			inner.appendChild(tools);
+			if (root.SynthPresets) {
+				const presetField = makePresetField(op);
+				presetFields[op.id] = presetField;
+				inner.appendChild(presetField.wrap);
+			}
 			const params = def.params || [];
 			params.forEach(function (spec) {
 				if (spec.show === 'afterInput' && index === 0) return;
@@ -1833,6 +2565,7 @@
 			body.appendChild(inner);
 			card.appendChild(body);
 			paintCamStatus(card, op);
+			paintVisibleParams(card, op);
 			return card;
 		}
 
@@ -1847,6 +2580,9 @@
 			});
 			Object.keys(palettes).forEach(function (key) {
 				delete palettes[key];
+			});
+			Object.keys(presetFields).forEach(function (key) {
+				delete presetFields[key];
 			});
 			Object.keys(colors).forEach(function (key) {
 				delete colors[key];
@@ -2075,6 +2811,11 @@
 						paletteField.setParams(op.parameters);
 					}
 
+					const presetField = presetFields[op.id];
+					if (presetField && presetField.paint) {
+						presetField.paint(op);
+					}
+
 					card.querySelectorAll('[data-enum-key]').forEach(function (btn) {
 						const key = btn.dataset.enumKey;
 						btn.classList.toggle(
@@ -2083,8 +2824,11 @@
 						);
 					});
 					paintCamStatus(card, op);
+					paintVisibleParams(card, op);
 				});
 			}
+
+			refreshOutput();
 
 			const dbgOn = !!(s.debug && s.debug.enabled);
 			debugToggle.textContent = dbgOn ? 'On' : 'Off';
@@ -2158,7 +2902,20 @@
 		});
 
 		window.addEventListener('keydown', function (event) {
-			if (event.key !== 'Escape' || sheet.hidden) return;
+			if (event.key !== 'Escape') return;
+			let closedForm = false;
+			Object.keys(presetFields).forEach(function (id) {
+				const field = presetFields[id];
+				if (!field || !field.closeForm) return;
+				field.closeForm();
+				closedForm = true;
+			});
+			if (closedForm) {
+				event.preventDefault();
+				refresh();
+				return;
+			}
+			if (sheet.hidden) return;
 			closeSheet();
 		});
 

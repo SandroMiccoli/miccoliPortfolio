@@ -18,6 +18,12 @@
 			color: '#FFFFFF',
 			blendMode: 'normal'
 		},
+		presets: [
+			{ id: 'soft', name: 'Soft', parameters: { fuzzyness: 0.85, amount: 4, width: 0.6, rotation: 8, position: 0.5, color: '#FFFFFF', blendMode: 'normal' } },
+			{ id: 'tight', name: 'Tight', parameters: { fuzzyness: 0.12, amount: 22, width: 0.16, rotation: 0, position: 0.5, color: '#FFFFFF', blendMode: 'normal' } },
+			{ id: 'cross', name: 'Cross', parameters: { fuzzyness: 0.35, amount: 10, width: 0.28, rotation: 45, position: 0.5, color: '#FFFFFF', blendMode: 'difference' } },
+			{ id: 'drift', name: 'Drift', parameters: { fuzzyness: 0.5, amount: 7, width: 0.4, rotation: 12, position: 0.35, color: '#FFFFFF', blendMode: 'normal' } }
+		],
 		params: [
 			{ key: 'fuzzyness', label: 'Fuzzyness', kind: 'range', min: 0, max: 1, step: 0.01 },
 			{ key: 'amount', label: 'Amount', kind: 'int', min: 0, max: 30, step: 1 },

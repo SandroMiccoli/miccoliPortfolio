@@ -12,6 +12,11 @@
 		defaults: {
 			gain: 1
 		},
+		presets: [
+			{ id: 'unity', name: 'Unity', parameters: { gain: 1 } },
+			{ id: 'dim', name: 'Dim', parameters: { gain: 0.55 } },
+			{ id: 'hot', name: 'Hot', parameters: { gain: 1.6 } }
+		],
 		params: [
 			{ key: 'gain', label: 'Gain', kind: 'range', min: 0, max: 2, step: 0.01 }
 		],

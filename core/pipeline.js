@@ -73,6 +73,139 @@
 		return lastScreen >= 0 ? lastScreen : (pipeline || []).length;
 	}
 
+	function pick(list) {
+		return list[Math.floor(Math.random() * list.length)];
+	}
+
+	function chance(p) {
+		return Math.random() < p;
+	}
+
+	function clamp(n, min, max) {
+		return Math.min(max, Math.max(min, n));
+	}
+
+	function dropLast(types, type, keepAtLeast) {
+		let count = 0;
+		types.forEach(function (item) {
+			if (item === type) count += 1;
+		});
+		if (count <= (keepAtLeast || 0)) return false;
+		for (let i = types.length - 1; i >= 0; i -= 1) {
+			if (types[i] === type) {
+				types.splice(i, 1);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function isGenerator(type) {
+		const def = root.SynthRegistry.get(type);
+		return !!(def && def.category === 'generator');
+	}
+
+	function tuneRandomInstance(inst, index, types) {
+		if (!inst || !inst.parameters) return inst;
+		const p = inst.parameters;
+
+		if (inst.type === 'lines') {
+			p.amount = Math.max(3, p.amount | 0);
+			p.width = clamp(p.width, 0.08, 0.62);
+			p.fuzzyness = clamp(p.fuzzyness, 0.15, 0.9);
+		}
+		if (inst.type === 'noise') {
+			p.scale = clamp(p.scale, 1.2, 14);
+			p.contrast = clamp(p.contrast, 0.7, 2.2);
+			p.octaves = Math.max(2, p.octaves | 0);
+		}
+		if (inst.type === 'shape') {
+			p.x = clamp(p.x, 0.28, 0.72);
+			p.y = clamp(p.y, 0.28, 0.72);
+			p.r = clamp(p.r, 0.18, 0.55);
+		}
+		if (inst.type === 'warp') {
+			p.amount = clamp(p.amount, 0.16, 0.85);
+			p.frequency = clamp(p.frequency, 1.5, 12);
+		}
+		if (inst.type === 'kaleidoscope') {
+			p.segments = Math.max(3, p.segments | 0);
+			p.zoom = clamp(p.zoom, 0.55, 1.8);
+			p.offsetX = clamp(p.offsetX, 0.35, 0.65);
+			p.offsetY = clamp(p.offsetY, 0.35, 0.65);
+		}
+		if (inst.type === 'edge') {
+			p.mix = clamp(p.mix, 0.55, 1);
+			p.intensity = clamp(p.intensity, 0.9, 3.2);
+			p.threshold = clamp(p.threshold, 0.04, 0.35);
+		}
+		if (inst.type === 'lookup') {
+			p.exposure = clamp(p.exposure, 0.55, 1.45);
+			p.saturation = clamp(p.saturation, 0.55, 1.7);
+		}
+		if (inst.type === 'bloom') {
+			p.intensity = clamp(p.intensity, 0.4, 1.8);
+			p.threshold = clamp(p.threshold, 0.12, 0.55);
+		}
+		if (inst.type === 'screen') {
+			p.gain = 1;
+		}
+		if (isGenerator(inst.type) && index > 0 && isGenerator(types[0])) {
+			p.blendMode = pick(['difference', 'add', 'overlay', 'screen', 'multiply', 'lighten']);
+		}
+		return inst;
+	}
+
+	// Generator → [blend generator] → warp/kaleido → [edge] → [lookup] → [bloom] → screen
+	function randomTypes() {
+		const generators = ['lines', 'noise', 'shape'];
+		const types = [pick(generators)];
+
+		if (chance(0.38)) {
+			types.push(pick(generators.filter(function (type) {
+				return type !== types[0];
+			})));
+		}
+
+		const spatial = [];
+		if (chance(0.8)) spatial.push('warp');
+		if (chance(0.7)) spatial.push('kaleidoscope');
+		if (!spatial.length) spatial.push(pick(['warp', 'kaleidoscope']));
+		types.push.apply(types, spatial);
+
+		if (types.indexOf('kaleidoscope') >= 0 && chance(0.22)) {
+			types.push('warp');
+		}
+		if (chance(0.42)) types.push('edge');
+		if (chance(0.88)) types.push('lookup');
+		if (chance(0.55)) types.push('bloom');
+		types.push('screen');
+
+		while (types.length > 8) {
+			if (dropLast(types, 'warp', 1)) continue;
+			if (dropLast(types, 'bloom', 0)) continue;
+			if (dropLast(types, 'edge', 0)) continue;
+			if (types.length > 2 && isGenerator(types[0]) && isGenerator(types[1])) {
+				types.splice(1, 1);
+				continue;
+			}
+			types.splice(Math.max(1, types.length - 2), 1);
+		}
+
+		while (types.length < 3) {
+			const fill = types.indexOf('lookup') < 0 ? 'lookup' : 'warp';
+			types.splice(types.length - 1, 0, fill);
+		}
+
+		return types;
+	}
+
+	function createRandom() {
+		return randomTypes().map(function (type, i, types) {
+			return tuneRandomInstance(makeInstance(type, null, type !== 'screen'), i, types);
+		}).filter(Boolean);
+	}
+
 	root.SynthPipeline = {
 		MVP_ORDER: MVP_ORDER,
 
@@ -82,11 +215,8 @@
 			}).filter(Boolean);
 		},
 
-		createFresh: function () {
-			return MVP_ORDER.map(function (type) {
-				return makeInstance(type);
-			}).filter(Boolean);
-		},
+		createFresh: createRandom,
+		createRandom: createRandom,
 
 		createInstance: makeInstance,
 

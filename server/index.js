@@ -74,12 +74,32 @@ const DEFAULT_STATE = {
 		}
 	],
 	activePipeId: 'pipe_01',
+	presets: [],
 	clock: {
 		bpm: 120,
 		originMs: Date.now()
 	},
 	debug: {
 		enabled: false
+	},
+	output: {
+		mapping: {
+			enabled: true,
+			mode: 'cornerPin',
+			edit: false,
+			template: false,
+			corners: {
+				tl: { x: 0, y: 0 },
+				tr: { x: 1, y: 0 },
+				br: { x: 1, y: 1 },
+				bl: { x: 0, y: 1 }
+			}
+		},
+		masks: {
+			enabled: true,
+			invert: false,
+			items: []
+		}
 	}
 };
 
@@ -122,6 +142,10 @@ function applyOpParam(state, opParam) {
 			}
 			if (typeof opParam.bypassed === 'boolean') {
 				updated.bypassed = opParam.bypassed;
+			}
+			if (Object.prototype.hasOwnProperty.call(opParam, 'presetId')) {
+				if (opParam.presetId) updated.presetId = opParam.presetId;
+				else delete updated.presetId;
 			}
 			return updated;
 		});
@@ -169,6 +193,7 @@ function setActiveOperators(state, operators) {
 const PATCH_KEYS = {
 	pipes: true,
 	activePipeId: true,
+	presets: true,
 	operators: true,
 	pipeline: true,
 	opParam: true,
@@ -187,6 +212,10 @@ function applyPatch(state, patch) {
 	if (Object.prototype.hasOwnProperty.call(patch, 'activePipeId')) {
 		next = clone(next);
 		next.activePipeId = patch.activePipeId;
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'presets')) {
+		next = clone(next);
+		next.presets = Array.isArray(patch.presets) ? clone(patch.presets) : [];
 	}
 	if (Object.prototype.hasOwnProperty.call(patch, 'operators')) {
 		next = setActiveOperators(next, patch.operators);
@@ -319,10 +348,44 @@ function listen(server, port) {
 	});
 }
 
+const DATA_DIR = path.join(__dirname, 'data');
+const PRESETS_PATH = path.join(DATA_DIR, 'presets.json');
+
+function persistedPresets(list) {
+	return (Array.isArray(list) ? list : []).filter((item) => {
+		return item && item.id && item.type && item.parameters && item.persisted && !item.builtin;
+	}).map((item) => ({
+		id: String(item.id),
+		type: String(item.type),
+		name: String(item.name || item.type).slice(0, 32),
+		parameters: clone(item.parameters),
+		persisted: true
+	}));
+}
+
+function loadDiskPresets() {
+	try {
+		const raw = JSON.parse(fs.readFileSync(PRESETS_PATH, 'utf8'));
+		return persistedPresets(Array.isArray(raw) ? raw : raw && raw.presets);
+	} catch (err) {
+		return [];
+	}
+}
+
+function writeDiskPresets(list) {
+	try {
+		fs.mkdirSync(DATA_DIR, { recursive: true });
+		fs.writeFileSync(PRESETS_PATH, JSON.stringify(persistedPresets(list), null, 2));
+	} catch (err) {
+		console.warn('Preset disk write failed: ' + err.message);
+	}
+}
+
 async function start() {
 	const app = express();
 	let port = Number(process.env.PORT) || 8080;
 	let state = clone(DEFAULT_STATE);
+	state.presets = loadDiskPresets();
 
 	app.get('/api/info', (_req, res) => {
 		res.json(makeInfo(port));
@@ -420,6 +483,9 @@ async function start() {
 
 			if (msg.type === 'patch' && msg.patch) {
 				state = applyPatch(state, msg.patch);
+				if (Object.prototype.hasOwnProperty.call(msg.patch, 'presets')) {
+					writeDiskPresets(state.presets);
+				}
 				broadcastState();
 				return;
 			}

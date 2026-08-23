@@ -26,6 +26,9 @@
 		if (applyingRemote) return;
 		SynthState.patch(patch);
 		SynthSync.sendPatch(patch);
+		if (patch.presets && window.SynthPresets) {
+			SynthPresets.syncDisk(SynthState.get().presets);
+		}
 	}
 
 	function requestThumb(immediate) {
@@ -280,6 +283,15 @@
 				requestThumb(true);
 			}
 		});
+
+		if (window.SynthOutputOverlay) {
+			window.SynthOutputOverlayApi = SynthOutputOverlay.mount({
+				getState: function () {
+					return SynthState.get();
+				},
+				patch: userPatch
+			});
+		}
 
 		SynthState.subscribe(function (state) {
 			if (uiApi) uiApi.refresh();
