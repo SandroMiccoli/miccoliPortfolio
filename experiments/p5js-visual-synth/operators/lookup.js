@@ -271,6 +271,12 @@
 			saturation: 1,
 			exposure: 1
 		},
+		presets: [
+			{ id: 'neutral', name: 'Neutral', parameters: { paletteId: 'fire', colors: ['#5C0812', '#D62408', '#FF9412', '#FFECC6'], bg: '#080206', hue: 0, saturation: 1, exposure: 1 } },
+			{ id: 'hot', name: 'Hot', parameters: { paletteId: 'heat', colors: ['#1A0000', '#C41414', '#FF7A00', '#FFE14A'], bg: '#080000', hue: 8, saturation: 1.3, exposure: 1.15 } },
+			{ id: 'cool', name: 'Cool', parameters: { paletteId: 'ice', colors: ['#082A6E', '#14A8C4', '#A0E6FF', '#F0FAFF'], bg: '#02040E', hue: -12, saturation: 0.9, exposure: 1 } },
+			{ id: 'fade', name: 'Fade', parameters: { paletteId: 'mono', colors: ['#2A2A2A', '#6E6E6E', '#B4B4B4', '#F5F5F5'], bg: '#000000', hue: 0, saturation: 0.4, exposure: 0.85 } }
+		],
 		params: [
 			{ key: 'palette', label: 'Palette', kind: 'palette' },
 			{ key: 'hue', label: 'Hue shift', kind: 'range', min: -180, max: 180, step: 1, unit: '°' },

@@ -28,8 +28,13 @@
 		return {
 			pipes: [pipe],
 			activePipeId: pipe.id,
+			presets: root.SynthPresets ? root.SynthPresets.initial() : [],
 			clock: root.SynthClock ? root.SynthClock.defaults() : { bpm: 120, originMs: Date.now() },
-			debug: { enabled: false }
+			debug: { enabled: false },
+			output: root.SynthOutput ? root.SynthOutput.defaults() : {
+				mapping: { enabled: true, mode: 'cornerPin', edit: false, corners: { tl: { x: 0, y: 0 }, tr: { x: 1, y: 0 }, br: { x: 1, y: 1 }, bl: { x: 0, y: 1 } } },
+				masks: { enabled: true, invert: false, items: [] }
+			}
 		};
 	}
 
@@ -39,12 +44,20 @@
 		const clock = root.SynthClock
 			? root.SynthClock.fromState(raw)
 			: Object.assign({ bpm: 120, originMs: Date.now() }, raw.clock || {});
+		const output = root.SynthOutput
+			? root.SynthOutput.normalize(raw.output)
+			: (raw.output || base.output);
+		const presets = root.SynthPresets
+			? root.SynthPresets.listUser(raw.presets)
+			: (Array.isArray(raw.presets) ? clone(raw.presets) : []);
 		if (raw.pipes && raw.pipes.length) {
 			return {
 				pipes: clone(raw.pipes),
 				activePipeId: raw.activePipeId || raw.pipes[0].id,
+				presets: presets,
 				clock: clock,
-				debug: raw.debug || { enabled: false }
+				debug: raw.debug || { enabled: false },
+				output: output
 			};
 		}
 		if (raw.pipeline) {
@@ -54,8 +67,10 @@
 			return {
 				pipes: [pipe],
 				activePipeId: pipe.id,
+				presets: presets,
 				clock: clock,
-				debug: raw.debug || { enabled: false }
+				debug: raw.debug || { enabled: false },
+				output: output
 			};
 		}
 		return deepMerge(base, raw);
@@ -78,6 +93,10 @@
 				}
 				if (typeof opParam.bypassed === 'boolean') {
 					updated.bypassed = opParam.bypassed;
+				}
+				if (Object.prototype.hasOwnProperty.call(opParam, 'presetId')) {
+					if (opParam.presetId) updated.presetId = opParam.presetId;
+					else delete updated.presetId;
 				}
 				return updated;
 			});
@@ -125,6 +144,7 @@
 	const PATCH_KEYS = {
 		pipes: true,
 		activePipeId: true,
+		presets: true,
 		operators: true,
 		pipeline: true,
 		opParam: true,
@@ -143,6 +163,12 @@
 		if (Object.prototype.hasOwnProperty.call(patch, 'activePipeId')) {
 			next = clone(next);
 			next.activePipeId = patch.activePipeId;
+		}
+		if (Object.prototype.hasOwnProperty.call(patch, 'presets')) {
+			next = clone(next);
+			next.presets = root.SynthPresets
+				? root.SynthPresets.listUser(patch.presets)
+				: clone(patch.presets);
 		}
 		if (Object.prototype.hasOwnProperty.call(patch, 'operators')) {
 			next = setActiveOperators(next, patch.operators);

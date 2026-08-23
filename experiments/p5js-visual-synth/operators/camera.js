@@ -16,6 +16,10 @@
 			fit: 'cover',
 			blendMode: 'normal'
 		},
+		presets: [
+			{ id: 'mirror', name: 'Mirror', parameters: { source: 'display', mirror: 1, fit: 'cover', blendMode: 'normal' } },
+			{ id: 'clean', name: 'Clean', parameters: { source: 'display', mirror: 0, fit: 'contain', blendMode: 'normal' } }
+		],
 		params: [
 			{
 				key: 'source',

@@ -26,6 +26,11 @@
 			intensity: 0.9,
 			radius: 1.35
 		},
+		presets: [
+			{ id: 'soft', name: 'Soft', parameters: { threshold: 0.45, intensity: 0.4, radius: 1.8 } },
+			{ id: 'heavy', name: 'Heavy', parameters: { threshold: 0.18, intensity: 1.8, radius: 2.2 } },
+			{ id: 'tight', name: 'Tight', parameters: { threshold: 0.4, intensity: 1.1, radius: 0.6 } }
+		],
 		params: [
 			{ key: 'threshold', label: 'Threshold', kind: 'range', min: 0, max: 1, step: 0.01 },
 			{ key: 'intensity', label: 'Intensity', kind: 'range', min: 0, max: 2.5, step: 0.01 },

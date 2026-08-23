@@ -16,6 +16,11 @@
 			offsetX: 0.5,
 			offsetY: 0.5
 		},
+		presets: [
+			{ id: 'hex', name: 'Hex', parameters: { segments: 6, angle: 0, zoom: 1, offsetX: 0.5, offsetY: 0.5 } },
+			{ id: 'shatter', name: 'Shatter', parameters: { segments: 14, angle: 18, zoom: 1.6, offsetX: 0.5, offsetY: 0.5 } },
+			{ id: 'slow', name: 'Slow', parameters: { segments: 4, angle: 0, zoom: 0.7, offsetX: 0.46, offsetY: 0.52 } }
+		],
 		params: [
 			{ key: 'segments', label: 'Segments', kind: 'int', min: 2, max: 16, step: 1 },
 			{ key: 'angle', label: 'Angle', kind: 'range', min: 0, max: 360, step: 1, unit: '°' },

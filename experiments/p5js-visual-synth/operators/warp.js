@@ -15,6 +15,12 @@
 			speed: 0.4,
 			detail: 0.65
 		},
+		presets: [
+			{ id: 'soft', name: 'Soft', parameters: { amount: 0.12, frequency: 2.2, speed: 0.15, detail: 0.3 } },
+			{ id: 'heavy', name: 'Heavy', parameters: { amount: 0.85, frequency: 6.5, speed: 0.55, detail: 0.85 } },
+			{ id: 'liquid', name: 'Liquid', parameters: { amount: 0.45, frequency: 1.8, speed: 0.8, detail: 0.4 } },
+			{ id: 'broken', name: 'Broken', parameters: { amount: 1.1, frequency: 14, speed: 1.4, detail: 1 } }
+		],
 		params: [
 			{ key: 'amount', label: 'Amount', kind: 'range', min: 0, max: 1.2, step: 0.01 },
 			{ key: 'frequency', label: 'Frequency', kind: 'range', min: 0.5, max: 18, step: 0.1 },

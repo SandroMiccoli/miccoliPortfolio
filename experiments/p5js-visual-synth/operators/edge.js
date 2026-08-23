@@ -16,6 +16,11 @@
 			mix: 1,
 			invert: 0
 		},
+		presets: [
+			{ id: 'soft', name: 'Soft', parameters: { threshold: 0.28, intensity: 0.9, radius: 1.4, mix: 1, invert: 0 } },
+			{ id: 'ink', name: 'Ink', parameters: { threshold: 0.08, intensity: 2.8, radius: 0.8, mix: 1, invert: 1 } },
+			{ id: 'trace', name: 'Trace', parameters: { threshold: 0.16, intensity: 1.4, radius: 1, mix: 0.55, invert: 0 } }
+		],
 		params: [
 			{ key: 'threshold', label: 'Threshold', kind: 'range', min: 0, max: 1, step: 0.01 },
 			{ key: 'intensity', label: 'Intensity', kind: 'range', min: 0, max: 4, step: 0.01 },

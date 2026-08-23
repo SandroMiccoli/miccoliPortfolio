@@ -1,7 +1,7 @@
 /* Visual Synth UI
    tokens: off-black / off-white / hairline
    radius: 0 for chrome / grid / sheets; 12px for operator blocks (pipe building blocks)
-   z: preview 18, chrome 20, hud 120, panel 130, picker 148, qr 140, sheet 145, boot 160, toasts 180, tip 185
+   z: preview 18, chrome 20, map overlay 115, hud 120, panel 130, picker 148, qr 140, sheet 145, boot 160, toasts 180, tip 185
 */
 
 :root {
@@ -96,7 +96,8 @@ body.synth-control {
 .synth-boot,
 .synth-toasts,
 .synth-debug-hud,
-.synth-qr-btn {
+.synth-qr-btn,
+.synth-map-overlay {
 	font-family: var(--font);
 	color: var(--fg);
 	line-height: 1.35;
@@ -1266,7 +1267,8 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	transform: scale(0.98);
 }
 
-.synth-btn.is-active {
+.synth-btn.is-active,
+.synth-btn--fill {
 	background: var(--fg);
 	color: var(--bg);
 }
@@ -1707,6 +1709,133 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 .synth-op .synth-slider.is-mod .synth-slider__fill {
 	background: color-mix(in srgb, var(--op-color) 55%, #ededed);
 	opacity: 0.85;
+}
+
+.synth-presets {
+	gap: 8px;
+	margin-bottom: 14px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--line);
+}
+
+.synth-presets__grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.synth-presets__grid[hidden] {
+	display: none !important;
+}
+
+.synth-preset {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	flex: 0 0 auto;
+	min-height: 36px;
+	padding: 6px 12px;
+	border: 1px solid color-mix(in srgb, #ededed 16%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, #101010 38%, transparent);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-preset:active {
+	transform: scale(0.98);
+}
+
+.synth-preset.is-active {
+	background: var(--fg);
+	border-color: var(--fg);
+	color: var(--bg);
+}
+
+.synth-preset:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 2px;
+}
+
+.synth-preset--add {
+	min-width: 36px;
+	padding: 6px;
+}
+
+.synth-preset--add .synth-ph {
+	width: 14px;
+	height: 14px;
+}
+
+.synth-preset__disk {
+	display: inline-flex;
+	width: 12px;
+	height: 12px;
+	opacity: 0.72;
+}
+
+.synth-preset__disk .synth-ph {
+	width: 12px;
+	height: 12px;
+}
+
+.synth-preset.is-active .synth-preset__disk {
+	opacity: 0.85;
+}
+
+.synth-presets__tools {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.synth-presets__tools .synth-btn {
+	min-height: 36px;
+	padding: 6px 10px;
+	border: 1px solid color-mix(in srgb, #ededed 16%, transparent);
+	font-size: 11px;
+}
+
+.synth-preset-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.synth-preset-form[hidden] {
+	display: none !important;
+}
+
+.synth-panel .synth-preset-form__hint {
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--muted);
+}
+
+.synth-preset-form__name {
+	width: 100%;
+	text-transform: none;
+	letter-spacing: 0.04em;
+}
+
+.synth-preset-form__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.synth-preset-form__actions .synth-btn {
+	flex: 1 1 96px;
+	min-height: 36px;
+	border: 1px solid color-mix(in srgb, #ededed 16%, transparent);
 }
 
 .synth-palettes {
@@ -2339,6 +2468,341 @@ body.synth-control .synth-toasts {
 
 .synth-meter.is-bad {
 	color: var(--bad);
+}
+
+/* Stage tabs: Pipeline / Mask / Mapping */
+
+.synth-stage-tabs {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	margin: 8px 0 0;
+	border-top: 1px solid var(--line);
+	border-bottom: 1px solid var(--line);
+}
+
+.synth-panel.is-page .synth-stage-tabs {
+	margin-left: calc(var(--pad) + env(safe-area-inset-left, 0px));
+	margin-right: calc(var(--pad) + env(safe-area-inset-right, 0px));
+}
+
+.synth-stage-tab {
+	min-height: 44px;
+	padding: 0 8px;
+	border: 0;
+	border-right: 1px solid var(--line);
+	background: transparent;
+	color: var(--muted);
+	font: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-stage-tab:last-child {
+	border-right: 0;
+}
+
+.synth-stage-tab.is-active {
+	background: var(--fg);
+	color: var(--bg);
+}
+
+.synth-stage-tab:active {
+	transform: scale(0.98);
+}
+
+.synth-stage-panel[hidden] {
+	display: none !important;
+}
+
+.synth-stage-panel.synth-sec {
+	border-top: 0;
+}
+
+/* Output mapping + masks */
+
+.synth-sec--map,
+.synth-sec--mask {
+	padding-bottom: 20px;
+}
+
+.synth-map__tools {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.synth-map__tools .synth-map__mode {
+	margin-right: auto;
+}
+
+.synth-map__tools.is-bypass,
+.synth-map-pad.is-bypass,
+.synth-map-list.is-bypass {
+	opacity: 0.4;
+}
+
+.synth-map__mode {
+	flex: 1;
+	min-width: 0;
+	font-size: 12px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.synth-map__tools .synth-btn,
+.synth-map__mask-toggles .synth-btn,
+.synth-map__add-btn {
+	min-height: 36px;
+	min-width: 72px;
+	padding: 0 12px;
+}
+
+.synth-map__mask-head {
+	margin-top: 8px;
+}
+
+.synth-map__mask-toggles {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.synth-stage-tab:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: -2px;
+}
+
+.synth-map__add {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.synth-map__add-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 44px;
+}
+
+.synth-map__add-btn .synth-ph {
+	width: 16px;
+	height: 16px;
+}
+
+.synth-map-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.synth-map-list__empty {
+	margin: 0;
+	padding: 10px 0 4px;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.synth-mask .synth-op__swatch {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	background: transparent;
+	box-shadow: none;
+	color: var(--fg);
+}
+
+.synth-mask .synth-op__swatch .synth-ph {
+	width: 16px;
+	height: 16px;
+}
+
+.synth-map-pad {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	margin: 0 0 8px;
+	border: 1px solid var(--line);
+	background:
+		linear-gradient(#1f1f1f 1px, transparent 1px) 0 0 / 25% 25%,
+		linear-gradient(90deg, #1f1f1f 1px, transparent 1px) 0 0 / 25% 25%,
+		#121212;
+	touch-action: none;
+}
+
+.synth-map-pad__svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.synth-map-pad__quad {
+	fill: color-mix(in srgb, var(--fg) 10%, transparent);
+	stroke: var(--fg);
+	stroke-width: 0.012;
+	vector-effect: non-scaling-stroke;
+}
+
+.synth-map-pad__h {
+	position: absolute;
+	width: 22px;
+	height: 22px;
+	min-width: 22px;
+	min-height: 22px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--fg);
+	background: var(--bg);
+	transform: translate(-50%, -50%);
+	appearance: none;
+	touch-action: none;
+}
+
+.synth-map-pad__h:focus-visible {
+	outline: 2px solid var(--fg);
+	outline-offset: 2px;
+}
+
+.synth-map-pad__h.is-drag,
+.synth-map-pad__h:active {
+	background: var(--fg);
+}
+
+.synth-map-pad.is-locked .synth-map-pad__h {
+	pointer-events: none;
+	opacity: 0.55;
+}
+
+.synth-mask__ident {
+	gap: 10px;
+}
+
+.synth-mask__mark {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	flex: 0 0 auto;
+	color: var(--fg);
+}
+
+.synth-mask__mark .synth-ph {
+	width: 16px;
+	height: 16px;
+}
+
+.synth-mask__name {
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 13px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--fg);
+	text-align: left;
+}
+
+.synth-map-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 115;
+	pointer-events: none;
+}
+
+.synth-map-overlay[hidden] {
+	display: none !important;
+}
+
+.synth-map-overlay__svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+}
+
+.synth-map-overlay__quad {
+	fill: color-mix(in srgb, var(--fg) 6%, transparent);
+	stroke: var(--fg);
+	stroke-width: 0.004;
+	vector-effect: non-scaling-stroke;
+}
+
+.synth-map-overlay__mask {
+	fill: color-mix(in srgb, var(--fg) 8%, transparent);
+	stroke: var(--muted);
+	stroke-width: 0.003;
+	stroke-dasharray: 0.018 0.012;
+	vector-effect: non-scaling-stroke;
+	pointer-events: auto;
+}
+
+.synth-map-overlay__mask.is-active {
+	stroke: var(--fg);
+	fill: color-mix(in srgb, var(--fg) 14%, transparent);
+}
+
+.synth-map-handle {
+	position: absolute;
+	width: 44px;
+	height: 44px;
+	min-width: 44px;
+	min-height: 44px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--fg);
+	background: rgba(16, 16, 16, 0.72);
+	transform: translate(-50%, -50%);
+	appearance: none;
+	pointer-events: auto;
+	touch-action: none;
+}
+
+.synth-map-handle::after {
+	content: "";
+	position: absolute;
+	inset: 16px;
+	background: var(--fg);
+}
+
+.synth-map-handle.is-drag,
+.synth-map-handle:active {
+	background: var(--fg);
+}
+
+.synth-map-handle.is-drag::after,
+.synth-map-handle:active::after {
+	background: var(--bg);
+}
+
+body.synth-display.is-map-edit .synth-map-overlay,
+body.synth-display.is-map-edit .synth-map-overlay * {
+	cursor: grab !important;
+}
+
+body.synth-display.is-map-edit .synth-map-handle.is-drag,
+body.synth-display.is-map-edit .synth-map-handle:active {
+	cursor: grabbing !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
