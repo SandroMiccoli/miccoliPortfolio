@@ -206,16 +206,48 @@
 		});
 	}
 
+	function targetPixelSize(target) {
+		if (target && target.width && target.height) {
+			const d = Number(target.density) > 0 ? Number(target.density) : 1;
+			return {
+				w: Math.max(2, Math.round(target.width * d)),
+				h: Math.max(2, Math.round(target.height * d))
+			};
+		}
+		const gl = drawingContext;
+		return {
+			w: (gl && gl.drawingBufferWidth) | 0,
+			h: (gl && gl.drawingBufferHeight) | 0
+		};
+	}
+
+	function restoreMain() {
+		const gl = drawingContext;
+		if (!gl) return;
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+		if (typeof ortho === 'function') ortho();
+	}
+
+	function ensureThumbComp() {
+		if (!thumbComp) thumbComp = makeFbo(THUMB_W, THUMB_H);
+		if (typeof thumbComp.resize === 'function') {
+			if (Math.abs(thumbComp.width - THUMB_W) > 1 || Math.abs(thumbComp.height - THUMB_H) > 1) {
+				thumbComp.resize(THUMB_W, THUMB_H);
+			}
+		}
+		return thumbComp;
+	}
+
 	function readFrom(target, flipY) {
 		const gl = drawingContext;
 		if (!gl || typeof gl.readPixels !== 'function') return '';
-		let w = 0;
-		let h = 0;
+		const size = targetPixelSize(target);
+		let w = size.w;
+		let h = size.h;
 		const prevFbo = gl.getParameter(gl.FRAMEBUFFER_BINDING);
 		if (target && typeof target.begin === 'function') {
 			target.begin();
-			w = gl.drawingBufferWidth | 0;
-			h = gl.drawingBufferHeight | 0;
 		} else {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			w = gl.drawingBufferWidth | 0;
@@ -224,6 +256,7 @@
 		if (w < 2 || h < 2) {
 			if (target && typeof target.end === 'function') target.end();
 			else if (prevFbo) gl.bindFramebuffer(gl.FRAMEBUFFER, prevFbo);
+			else restoreMain();
 			return '';
 		}
 
@@ -236,6 +269,7 @@
 		gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuf);
 		if (target && typeof target.end === 'function') target.end();
 		else if (prevFbo) gl.bindFramebuffer(gl.FRAMEBUFFER, prevFbo);
+		else restoreMain();
 
 		if (!readCanvas) readCanvas = document.createElement('canvas');
 		if (readCanvas.width !== w || readCanvas.height !== h) {
@@ -307,6 +341,7 @@
 		},
 
 		draw: function (stateOrOps, time) {
+			restoreMain();
 			ortho();
 			background(0);
 			if (!liveExecutor) return;
@@ -325,6 +360,7 @@
 		capture: function (quality, flipY) {
 			lastThumbLuma = 0;
 			const gfx = readFrom(composition, !!flipY);
+			restoreMain();
 			if (!gfx) return '';
 			lastThumbLuma = thumbLuma(gfx);
 			try {
@@ -337,19 +373,21 @@
 
 		captureOperators: function (operators, time, quality) {
 			if (!thumbExecutor) return '';
-			if (!thumbComp) thumbComp = makeFbo(THUMB_W, THUMB_H);
+			const dest = ensureThumbComp();
+			if (!dest) return '';
 			const state = root.SynthState ? root.SynthState.get() : null;
-			clearFbo(thumbComp);
+			clearFbo(dest);
 			thumbExecutor.run(operators || [], time || 0, {
-				dest: thumbComp,
-				width: THUMB_W,
-				height: THUMB_H,
+				dest: dest,
+				width: dest.width || THUMB_W,
+				height: dest.height || THUMB_H,
 				nowMs: Date.now(),
 				clock: root.SynthClock && state ? root.SynthClock.fromState(state) : null,
 				fft: root.SynthFft ? root.SynthFft.levels() : null
 			});
 			lastThumbLuma = 0;
-			const gfx = readFrom(thumbComp, false);
+			const gfx = readFrom(dest, false);
+			restoreMain();
 			if (!gfx) return '';
 			lastThumbLuma = thumbLuma(gfx);
 			try {
