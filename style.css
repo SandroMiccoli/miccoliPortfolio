@@ -2115,38 +2115,50 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	touch-action: none;
 }
 
+.synth-ramp__notch::before,
 .synth-ramp__notch::after {
 	content: '';
 	position: absolute;
 	left: 50%;
+	transform: translateX(-50%);
+	clip-path: polygon(50% 100%, 0 0, 100% 0);
+	pointer-events: none;
+}
+
+.synth-ramp__notch::before {
 	top: 4px;
 	width: 12px;
 	height: 14px;
+	background: color-mix(in srgb, #101010 55%, transparent);
+}
+
+.synth-ramp__notch::after {
+	top: 5px;
+	width: 10px;
+	height: 12px;
 	background: var(--notch-color, #ededed);
-	border: 1px solid color-mix(in srgb, #101010 45%, transparent);
-	clip-path: polygon(50% 100%, 0 0, 100% 0);
-	transform: translateX(-50%);
-	box-shadow: 0 1px 2px color-mix(in srgb, #101010 40%, transparent);
+}
+
+.synth-ramp__notch.is-active {
+	z-index: 3;
+	background: linear-gradient(var(--fg), var(--fg)) 50% 22px / 2px 18px no-repeat;
+}
+
+.synth-ramp__notch.is-active::before {
+	top: 0;
+	width: 20px;
+	height: 22px;
+	background: var(--fg);
 }
 
 .synth-ramp__notch.is-active::after {
+	top: 3px;
 	width: 14px;
 	height: 16px;
-	top: 2px;
-	box-shadow:
-		0 0 0 1.5px var(--fg),
-		0 1px 2px color-mix(in srgb, #101010 40%, transparent);
 }
 
 .synth-ramp__notch:focus-visible {
 	outline: none;
-}
-
-.synth-ramp__notch:focus-visible::after,
-.synth-ramp__notch:active::after {
-	box-shadow:
-		0 0 0 1.5px var(--fg),
-		0 1px 2px color-mix(in srgb, #101010 40%, transparent);
 }
 
 .synth-ramp__tools {
@@ -2370,7 +2382,8 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	padding: 4px 0 2px;
 }
 
-.synth-mod[hidden] {
+.synth-mod[hidden],
+.synth-mod [hidden] {
 	display: none !important;
 }
 

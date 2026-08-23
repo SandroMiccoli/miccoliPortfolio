@@ -1563,6 +1563,7 @@
 					{ id: 'fft', icon: 'mic', name: 'FFT', desc: 'Follow the phone microphone.' }
 				].forEach(function (src) {
 					const btn = iconBtn(src.icon, src.name, src.desc, function () {
+						setSourceUi(src.id);
 						patchMod({ source: src.id, enabled: true });
 						if (src.id === 'fft' && root.SynthFft) {
 							root.SynthFft.start(true).catch(function () {
