@@ -61,15 +61,15 @@
 		}).join('|');
 	}
 
-	function gridSignature(gallery, pipes, activeId, templates, selectedId) {
+	function gridSignature(gallery, pipes, templates) {
 		if (gallery === 'templates') {
 			return 'tpl|' + (templates || []).map(function (item) {
-				return item.id + ':' + item.name + ':' + (item.thumbnail ? String(item.thumbnail.length) : '0');
-			}).join('|') + '#' + String(selectedId || '');
+				return item.id + ':' + item.name;
+			}).join('|');
 		}
 		return 'set|' + (pipes || []).map(function (pipe) {
-			return pipe.id + ':' + pipe.name + ':' + (pipe.thumbnail ? '1' : '0');
-		}).join('|') + '#' + String(activeId || '');
+			return pipe.id + ':' + pipe.name;
+		}).join('|');
 	}
 
 	function mount(rootEl, options) {
@@ -3614,7 +3614,7 @@
 			}
 			refreshGalleryChrome();
 			const activeId = galleryMode === 'templates' ? selectedTemplateId : s.activePipeId;
-			const gsig = gridSignature(galleryMode, pipes, s.activePipeId, items, selectedTemplateId);
+			const gsig = gridSignature(galleryMode, pipes, items);
 			if (gsig !== lastGridSig) {
 				lastGridSig = gsig;
 				rebuildGrid(pipes, s.activePipeId, items, selectedTemplateId);

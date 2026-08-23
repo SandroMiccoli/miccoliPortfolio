@@ -54,13 +54,14 @@ html.synth-html--control body.synth-control {
 	overflow: visible;
 }
 
-body.synth-display,
-body.synth-display * {
-	cursor: none !important;
+body.synth-display {
+	cursor: none;
+	touch-action: none;
 }
 
-body.synth-display {
-	touch-action: none;
+body.synth-display #app,
+body.synth-display #app * {
+	cursor: none;
 }
 
 body.synth-control {
@@ -301,6 +302,12 @@ body.synth-control {
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	color: var(--muted);
+}
+
+.synth-pipes,
+.synth-pipe-active {
+	position: relative;
+	z-index: 2;
 }
 
 .synth-pipes {
@@ -627,12 +634,11 @@ body.synth-control {
 }
 
 body.synth-display .synth-panel.is-open,
-body.synth-display .synth-panel.is-open * {
-	cursor: auto !important;
-}
-
-body.synth-display .synth-panel.is-open .synth-icon--grip {
-	cursor: grab !important;
+body.synth-display .synth-picker,
+body.synth-display .synth-boot,
+body.synth-display .synth-toasts,
+body.synth-display .synth-float-tip {
+	cursor: auto;
 }
 
 .synth-sheet {
@@ -813,6 +819,8 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 
 .synth-stack {
 	position: relative;
+	z-index: 1;
+	isolation: isolate;
 	display: flex;
 	flex-direction: column;
 	gap: 0;

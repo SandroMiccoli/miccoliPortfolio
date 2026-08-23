@@ -466,7 +466,6 @@
 	}
 
 	function draw() {
-		noCursor();
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
 		scheduleThumb(state);
