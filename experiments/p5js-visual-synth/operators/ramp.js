@@ -243,10 +243,16 @@
 		},
 		presets: [
 			{
-				id: 'ember',
-				name: 'Ember',
+				id: 'ice',
+				name: 'Ice',
 				parameters: {
-					stops: DEFAULT_STOPS.map(cloneStop),
+					stops: [
+						{ pos: 0, color: '#02040E' },
+						{ pos: 0.2, color: '#082A6E' },
+						{ pos: 0.48, color: '#14A8C4' },
+						{ pos: 0.76, color: '#A0E6FF' },
+						{ pos: 1, color: '#F0FAFF' }
+					],
 					phase: 0,
 					period: 1,
 					interpolate: 'linear'
