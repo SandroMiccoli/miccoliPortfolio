@@ -909,6 +909,121 @@
 		'}'
 	].join('\n');
 
+	const PIXELATE = [
+		FILTER,
+		'uniform vec2 u_size;',
+		'uniform float u_mix;',
+		'',
+		'void main() {',
+		'  vec2 st = uv();',
+		'  vec2 cell = max(u_size, vec2(1.0));',
+		'  vec2 grid = max(u_resolution / cell, vec2(1.0));',
+		'  vec2 snapped = (floor(st * grid) + 0.5) / grid;',
+		'  vec3 wet = texture2D(u_input, clamp(snapped, 0.0, 1.0)).rgb;',
+		'  gl_FragColor = vec4(mix(src().rgb, wet, clamp(u_mix, 0.0, 1.0)), 1.0);',
+		'}'
+	].join('\n');
+
+	const POSTERIZE = [
+		FILTER,
+		'uniform float u_levels;',
+		'uniform float u_mix;',
+		'uniform float u_mode;',
+		'',
+		'void main() {',
+		'  vec3 col = src().rgb;',
+		'  float n = max(u_levels, 2.0);',
+		'  vec3 wet;',
+		'  if (u_mode > 0.5) {',
+		'    float luma = dot(col, vec3(0.299, 0.587, 0.114));',
+		'    float q = floor(luma * n) / n;',
+		'    wet = col * (q / max(luma, 1.0e-4));',
+		'  } else {',
+		'    wet = floor(col * n) / n;',
+		'  }',
+		'  gl_FragColor = vec4(mix(col, clamp(wet, 0.0, 1.0), clamp(u_mix, 0.0, 1.0)), 1.0);',
+		'}'
+	].join('\n');
+
+	const MIRROR = [
+		FILTER,
+		TILE_FN,
+		'uniform float u_axis;',
+		'uniform float u_mode;',
+		'uniform float u_offsetX;',
+		'uniform float u_offsetY;',
+		'uniform float u_angle;',
+		'uniform float u_tile;',
+		'',
+		'void main() {',
+		'  vec2 st = uv() - 0.5;',
+		'  float aspect = u_resolution.x / max(u_resolution.y, 1.0);',
+		'  st.x *= aspect;',
+		'  float ang = u_angle * 0.017453292;',
+		'  float c = cos(ang);',
+		'  float s = sin(ang);',
+		'  st = vec2(c * st.x - s * st.y, s * st.x + c * st.y);',
+		'  st.x /= aspect;',
+		'  st += 0.5;',
+		'  if (u_mode < 0.5) {',
+		'    if (u_axis < 0.5 || u_axis > 1.5) st.x = u_offsetX + abs(st.x - u_offsetX);',
+		'    if (u_axis > 0.5) st.y = u_offsetY + abs(st.y - u_offsetY);',
+		'  } else {',
+		'    if (u_axis < 0.5 || u_axis > 1.5) st.x = u_offsetX - (st.x - u_offsetX);',
+		'    if (u_axis > 0.5) st.y = u_offsetY - (st.y - u_offsetY);',
+		'  }',
+		'  gl_FragColor = texture2D(u_input, tileUv(st, u_tile));',
+		'}'
+	].join('\n');
+
+	const TILE = [
+		FILTER,
+		TILE_FN,
+		'uniform vec2 u_count;',
+		'uniform vec2 u_offset;',
+		'uniform float u_angle;',
+		'uniform float u_tile;',
+		'',
+		'void main() {',
+		'  vec2 st = uv() - 0.5;',
+		'  float aspect = u_resolution.x / max(u_resolution.y, 1.0);',
+		'  st.x *= aspect;',
+		'  float ang = -u_angle * 0.017453292;',
+		'  float c = cos(ang);',
+		'  float s = sin(ang);',
+		'  st = vec2(c * st.x - s * st.y, s * st.x + c * st.y);',
+		'  st.x /= aspect;',
+		'  st += 0.5;',
+		'  vec2 count = max(u_count, vec2(0.25));',
+		'  st = (st - 0.5) * count + 0.5 + u_offset;',
+		'  gl_FragColor = texture2D(u_input, tileUv(st, u_tile));',
+		'}'
+	].join('\n');
+
+	const INVERT = [
+		FILTER,
+		HSV_FN,
+		'uniform float u_amount;',
+		'uniform float u_mode;',
+		'',
+		'void main() {',
+		'  vec3 col = src().rgb;',
+		'  vec3 inv;',
+		'  if (u_mode < 0.5) {',
+		'    inv = 1.0 - col;',
+		'  } else if (u_mode < 1.5) {',
+		'    vec3 hsv = rgb2hsv(col);',
+		'    hsv.z = 1.0 - hsv.z;',
+		'    inv = hsv2rgb(hsv);',
+		'  } else {',
+		'    vec3 hsv = rgb2hsv(col);',
+		'    hsv.x = fract(hsv.x + 0.5);',
+		'    inv = hsv2rgb(hsv);',
+		'  }',
+		'  gl_FragColor = vec4(mix(col, inv, clamp(u_amount, 0.0, 1.0)), 1.0);',
+		'}'
+	].join('\n');
+
 	root.SYNTH_SHADERS = {
 		vert: VERT,
 		lines: LINES,
@@ -937,6 +1052,11 @@
 		feedback: FEEDBACK,
 		transform: TRANSFORM,
 		glitch: GLITCH,
-		tape: TAPE
+		tape: TAPE,
+		pixelate: PIXELATE,
+		posterize: POSTERIZE,
+		mirror: MIRROR,
+		tile: TILE,
+		invert: INVERT
 	};
 })(window);

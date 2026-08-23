@@ -618,6 +618,12 @@
 		onChange: function (fn) {
 			if (typeof fn === 'function') listeners.push(fn);
 		},
+		deviceSignature: function () {
+			return [
+				displayDevices.map(function (d) { return d.id; }).join(','),
+				phoneDevices.map(function (d) { return d.id; }).join(',')
+			].join(':');
+		},
 		signature: function () {
 			const local = viewFor(isControl() ? 'phone' : 'display');
 			const remote = isControl() ? viewFor('display') : viewFor('phone');
@@ -627,8 +633,7 @@
 				local.live ? '1' : '0',
 				remote.phase,
 				remote.live ? '1' : '0',
-				displayDevices.map(function (d) { return d.id; }).join(','),
-				phoneDevices.map(function (d) { return d.id; }).join(',')
+				root.SynthCamera.deviceSignature()
 			].join(':');
 		},
 		view: viewFor,

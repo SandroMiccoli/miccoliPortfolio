@@ -38,9 +38,9 @@ Shipped ELOs:
 | Category   | ELOs                                                      |
 | ---------- | --------------------------------------------------------- |
 | Generators | Lines, Noise, Shape, Gradient, Camera Input               |
-| Effects    | Warp, Transform, Kaleidoscope, Displace, Feedback, Glitch |
+| Effects    | Warp, Transform, Kaleidoscope, Displace, Feedback, Glitch, Pixelate, Mirror, Tile |
 | Filters    | Bloom, Blur, Edge                                         |
-| Color      | Color Lookup, Color Ramp, HSV, Levels, Contrast           |
+| Color      | Color Lookup, Color Ramp, HSV, Levels, Contrast, Posterize, Invert |
 | Output     | Screen                                                    |
 
 ## Next

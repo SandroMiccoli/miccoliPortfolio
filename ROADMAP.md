@@ -163,6 +163,12 @@ Shipped Elos in the live instrument.
 
 **Glitch** — quantized strips with spectrum smear. Same Tile modes as Warp.
 
+**Pixelate** — snaps the image to a coarse pixel grid.
+
+**Mirror** — fold or flip across a line. Same Tile modes as Warp.
+
+**Tile** — repeats the image across the frame. Same Tile modes as Warp.
+
 ### Filters
 
 **Bloom** — glow around bright areas.
@@ -182,6 +188,10 @@ Shipped Elos in the live instrument.
 **Levels** — input/output range and gamma.
 
 **Contrast** — contrast, brightness, and pivot.
+
+**Posterize** — cuts color into a few steps, RGB or luma.
+
+**Invert** — RGB, luma, or hue invert.
 
 ### Output
 

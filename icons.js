@@ -34,6 +34,7 @@
 		node.setAttribute('viewBox', '0 0 256 256');
 		node.setAttribute('aria-hidden', 'true');
 		node.setAttribute('focusable', 'false');
+		node.style.pointerEvents = 'none';
 		node.classList.add('synth-ph');
 		const path = document.createElementNS(NS, 'path');
 		path.setAttribute('d', PATHS[name] || PATHS.question);

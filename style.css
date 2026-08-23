@@ -992,6 +992,13 @@ body.synth-display .synth-float-tip {
 	opacity: 0.45;
 }
 
+.synth-op.is-solo {
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, #ededed 16%, transparent),
+		inset 0 -1px 0 color-mix(in srgb, #101010 28%, transparent),
+		0 0 0 1px var(--fg);
+}
+
 .synth-op.is-dragging {
 	opacity: 0.95;
 	z-index: 6;
@@ -1006,11 +1013,28 @@ body.synth-display .synth-float-tip {
 
 .synth-op__head {
 	display: grid;
-	grid-template-columns: 44px minmax(0, 1fr);
+	grid-template-columns: 44px minmax(0, 1fr) auto;
 	align-items: center;
 	min-height: 56px;
-	padding: 0 6px 0 0;
+	padding: 0 4px 0 0;
 	background: transparent;
+}
+
+.synth-op__head-tools {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	gap: 0;
+	padding-right: 2px;
+}
+
+.synth-op__solo {
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	user-select: none;
 }
 
 .synth-op.is-open .synth-op__head {
@@ -1114,6 +1138,11 @@ body.synth-display .synth-float-tip {
 	min-width: 32px;
 	height: 32px;
 	min-height: 32px;
+}
+
+.synth-icon .synth-ph,
+.synth-icon svg {
+	pointer-events: none;
 }
 
 .synth-icon:active {

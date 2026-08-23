@@ -277,9 +277,25 @@
 			btn.dataset.tip = name;
 			btn.dataset.tipDesc = description;
 			btn.appendChild(root.SynthIcons.svg(iconName));
-			btn.addEventListener('click', onClick);
+			btn.addEventListener('pointerup', function (event) {
+				if (event.pointerType === 'mouse' && event.button !== 0) return;
+				event.preventDefault();
+				event.stopPropagation();
+				if (onClick) onClick(event);
+			});
 			bindTip(btn);
 			return btn;
+		}
+
+		function paintBypassIcon(btn, bypassed) {
+			if (!btn) return;
+			const on = !!bypassed;
+			btn.classList.toggle('is-active', on);
+			const key = on ? '1' : '0';
+			if (btn.dataset.bypassed === key) return;
+			btn.dataset.bypassed = key;
+			btn.innerHTML = '';
+			btn.appendChild(root.SynthIcons.svg(on ? 'eye-slash' : 'eye'));
 		}
 
 		top.appendChild(iconBtn(
@@ -645,6 +661,7 @@
 				}
 			);
 			bypassBtn.classList.add('synth-icon--bypass');
+			bypassBtn.dataset.bypassed = item.enabled === false ? '1' : '0';
 			if (item.enabled === false) bypassBtn.classList.add('is-active');
 			tools.appendChild(bypassBtn);
 			tools.appendChild(iconBtn('trash', 'Delete', 'Remove this mask from the stack.', function () {
@@ -755,11 +772,7 @@
 					if (!card) return;
 					card.classList.toggle('is-bypass', item.enabled === false);
 					const bypassBtn = card.querySelector('.synth-icon--bypass');
-					if (bypassBtn) {
-						bypassBtn.classList.toggle('is-active', item.enabled === false);
-						bypassBtn.innerHTML = '';
-						bypassBtn.appendChild(root.SynthIcons.svg(item.enabled === false ? 'eye-slash' : 'eye'));
-					}
+					if (bypassBtn) paintBypassIcon(bypassBtn, item.enabled === false);
 					['x', 'y', 'r', 'w', 'h', 'feather'].forEach(function (key) {
 						const slider = outSliders[item.id + ':' + key];
 						if (slider && item[key] != null) slider.setValue(item[key]);
@@ -3203,6 +3216,8 @@
 			card.style.setProperty('--op-color', color);
 			if (op.id === expandedId) card.classList.add('is-open');
 			if (op.bypassed) card.classList.add('is-bypass');
+			const soloed = !!(root.SynthPipeline.isSoloed && root.SynthPipeline.isSoloed(ops(), op.id));
+			if (soloed) card.classList.add('is-solo');
 
 			const head = el('header', 'synth-op__head');
 
@@ -3235,16 +3250,25 @@
 			});
 			head.appendChild(ident);
 
-			const tools = el('div', 'synth-op__tools');
-
-			tools.appendChild(iconBtn(
-				'question',
-				def.name || 'Help',
-				def.help || 'Elo help',
-				function () {
-					openOpHelp(def);
-				}
-			));
+			const headTools = el('div', 'synth-op__head-tools');
+			if (def.category === 'generator') {
+				const soloBtn = el('button', 'synth-icon synth-op__solo', 'S');
+				soloBtn.type = 'button';
+				soloBtn.setAttribute('aria-label', 'Solo. Bypass every other Elo and leave only this generator on the output.');
+				soloBtn.setAttribute('aria-pressed', soloed ? 'true' : 'false');
+				if (soloed) soloBtn.classList.add('is-active');
+				soloBtn.dataset.tip = 'Solo';
+				soloBtn.dataset.tipDesc = 'Bypass every other Elo and leave only this generator on the output.';
+				bindTip(soloBtn);
+				soloBtn.addEventListener('pointerup', function (event) {
+					if (event.pointerType === 'mouse' && event.button !== 0) return;
+					event.preventDefault();
+					event.stopPropagation();
+					if (!root.SynthPipeline.setSolo) return;
+					patchOps(root.SynthPipeline.setSolo(ops(), op.id));
+				});
+				headTools.appendChild(soloBtn);
+			}
 
 			const bypassBtn = iconBtn(
 				op.bypassed ? 'eye-slash' : 'eye',
@@ -3259,8 +3283,21 @@
 				}
 			);
 			bypassBtn.classList.add('synth-icon--bypass');
+			bypassBtn.dataset.bypassed = op.bypassed ? '1' : '0';
 			if (op.bypassed) bypassBtn.classList.add('is-active');
-			tools.appendChild(bypassBtn);
+			headTools.appendChild(bypassBtn);
+			head.appendChild(headTools);
+
+			const tools = el('div', 'synth-op__tools');
+
+			tools.appendChild(iconBtn(
+				'question',
+				def.name || 'Help',
+				def.help || 'Elo help',
+				function () {
+					openOpHelp(def);
+				}
+			));
 
 			const upBtn = iconBtn('caret-up', 'Move up', 'Move this Elo one step earlier in the chain.', function () {
 				patchOps(root.SynthPipeline.move(ops(), op.id, -1));
@@ -3600,11 +3637,18 @@
 			const s = getState();
 			const pipes = s.pipes || [];
 			const items = templates();
+			const previewId = s.previewTemplateId || '';
+			const previewLive = !!(previewId && items.some(function (item) {
+				return item.id === previewId;
+			}));
+			if (previewLive && (galleryMode !== 'templates' || selectedTemplateId !== previewId)) {
+				galleryMode = 'templates';
+				selectedTemplateId = previewId;
+				lastGridSig = null;
+			}
 			const pipeline = ops();
-			if (s.previewTemplateId && items.some(function (item) {
-				return item.id === s.previewTemplateId;
-			})) {
-				selectedTemplateId = s.previewTemplateId;
+			if (previewLive) {
+				selectedTemplateId = previewId;
 			}
 			if (!selectedTemplateId && items[0]) selectedTemplateId = items[0].id;
 			if (selectedTemplateId && items.length && !items.some(function (item) {
@@ -3646,7 +3690,7 @@
 			deletePipeBtn.disabled = galleryMode === 'templates' ? !tpl : pipes.length <= 1;
 
 			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '') + ':' + String(s.previewTemplateId || '') + ':' + (
-				root.SynthCamera && root.SynthCamera.signature ? root.SynthCamera.signature() : ''
+				root.SynthCamera && root.SynthCamera.deviceSignature ? root.SynthCamera.deviceSignature() : ''
 			);
 			if (signature !== lastSignature) {
 				lastSignature = signature;
@@ -3658,12 +3702,14 @@
 					const card = stack.querySelector('[data-id="' + op.id + '"]');
 					if (!card) return;
 					card.classList.toggle('is-bypass', !!op.bypassed);
-					const bypassBtn = card.querySelector('.synth-icon--bypass');
-					if (bypassBtn) {
-						bypassBtn.classList.toggle('is-active', !!op.bypassed);
-						bypassBtn.innerHTML = '';
-						bypassBtn.appendChild(root.SynthIcons.svg(op.bypassed ? 'eye-slash' : 'eye'));
+					const soloed = !!(root.SynthPipeline.isSoloed && root.SynthPipeline.isSoloed(pipeline, op.id));
+					card.classList.toggle('is-solo', soloed);
+					const soloBtn = card.querySelector('.synth-op__solo');
+					if (soloBtn) {
+						soloBtn.classList.toggle('is-active', soloed);
+						soloBtn.setAttribute('aria-pressed', soloed ? 'true' : 'false');
 					}
+					paintBypassIcon(card.querySelector('.synth-icon--bypass'), op.bypassed);
 
 					Object.keys(op.parameters || {}).forEach(function (key) {
 						const slider = sliders[op.id + ':' + key];

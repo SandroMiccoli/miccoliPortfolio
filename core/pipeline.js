@@ -200,6 +200,31 @@
 			p.scaleY = clamp(p.scaleY, 0.72, 1.45);
 			p.tile = pick(['hold', 'repeat', 'mirror']);
 		}
+		if (inst.type === 'pixelate') {
+			p.sizeX = clamp(p.sizeX, 3, 28);
+			p.sizeY = clamp(p.sizeY, 3, 28);
+			p.mix = clamp(p.mix, 0.7, 1);
+		}
+		if (inst.type === 'posterize') {
+			p.levels = Math.max(3, p.levels | 0);
+			p.mix = clamp(p.mix, 0.7, 1);
+		}
+		if (inst.type === 'mirror') {
+			p.offsetX = clamp(p.offsetX, 0.35, 0.65);
+			p.offsetY = clamp(p.offsetY, 0.35, 0.65);
+			p.angle = clamp(p.angle, -18, 18);
+		}
+		if (inst.type === 'tile') {
+			p.countX = clamp(p.countX, 1.4, 5);
+			p.countY = clamp(p.countY, 1.4, 5);
+			p.offsetX = clamp(p.offsetX, -0.2, 0.2);
+			p.offsetY = clamp(p.offsetY, -0.2, 0.2);
+			p.angle = clamp(p.angle, -12, 12);
+			p.tile = pick(['repeat', 'mirror']);
+		}
+		if (inst.type === 'invert') {
+			p.amount = clamp(p.amount, 0.55, 1);
+		}
 		if (inst.type === 'screen') {
 			p.gain = 1;
 		}
@@ -225,6 +250,9 @@
 		if (chance(0.38)) spatial.push('transform');
 		if (chance(0.42)) spatial.push('displace');
 		if (chance(0.7)) spatial.push('kaleidoscope');
+		if (chance(0.32)) spatial.push('mirror');
+		if (chance(0.28)) spatial.push('tile');
+		if (chance(0.3)) spatial.push('pixelate');
 		if (!spatial.length) spatial.push(pick(['warp', 'transform', 'kaleidoscope', 'displace']));
 		types.push.apply(types, spatial);
 
@@ -235,7 +263,7 @@
 		if (chance(0.32)) types.push('blur');
 		if (chance(0.42)) types.push('edge');
 		if (chance(0.88)) types.push(chance(0.42) ? 'ramp' : 'lookup');
-		if (chance(0.4)) types.push(pick(['hsv', 'levels', 'contrast']));
+		if (chance(0.4)) types.push(pick(['hsv', 'levels', 'contrast', 'posterize', 'invert']));
 		if (chance(0.55)) types.push('bloom');
 		types.push('screen');
 
@@ -245,9 +273,14 @@
 			if (dropLast(types, 'blur', 0)) continue;
 			if (dropLast(types, 'feedback', 0)) continue;
 			if (dropLast(types, 'displace', 0)) continue;
+			if (dropLast(types, 'mirror', 0)) continue;
+			if (dropLast(types, 'tile', 0)) continue;
+			if (dropLast(types, 'pixelate', 0)) continue;
 			if (dropLast(types, 'hsv', 0)) continue;
 			if (dropLast(types, 'levels', 0)) continue;
 			if (dropLast(types, 'contrast', 0)) continue;
+			if (dropLast(types, 'posterize', 0)) continue;
+			if (dropLast(types, 'invert', 0)) continue;
 			if (dropLast(types, 'bloom', 0)) continue;
 			if (dropLast(types, 'edge', 0)) continue;
 			if (types.length > 2 && isGenerator(types[0]) && isGenerator(types[1])) {
@@ -341,11 +374,63 @@
 			return next;
 		},
 
+		isGenerator: isGenerator,
+
+		isOutput: function (type) {
+			const def = root.SynthRegistry.get(type);
+			return !!(def && def.category === 'output') || type === 'screen';
+		},
+
 		setBypass: function (pipeline, id, bypassed) {
 			return (pipeline || []).map(function (op) {
 				if (op.id !== id) return op;
 				const next = clone(op);
 				next.bypassed = !!bypassed;
+				return next;
+			});
+		},
+
+		isSoloed: function (pipeline, id) {
+			let found = false;
+			for (let i = 0; i < (pipeline || []).length; i += 1) {
+				const op = pipeline[i];
+				if (this.isOutput(op.type)) continue;
+				if (op.id === id) {
+					if (op.bypassed) return false;
+					found = true;
+				} else if (!op.bypassed) {
+					return false;
+				}
+			}
+			return found;
+		},
+
+		setSolo: function (pipeline, id) {
+			const list = pipeline || [];
+			const exists = list.some(function (op) {
+				return op.id === id;
+			});
+			if (!exists) return list;
+			if (this.isSoloed(list, id)) {
+				return list.map(function (op) {
+					const next = clone(op);
+					if (Object.prototype.hasOwnProperty.call(op, 'preSoloBypassed')) {
+						next.bypassed = !!op.preSoloBypassed;
+						delete next.preSoloBypassed;
+					} else if (op.id === id) {
+						next.bypassed = false;
+					}
+					return next;
+				});
+			}
+			const keepSnapshot = list.some(function (op) {
+				return Object.prototype.hasOwnProperty.call(op, 'preSoloBypassed');
+			});
+			const self = this;
+			return list.map(function (op) {
+				const next = clone(op);
+				if (!keepSnapshot) next.preSoloBypassed = !!op.bypassed;
+				next.bypassed = !self.isOutput(op.type) && op.id !== id;
 				return next;
 			});
 		}
