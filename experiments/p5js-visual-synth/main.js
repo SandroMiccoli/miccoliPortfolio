@@ -20,6 +20,7 @@
 	let liveThumbAge = 0;
 	let camThumbTries = 0;
 	let tplThumbDue = 0;
+	let tplThumbForce = false;
 
 	function inLab() {
 		return document.body.classList.contains('lab-body');
@@ -85,17 +86,26 @@
 
 	function scheduleTemplateThumbs(state) {
 		if (!window.SynthEngine || !SynthEngine.captureOperators) return;
-		if (capturingThumb || millis() < tplThumbDue) return;
+		if (capturingThumb) return;
+		if (!tplThumbForce && millis() < tplThumbDue) return;
 		const list = state.templates || [];
-		const missing = list.filter(function (item) {
-			return item && !item.thumbnail;
+		const previewId = state.previewTemplateId || '';
+		const pending = list.filter(function (item) {
+			if (!item) return false;
+			if (previewId && item.id === previewId) return false;
+			if (tplThumbForce) return true;
+			return !item.thumbnail;
 		});
-		if (!missing.length) return;
-		const item = missing[0];
+		if (!pending.length) {
+			tplThumbForce = false;
+			return;
+		}
+		const item = pending[0];
 		capturingThumb = true;
 		const url = SynthEngine.captureOperators(item.operators, millis() / 1000);
 		capturingThumb = false;
-		tplThumbDue = millis() + 240;
+		tplThumbDue = millis() + (tplThumbForce ? 0 : 80);
+		if (pending.length <= 1) tplThumbForce = false;
 		if (url) userPatch({ templateThumb: { id: item.id, thumbnail: url } });
 	}
 
@@ -354,6 +364,10 @@
 			patch: userPatch,
 			capturePipe: function () {
 				requestThumb(true);
+			},
+			captureTemplates: function () {
+				tplThumbForce = true;
+				tplThumbDue = 0;
 			}
 		});
 

@@ -64,7 +64,7 @@
 	function gridSignature(gallery, pipes, activeId, templates, selectedId) {
 		if (gallery === 'templates') {
 			return 'tpl|' + (templates || []).map(function (item) {
-				return item.id + ':' + item.name + ':' + (item.thumbnail ? '1' : '0');
+				return item.id + ':' + item.name + ':' + (item.thumbnail ? String(item.thumbnail.length) : '0');
 			}).join('|') + '#' + String(selectedId || '');
 		}
 		return 'set|' + (pipes || []).map(function (pipe) {
@@ -76,6 +76,7 @@
 		const getState = options.getState;
 		const patch = options.patch;
 		const capturePipe = options.capturePipe;
+		const captureTemplates = options.captureTemplates;
 		const setLivePreview = options.setLivePreview;
 		let lastSignature = null;
 		let lastGridSig = null;
@@ -798,6 +799,10 @@
 			if (input && input.parentNode) input.replaceWith(activeName);
 		}
 
+		function requestTemplateThumbs() {
+			if (typeof captureTemplates === 'function') captureTemplates();
+		}
+
 		function setPreview(id) {
 			const next = id || '';
 			if ((getState().previewTemplateId || '') === next) return;
@@ -816,6 +821,7 @@
 					selectedTemplateId = first ? first.id : '';
 				}
 				setPreview(selectedTemplateId);
+				requestTemplateThumbs();
 			} else {
 				setPreview('');
 			}
@@ -850,6 +856,7 @@
 				templatesSeeded: true,
 				previewTemplateId: created.id
 			});
+			requestTemplateThumbs();
 			if (root.SynthNotify) root.SynthNotify.show('success', 'Template saved to disk');
 		}
 
