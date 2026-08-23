@@ -12,7 +12,7 @@
 			id: 'effect',
 			label: 'Effects',
 			color: '#4AAE72',
-			about: 'Transforms the incoming image in space. Warp, Transform, and Displace bend it. Kaleidoscope mirrors it. Feedback keeps a decaying trail and transforms that trail. Spatial effects expose Tile (Hold, Repeat, Mirror) when UVs leave the frame. An effect never starts a new picture on its own.'
+			about: 'Transforms the incoming image in space. Warp, Transform, and Displace bend it. Kaleidoscope mirrors it. Glitch tears it into time-quantized bands. Feedback keeps a decaying trail and transforms that trail. Spatial effects expose Tile (Hold, Repeat, Mirror) when UVs leave the frame. An effect never starts a new picture on its own.'
 		},
 		filter: {
 			id: 'filter',
