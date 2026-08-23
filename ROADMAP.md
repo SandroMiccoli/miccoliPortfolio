@@ -161,6 +161,8 @@ Shipped Elos in the live instrument.
 
 **Feedback** — decaying trail.
 
+**Glitch** — quantized strips with spectrum smear. Same Tile modes as Warp.
+
 ### Filters
 
 **Bloom** — glow around bright areas.

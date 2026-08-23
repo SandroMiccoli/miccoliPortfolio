@@ -141,6 +141,7 @@ Effects / Filters
     Displace
     Blur
     Feedback
+    Glitch
 
 Color
     Lookup         (MVP)
