@@ -119,6 +119,13 @@
 			p.contrast = clamp(p.contrast, 0.7, 2.2);
 			p.octaves = Math.max(2, p.octaves | 0);
 		}
+		if (inst.type === 'tape') {
+			p.lines = clamp(p.lines, 80, 360);
+			p.threshold = clamp(p.threshold, 0.45, 0.82);
+			p.speed = clamp(p.speed, 0.4, 4);
+			p.grain = clamp(p.grain, 0.6, 1.4);
+			p.amount = clamp(p.amount, 0.7, 1.3);
+		}
 		if (inst.type === 'shape') {
 			p.x = clamp(p.x, 0.28, 0.72);
 			p.y = clamp(p.y, 0.28, 0.72);
@@ -204,7 +211,7 @@
 
 	// Generator → [blend generator] → warp/kaleido → [edge] → [lookup] → [bloom] → screen
 	function randomTypes() {
-		const generators = ['lines', 'noise', 'shape', 'gradient'];
+		const generators = ['lines', 'noise', 'tape', 'shape', 'gradient'];
 		const types = [pick(generators)];
 
 		if (chance(0.38)) {

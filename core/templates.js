@@ -141,7 +141,20 @@
 			makeOp('melt', 'screen', { gain: 1.05 })
 		]);
 
-		return [stripe, prism, ink, tunnel, melt];
+		const tape = makeTemplate('tpl_tape', 'VHS TAPE', [
+			makeOp('tape', 'tape', { speed: 2, lines: 240, threshold: 0.7, grain: 1, amount: 1 }),
+			makeOp('tape', 'lookup', {
+				paletteId: 'mono',
+				colors: ['#0A0808', '#3A2A22', '#C8B8A0', '#F2EDE4'],
+				bg: '#050404',
+				saturation: 0.55,
+				exposure: 1.05
+			}),
+			makeOp('tape', 'bloom', { threshold: 0.38, intensity: 0.7, radius: 0.85 }),
+			makeOp('tape', 'screen', { gain: 1 })
+		]);
+
+		return [stripe, prism, ink, tunnel, melt, tape];
 	}
 
 	function reIdOperators(operators) {

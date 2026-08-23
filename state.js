@@ -43,7 +43,11 @@
 	}
 
 	function migrateOperator(op) {
-		if (!op || !op.parameters) return op;
+		if (!op) return op;
+		if (op.type === 'tape' && op.name !== 'VHS Tape') {
+			op = Object.assign({}, op, { name: 'VHS Tape' });
+		}
+		if (!op.parameters) return op;
 		const spatial = {
 			warp: true,
 			transform: true,
