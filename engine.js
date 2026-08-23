@@ -81,7 +81,27 @@
 	let readImage = null;
 	let pixelBuf = null;
 	let pixelBufLen = 0;
+	let lastThumbLuma = 0;
 	const shaders = {};
+
+	function thumbLuma(canvas) {
+		if (!canvas) return 0;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return 0;
+		let data;
+		try {
+			data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+		} catch (err) {
+			return 0;
+		}
+		let sum = 0;
+		let n = 0;
+		for (let i = 0; i < data.length; i += 16) {
+			sum += data[i] + data[i + 1] + data[i + 2];
+			n += 1;
+		}
+		return n ? sum / (n * 765) : 0;
+	}
 
 	function makeFbo(w, h) {
 		const opts = { density: 1, antialias: false };
@@ -184,7 +204,7 @@
 		});
 	}
 
-	function readFrom(target) {
+	function readFrom(target, flipY) {
 		const gl = drawingContext;
 		if (!gl || typeof gl.readPixels !== 'function') return '';
 		let w = 0;
@@ -238,9 +258,15 @@
 			thumbGfx.height = THUMB_H;
 		}
 		const ctx = thumbGfx.getContext('2d');
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, THUMB_W, THUMB_H);
+		if (flipY) {
+			ctx.translate(0, THUMB_H);
+			ctx.scale(1, -1);
+		}
 		ctx.drawImage(readCanvas, 0, 0, THUMB_W, THUMB_H);
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
 		return thumbGfx;
 	}
 
@@ -291,15 +317,21 @@
 			applyOutput(state);
 		},
 
-		capture: function (quality) {
-			const gfx = readFrom(composition);
+		capture: function (quality, flipY) {
+			lastThumbLuma = 0;
+			const gfx = readFrom(composition, !!flipY);
 			if (!gfx) return '';
+			lastThumbLuma = thumbLuma(gfx);
 			try {
 				const q = quality == null ? 0.72 : quality;
 				return gfx.toDataURL('image/jpeg', q);
 			} catch (err) {
 				return '';
 			}
+		},
+
+		thumbLuma: function () {
+			return lastThumbLuma;
 		}
 	};
 })(window);
