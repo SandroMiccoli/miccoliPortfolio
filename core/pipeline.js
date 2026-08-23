@@ -147,6 +147,23 @@
 			p.intensity = clamp(p.intensity, 0.4, 1.8);
 			p.threshold = clamp(p.threshold, 0.12, 0.55);
 		}
+		if (inst.type === 'gradient') {
+			p.spread = clamp(p.spread, 0.35, 1.6);
+			p.position = clamp(p.position, 0.25, 0.75);
+		}
+		if (inst.type === 'displace') {
+			p.amount = clamp(p.amount, 0.08, 0.55);
+		}
+		if (inst.type === 'blur') {
+			p.radius = clamp(p.radius, 0.6, 4.2);
+			p.mix = clamp(p.mix, 0.35, 1);
+		}
+		if (inst.type === 'feedback') {
+			p.amount = clamp(p.amount, 0.28, 0.7);
+			p.decay = clamp(p.decay, 0.72, 0.94);
+			p.scale = clamp(p.scale, 0.94, 1.04);
+			p.rotate = clamp(p.rotate, -3, 3);
+		}
 		if (inst.type === 'screen') {
 			p.gain = 1;
 		}
@@ -158,7 +175,7 @@
 
 	// Generator → [blend generator] → warp/kaleido → [edge] → [lookup] → [bloom] → screen
 	function randomTypes() {
-		const generators = ['lines', 'noise', 'shape'];
+		const generators = ['lines', 'noise', 'shape', 'gradient'];
 		const types = [pick(generators)];
 
 		if (chance(0.38)) {
@@ -169,13 +186,16 @@
 
 		const spatial = [];
 		if (chance(0.8)) spatial.push('warp');
+		if (chance(0.42)) spatial.push('displace');
 		if (chance(0.7)) spatial.push('kaleidoscope');
-		if (!spatial.length) spatial.push(pick(['warp', 'kaleidoscope']));
+		if (!spatial.length) spatial.push(pick(['warp', 'kaleidoscope', 'displace']));
 		types.push.apply(types, spatial);
 
 		if (types.indexOf('kaleidoscope') >= 0 && chance(0.22)) {
 			types.push('warp');
 		}
+		if (chance(0.28)) types.push('feedback');
+		if (chance(0.32)) types.push('blur');
 		if (chance(0.42)) types.push('edge');
 		if (chance(0.88)) types.push('lookup');
 		if (chance(0.55)) types.push('bloom');
@@ -183,6 +203,9 @@
 
 		while (types.length > 8) {
 			if (dropLast(types, 'warp', 1)) continue;
+			if (dropLast(types, 'blur', 0)) continue;
+			if (dropLast(types, 'feedback', 0)) continue;
+			if (dropLast(types, 'displace', 0)) continue;
 			if (dropLast(types, 'bloom', 0)) continue;
 			if (dropLast(types, 'edge', 0)) continue;
 			if (types.length > 2 && isGenerator(types[0]) && isGenerator(types[1])) {

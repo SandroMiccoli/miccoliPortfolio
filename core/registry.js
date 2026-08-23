@@ -6,13 +6,13 @@
 			id: 'generator',
 			label: 'Generators',
 			color: '#B45CC8',
-			about: 'Creates a visual from nothing. Lines, Noise, Shape, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
+			about: 'Creates a visual from nothing. Lines, Noise, Shape, Gradient, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
 		},
 		effect: {
 			id: 'effect',
 			label: 'Effects / Filters',
 			color: '#4AAE72',
-			about: 'Transforms the incoming image. Warp bends space. Kaleidoscope mirrors it. Bloom glows bright areas. Edge traces outlines. An effect never starts a new picture on its own.'
+			about: 'Transforms the incoming image. Warp and Displace bend space. Kaleidoscope mirrors it. Blur and Bloom soften or glow. Feedback keeps a decaying trail. Edge traces outlines. An effect never starts a new picture on its own.'
 		},
 		color: {
 			id: 'color',

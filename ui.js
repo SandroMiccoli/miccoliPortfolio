@@ -618,11 +618,12 @@
 			inner.appendChild(tools);
 
 			function addSlider(label, key, min, max, step) {
+				const maskDefaults = { x: 0.5, y: 0.5, r: 0.38, w: 0.72, h: 0.72, feather: 0.02 };
 				const field = makeSlider(label, min, max, step, function (value) {
 					const partial = {};
 					partial[key] = value;
 					patchMask(item.id, partial);
-				}, { value: item[key] });
+				}, { value: item[key], defaultValue: maskDefaults[key] });
 				outSliders[item.id + ':' + key] = field;
 				inner.appendChild(field.wrap);
 			}
@@ -853,9 +854,67 @@
 		pipesSec.appendChild(clockBar);
 
 		let lastBeat = -1;
+		let editingBpm = false;
+		let bpmEditInput = null;
+		let lastBpmTap = 0;
+		let bpmResetAt = 0;
+
+		function finishBpmEdit(shouldCommit) {
+			if (!editingBpm) return;
+			editingBpm = false;
+			const input = bpmEditInput;
+			bpmEditInput = null;
+			const typed = input ? parseFloat(String(input.value).trim().replace(',', '.')) : NaN;
+			if (input && input.parentNode) input.replaceWith(bpmVal);
+			if (shouldCommit && isFinite(typed) && root.SynthClock) {
+				const clock = root.SynthClock.fromState(getState());
+				const bpm = Math.min(root.SynthClock.BPM_MAX, Math.max(root.SynthClock.BPM_MIN, Math.round(typed)));
+				patch({ clock: { bpm: bpm, originMs: clock.originMs } });
+			} else if (root.SynthClock) {
+				bpmVal.textContent = String(Math.round(root.SynthClock.fromState(getState()).bpm));
+			}
+		}
+
+		function startBpmEdit() {
+			if (editingBpm) return;
+			editingBpm = true;
+			const input = el('input', 'synth-clock__edit');
+			input.type = 'text';
+			input.inputMode = 'numeric';
+			input.autocomplete = 'off';
+			input.spellcheck = false;
+			input.setAttribute('aria-label', 'BPM');
+			const clock = root.SynthClock ? root.SynthClock.fromState(getState()) : { bpm: 120 };
+			input.value = String(Math.round(clock.bpm));
+			bpmVal.replaceWith(input);
+			bpmEditInput = input;
+			input.focus();
+			input.select();
+			input.addEventListener('keydown', function (event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					finishBpmEdit(true);
+				} else if (event.key === 'Escape') {
+					event.preventDefault();
+					finishBpmEdit(false);
+				}
+			});
+			input.addEventListener('blur', function () {
+				finishBpmEdit(true);
+			});
+		}
+
+		function resetBpm() {
+			bpmResetAt = Date.now();
+			finishBpmEdit(false);
+			if (!root.SynthClock) return;
+			const clock = root.SynthClock.fromState(getState());
+			patch({ clock: { bpm: 120, originMs: clock.originMs } });
+		}
 
 		tapBtn.addEventListener('pointerdown', function (event) {
 			if (event.button !== 0 && event.pointerType === 'mouse') return;
+			if (event.target.closest('.synth-clock__bpm, .synth-clock__edit')) return;
 			event.preventDefault();
 			const prev = root.SynthClock.fromState(getState());
 			const next = root.SynthClock.tap(prev);
@@ -876,6 +935,38 @@
 			}, 140);
 		});
 
+		bpmVal.tabIndex = 0;
+		bpmVal.setAttribute('role', 'textbox');
+		bpmVal.setAttribute('aria-label', 'BPM value');
+		bpmVal.addEventListener('click', function (event) {
+			event.preventDefault();
+			event.stopPropagation();
+			if (Date.now() - bpmResetAt < 400) return;
+			startBpmEdit();
+		});
+		bpmVal.addEventListener('keydown', function (event) {
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				startBpmEdit();
+			}
+		});
+		readout.addEventListener('contextmenu', function (event) {
+			event.preventDefault();
+			resetBpm();
+		});
+		bpmVal.addEventListener('pointerdown', function (event) {
+			event.stopPropagation();
+			if (event.pointerType === 'mouse') return;
+			const now = Date.now();
+			if (now - lastBpmTap < 340) {
+				event.preventDefault();
+				lastBpmTap = 0;
+				resetBpm();
+				return;
+			}
+			lastBpmTap = now;
+		});
+
 		function liveOp(id) {
 			return ops().find(function (item) {
 				return item.id === id;
@@ -885,6 +976,14 @@
 		function liveMod(id, key) {
 			const op = liveOp(id);
 			return (op && op.modulations && op.modulations[key]) || null;
+		}
+
+		function paramDefault(type, key, fallback) {
+			const def = root.SynthRegistry && root.SynthRegistry.get(type);
+			if (def && def.defaults && def.defaults[key] != null && isFinite(Number(def.defaults[key]))) {
+				return Number(def.defaults[key]);
+			}
+			return fallback;
 		}
 
 		function closeSheet() {
@@ -1130,6 +1229,11 @@
 			let outMark = max;
 			let liveValue = min;
 			let modOn = false;
+			let editing = false;
+			let editInput = null;
+			let lastTapAt = 0;
+			let lastTapX = 0;
+			let lastTapY = 0;
 			let dragTarget = 'value';
 			let pointerId = null;
 			let startX = 0;
@@ -1142,6 +1246,7 @@
 			let timeRow = null;
 			let bpmRow = null;
 			let fftRow = null;
+			const defaultValue = options.defaultValue;
 
 			function clamp(value) {
 				const stepped = Math.round((value - min) / step) * step + min;
@@ -1161,6 +1266,19 @@
 				return text;
 			}
 
+			function formatEditValue(value) {
+				if (spec && spec.unit === '°') return String(Math.round(value * 1000) / 1000);
+				if (Math.abs(step - 1) < 1e-6) return String(Math.round(value));
+				const digits = step < 0.01 ? 3 : (step < 0.1 ? 2 : 1);
+				return String(Number(value.toFixed(digits)));
+			}
+
+			function parseTyped(text) {
+				const n = parseFloat(String(text).trim().replace(',', '.'));
+				if (!isFinite(n)) return null;
+				return clamp(n);
+			}
+
 			function place(node, value) {
 				node.style.left = (posFromValue(value) * 100) + '%';
 			}
@@ -1174,13 +1292,19 @@
 				fill.style.width = ((right - left) * 100) + '%';
 			}
 
+			function paintValue(value) {
+				if (editing) return;
+				valueEl.textContent = formatDisplay(value);
+			}
+
 			function render() {
+				valueEl.classList.toggle('is-live', modOn);
 				if (modOn) {
 					renderFill(inMark, outMark);
 					place(inThumb, inMark);
 					place(outThumb, outMark);
 					place(playhead, liveValue);
-					valueEl.textContent = formatDisplay(liveValue);
+					paintValue(liveValue);
 					slider.setAttribute('aria-valuenow', String(liveValue));
 					slider.setAttribute('aria-valuetext', formatDisplay(liveValue));
 					return;
@@ -1200,7 +1324,7 @@
 					fill.style.width = (t * 100) + '%';
 				}
 				thumb.style.left = (t * 100) + '%';
-				valueEl.textContent = formatDisplay(current);
+				paintValue(current);
 				if (minusBtn) minusBtn.disabled = current <= min;
 				if (plusBtn) plusBtn.disabled = current >= max;
 				slider.setAttribute('aria-valuenow', String(current));
@@ -1230,6 +1354,69 @@
 				current = clamp(value);
 				render();
 				if (fromUser) onChange(current);
+			}
+
+			function finishEdit(shouldCommit) {
+				if (!editing) return;
+				editing = false;
+				const input = editInput;
+				editInput = null;
+				const typed = input ? parseTyped(input.value) : null;
+				if (input && input.parentNode) input.replaceWith(valueEl);
+				if (shouldCommit && typed != null) commit(typed, true);
+				else render();
+			}
+
+			function startEdit() {
+				if (editing || modOn) return;
+				editing = true;
+				const input = el('input', 'synth-field__edit');
+				input.type = 'text';
+				input.inputMode = Math.abs(step - 1) < 1e-6 ? 'numeric' : 'decimal';
+				input.autocomplete = 'off';
+				input.spellcheck = false;
+				input.setAttribute('aria-label', label + ' value');
+				input.value = formatEditValue(current);
+				valueEl.replaceWith(input);
+				editInput = input;
+				input.focus();
+				input.select();
+				input.addEventListener('keydown', function (event) {
+					if (event.key === 'Enter') {
+						event.preventDefault();
+						finishEdit(true);
+					} else if (event.key === 'Escape') {
+						event.preventDefault();
+						finishEdit(false);
+					}
+				});
+				input.addEventListener('blur', function () {
+					finishEdit(true);
+				});
+			}
+
+			function resetToDefault() {
+				if (defaultValue == null || !isFinite(Number(defaultValue))) return;
+				finishEdit(false);
+				const next = clamp(defaultValue);
+				current = next;
+				render();
+				if (modOn && opId && paramKey) {
+					patch({
+						opParam: { id: opId, key: paramKey, value: next, presetId: null },
+						opMod: { id: opId, key: paramKey, modulation: { enabled: false } }
+					});
+					return;
+				}
+				onChange(next);
+			}
+
+			function isOwnControl(node) {
+				if (!node || !wrap.contains(node)) return false;
+				if (node.closest('.synth-field') !== wrap) return false;
+				if (node.closest('.synth-mod') && !wrap.classList.contains('synth-mod__speed')) return false;
+				if (node.closest('.synth-field__mod, .synth-stepper, input')) return false;
+				return true;
 			}
 
 			function commitMark(which, value, fromUser) {
@@ -1406,7 +1593,7 @@
 				timeRow = el('div', 'synth-mod__time');
 				speedSlider = makeSlider('Seconds', root.SynthModulate.DURATION_MIN, root.SynthModulate.DURATION_MAX, 0.25, function (value) {
 					patchMod({ duration: value });
-				}, { className: 'synth-mod__speed' });
+				}, { className: 'synth-mod__speed', defaultValue: 2 });
 				timeRow.appendChild(speedSlider.wrap);
 				panel.appendChild(timeRow);
 
@@ -1420,6 +1607,87 @@
 					patchMod({ beats: root.SynthModulate.halfBeats(mod.beats) });
 				});
 				beatsEl = el('span', 'synth-mod__beats', '4 beats');
+				beatsEl.tabIndex = 0;
+				beatsEl.setAttribute('role', 'textbox');
+				beatsEl.setAttribute('aria-label', 'Beats');
+				function snapBeats(value) {
+					const lo = root.SynthModulate.BEATS_MIN;
+					const hi = root.SynthModulate.BEATS_MAX;
+					const n = Math.round(Number(value) || 4);
+					return Math.min(hi, Math.max(lo, Math.pow(2, Math.round(Math.log2(Math.max(lo, n))))));
+				}
+				function finishBeatsEdit(input, shouldCommit) {
+					const typed = parseFloat(String(input.value).trim().replace(',', '.'));
+					if (input.parentNode) input.replaceWith(beatsEl);
+					if (shouldCommit && isFinite(typed)) patchMod({ beats: snapBeats(typed) });
+					else {
+						const beats = (liveMod(opId, paramKey) || {}).beats || 4;
+						beatsEl.textContent = beats + (beats === 1 ? ' beat' : ' beats');
+					}
+				}
+				let beatsResetAt = 0;
+				function resetBeats() {
+					beatsResetAt = Date.now();
+					const input = bpmRow.querySelector('.synth-mod__beats-edit');
+					if (input && input.parentNode) input.replaceWith(beatsEl);
+					patchMod({ beats: 4 });
+				}
+				function startBeatsEdit() {
+					if (!beatsEl.parentNode || beatsEl.parentNode.querySelector('.synth-mod__beats-edit')) return;
+					if (Date.now() - beatsResetAt < 400) return;
+					const currentBeats = (liveMod(opId, paramKey) || {}).beats || 4;
+					const input = el('input', 'synth-field__edit synth-mod__beats-edit');
+					input.type = 'text';
+					input.inputMode = 'numeric';
+					input.autocomplete = 'off';
+					input.spellcheck = false;
+					input.setAttribute('aria-label', 'Beats');
+					input.value = String(currentBeats);
+					beatsEl.replaceWith(input);
+					input.focus();
+					input.select();
+					input.addEventListener('keydown', function (event) {
+						if (event.key === 'Enter') {
+							event.preventDefault();
+							finishBeatsEdit(input, true);
+						} else if (event.key === 'Escape') {
+							event.preventDefault();
+							finishBeatsEdit(input, false);
+						}
+					});
+					input.addEventListener('blur', function () {
+						finishBeatsEdit(input, true);
+					});
+				}
+				beatsEl.addEventListener('click', function (event) {
+					event.preventDefault();
+					event.stopPropagation();
+					if (Date.now() - beatsResetAt < 400) return;
+					startBeatsEdit();
+				});
+				beatsEl.addEventListener('keydown', function (event) {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						startBeatsEdit();
+					}
+				});
+				beatsEl.addEventListener('contextmenu', function (event) {
+					event.preventDefault();
+					resetBeats();
+				});
+				let lastBeatsTap = 0;
+				beatsEl.addEventListener('pointerdown', function (event) {
+					if (event.pointerType === 'mouse') return;
+					const now = Date.now();
+					if (now - lastBeatsTap < 340) {
+						event.preventDefault();
+						event.stopPropagation();
+						lastBeatsTap = 0;
+						resetBeats();
+						return;
+					}
+					lastBeatsTap = now;
+				});
 				const doubleBtn = el('button', 'synth-btn synth-mod__beat-btn', 'x2');
 				doubleBtn.type = 'button';
 				doubleBtn.setAttribute('aria-label', 'Double beats');
@@ -1452,6 +1720,46 @@
 				wrap.appendChild(panel);
 			}
 
+			valueEl.tabIndex = 0;
+			valueEl.setAttribute('role', 'textbox');
+			valueEl.setAttribute('aria-label', label + ' value');
+			valueEl.addEventListener('click', function (event) {
+				event.preventDefault();
+				event.stopPropagation();
+				startEdit();
+			});
+			valueEl.addEventListener('keydown', function (event) {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault();
+					startEdit();
+				}
+			});
+
+			wrap.addEventListener('contextmenu', function (event) {
+				if (!isOwnControl(event.target)) return;
+				event.preventDefault();
+				resetToDefault();
+			});
+
+			wrap.addEventListener('pointerdown', function (event) {
+				if (event.pointerType === 'mouse' || !isOwnControl(event.target)) return;
+				const now = Date.now();
+				const close = Math.abs(event.clientX - lastTapX) < 28 && Math.abs(event.clientY - lastTapY) < 28;
+				if (close && now - lastTapAt < 340) {
+					event.preventDefault();
+					event.stopPropagation();
+					pointerId = null;
+					intent = null;
+					sliding = false;
+					lastTapAt = 0;
+					resetToDefault();
+					return;
+				}
+				lastTapAt = now;
+				lastTapX = event.clientX;
+				lastTapY = event.clientY;
+			}, true);
+
 			function setMod(mod) {
 				const on = !!(mod && mod.enabled);
 				modOn = on;
@@ -1469,7 +1777,7 @@
 					setModeUi(mod.playMode || 'loop');
 					setBandUi(mod.band || 'low');
 					if (speedSlider) speedSlider.setValue(mod.duration);
-					if (beatsEl) {
+					if (beatsEl && beatsEl.parentNode && !beatsEl.parentNode.querySelector('.synth-mod__beats-edit')) {
 						const beats = mod.beats || 4;
 						beatsEl.textContent = beats + (beats === 1 ? ' beat' : ' beats');
 					}
@@ -1483,18 +1791,19 @@
 				wrap: wrap,
 				step: step,
 				setValue: function (value) {
+					if (editing) return;
 					current = clamp(value);
 					if (!modOn) render();
 				},
 				setMod: setMod,
 				updateLive: function (ctx) {
-					if (!modOn || !spec) return;
+					if (!modOn || !spec || editing) return;
 					const mod = liveMod(opId, paramKey);
 					const value = root.SynthModulate.evaluate(mod, spec, ctx, opId + ':' + paramKey);
 					if (value === undefined) return;
 					liveValue = value;
 					place(playhead, liveValue);
-					valueEl.textContent = formatDisplay(liveValue);
+					paintValue(liveValue);
 					slider.setAttribute('aria-valuenow', String(liveValue));
 					slider.setAttribute('aria-valuetext', formatDisplay(liveValue));
 				}
@@ -1521,7 +1830,8 @@
 					opId: op.id,
 					paramKey: axisSpec.key,
 					spec: axisSpec,
-					className: 'synth-xyz__axis'
+					className: 'synth-xyz__axis',
+					defaultValue: paramDefault(op.type, axisSpec.key, 0)
 				});
 				field.wrap.dataset.param = axisSpec.key;
 				field.wrap.dataset.axis = axis.toLowerCase();
@@ -2555,7 +2865,8 @@
 					modulate: true,
 					opId: op.id,
 					paramKey: spec.key,
-					spec: spec
+					spec: spec,
+					defaultValue: paramDefault(op.type, spec.key, spec.min)
 				});
 				field.wrap.dataset.param = spec.key;
 				if (spec.visibleWhen) field.wrap.dataset.visibleWhen = spec.visibleWhen;
@@ -2836,7 +3147,7 @@
 			debugToggle.setAttribute('aria-pressed', dbgOn ? 'true' : 'false');
 			debugStats.hidden = !dbgOn;
 
-			if (root.SynthClock) {
+			if (root.SynthClock && !editingBpm) {
 				bpmVal.textContent = String(Math.round(root.SynthClock.fromState(s).bpm));
 			}
 		}
@@ -2847,7 +3158,7 @@
 			const clock = root.SynthClock.fromState(s);
 			const nowMs = Date.now();
 			const beat = root.SynthClock.beatInBar(clock, nowMs);
-			bpmVal.textContent = String(Math.round(clock.bpm));
+			if (!editingBpm) bpmVal.textContent = String(Math.round(clock.bpm));
 			tapBtn.setAttribute('aria-valuenow', String(Math.round(clock.bpm)));
 			beatCells.forEach(function (cell, i) {
 				cell.classList.toggle('is-on', i === beat);
