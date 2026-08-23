@@ -134,6 +134,7 @@ Generators
 
 Effects / Filters
     Warp           (MVP)
+    Transform
     Bloom          (MVP)
     Kaleidoscope
     Edge
@@ -200,7 +201,7 @@ Density, thickness, angle, spread, speed, mix, invert. After another operator, *
 
 ### 2. Warp (Effect / Transform)
 
-Does not draw its own picture. It distorts the incoming UVs and resamples the previous texture. Amount, frequency, speed, detail.
+Does not draw its own picture. It distorts the incoming UVs and resamples the previous texture. Amount, frequency, speed, detail. **Tile** (Hold, Repeat, Mirror) fills the frame when those UVs leave the image.
 
 ### 3. Color Lookup (Color)
 

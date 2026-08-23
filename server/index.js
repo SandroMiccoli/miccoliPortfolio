@@ -68,13 +68,16 @@ const DEFAULT_STATE = {
 	pipes: [
 		{
 			id: 'pipe_01',
-			name: 'PIPE 01',
+			name: 'ELOS 01',
 			thumbnail: '',
 			operators: DEFAULT_OPERATORS
 		}
 	],
 	activePipeId: 'pipe_01',
 	presets: [],
+	templates: [],
+	templatesSeeded: false,
+	previewTemplateId: '',
 	clock: {
 		bpm: 120,
 		originMs: Date.now()
@@ -125,56 +128,61 @@ function deepMerge(target, patch) {
 	return out;
 }
 
+function mapChain(items, fn) {
+	return (items || []).map((item) => {
+		const operators = (item.operators || []).map(fn);
+		return Object.assign({}, item, { operators: operators });
+	});
+}
+
 function applyOpParam(state, opParam) {
 	if (!opParam || !opParam.id) return state;
 	const next = clone(state);
-	next.pipes = (next.pipes || []).map((pipe) => {
-		const operators = (pipe.operators || []).map((op) => {
-			if (op.id !== opParam.id) return op;
-			const updated = clone(op);
-			updated.parameters = updated.parameters || {};
-			if (opParam.parameters) {
-				Object.keys(opParam.parameters).forEach((key) => {
-					updated.parameters[key] = opParam.parameters[key];
-				});
-			} else if (Object.prototype.hasOwnProperty.call(opParam, 'key')) {
-				updated.parameters[opParam.key] = opParam.value;
-			}
-			if (typeof opParam.bypassed === 'boolean') {
-				updated.bypassed = opParam.bypassed;
-			}
-			if (Object.prototype.hasOwnProperty.call(opParam, 'presetId')) {
-				if (opParam.presetId) updated.presetId = opParam.presetId;
-				else delete updated.presetId;
-			}
-			return updated;
-		});
-		return Object.assign({}, pipe, { operators: operators });
-	});
+	const eachOp = (op) => {
+		if (op.id !== opParam.id) return op;
+		const updated = clone(op);
+		updated.parameters = updated.parameters || {};
+		if (opParam.parameters) {
+			Object.keys(opParam.parameters).forEach((key) => {
+				updated.parameters[key] = opParam.parameters[key];
+			});
+		} else if (Object.prototype.hasOwnProperty.call(opParam, 'key')) {
+			updated.parameters[opParam.key] = opParam.value;
+		}
+		if (typeof opParam.bypassed === 'boolean') {
+			updated.bypassed = opParam.bypassed;
+		}
+		if (Object.prototype.hasOwnProperty.call(opParam, 'presetId')) {
+			if (opParam.presetId) updated.presetId = opParam.presetId;
+			else delete updated.presetId;
+		}
+		return updated;
+	};
+	next.pipes = mapChain(next.pipes, eachOp);
+	next.templates = mapChain(next.templates, eachOp);
 	return next;
 }
 
 function applyOpMod(state, opMod) {
 	if (!opMod || !opMod.id || !opMod.key) return state;
 	const next = clone(state);
-	next.pipes = (next.pipes || []).map((pipe) => {
-		const operators = (pipe.operators || []).map((op) => {
-			if (op.id !== opMod.id) return op;
-			const updated = clone(op);
-			updated.modulations = updated.modulations || {};
-			if (!opMod.modulation) {
-				delete updated.modulations[opMod.key];
-				return updated;
-			}
-			updated.modulations[opMod.key] = Object.assign(
-				{},
-				updated.modulations[opMod.key] || {},
-				opMod.modulation
-			);
+	const eachOp = (op) => {
+		if (op.id !== opMod.id) return op;
+		const updated = clone(op);
+		updated.modulations = updated.modulations || {};
+		if (!opMod.modulation) {
+			delete updated.modulations[opMod.key];
 			return updated;
-		});
-		return Object.assign({}, pipe, { operators: operators });
-	});
+		}
+		updated.modulations[opMod.key] = Object.assign(
+			{},
+			updated.modulations[opMod.key] || {},
+			opMod.modulation
+		);
+		return updated;
+	};
+	next.pipes = mapChain(next.pipes, eachOp);
+	next.templates = mapChain(next.templates, eachOp);
 	return next;
 }
 
@@ -194,6 +202,11 @@ const PATCH_KEYS = {
 	pipes: true,
 	activePipeId: true,
 	presets: true,
+	templates: true,
+	templatesSeeded: true,
+	previewTemplateId: true,
+	templateOps: true,
+	templateThumb: true,
 	operators: true,
 	pipeline: true,
 	opParam: true,
@@ -216,6 +229,37 @@ function applyPatch(state, patch) {
 	if (Object.prototype.hasOwnProperty.call(patch, 'presets')) {
 		next = clone(next);
 		next.presets = Array.isArray(patch.presets) ? clone(patch.presets) : [];
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'templates')) {
+		next = clone(next);
+		next.templates = Array.isArray(patch.templates) ? clone(patch.templates) : [];
+		next.templatesSeeded = true;
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'templatesSeeded')) {
+		next = clone(next);
+		next.templatesSeeded = !!patch.templatesSeeded;
+	}
+	if (Object.prototype.hasOwnProperty.call(patch, 'previewTemplateId')) {
+		next = clone(next);
+		next.previewTemplateId = patch.previewTemplateId ? String(patch.previewTemplateId) : '';
+	}
+	if (patch.templateOps && patch.templateOps.id) {
+		next = clone(next);
+		next.templates = (next.templates || []).map((item) => {
+			if (item.id !== patch.templateOps.id) return item;
+			const updated = clone(item);
+			updated.operators = clone(patch.templateOps.operators || []);
+			return updated;
+		});
+	}
+	if (patch.templateThumb && patch.templateThumb.id) {
+		next = clone(next);
+		next.templates = (next.templates || []).map((item) => {
+			if (item.id !== patch.templateThumb.id) return item;
+			const updated = clone(item);
+			updated.thumbnail = patch.templateThumb.thumbnail || '';
+			return updated;
+		});
 	}
 	if (Object.prototype.hasOwnProperty.call(patch, 'operators')) {
 		next = setActiveOperators(next, patch.operators);
@@ -350,6 +394,7 @@ function listen(server, port) {
 
 const DATA_DIR = path.join(__dirname, 'data');
 const PRESETS_PATH = path.join(DATA_DIR, 'presets.json');
+const TEMPLATES_PATH = path.join(DATA_DIR, 'templates.json');
 
 function persistedPresets(list) {
 	return (Array.isArray(list) ? list : []).filter((item) => {
@@ -381,11 +426,53 @@ function writeDiskPresets(list) {
 	}
 }
 
+function persistTemplate(item) {
+	if (!item || !item.id || !Array.isArray(item.operators)) return null;
+	const name = String(item.name || 'TEMPLATE').trim().slice(0, 32);
+	if (!name) return null;
+	return {
+		id: String(item.id),
+		name: name,
+		thumbnail: typeof item.thumbnail === 'string' ? item.thumbnail : '',
+		operators: clone(item.operators),
+		persisted: true
+	};
+}
+
+function persistedTemplates(list) {
+	return (Array.isArray(list) ? list : []).map(persistTemplate).filter(Boolean);
+}
+
+function loadDiskTemplates() {
+	if (!fs.existsSync(TEMPLATES_PATH)) {
+		return { items: [], seeded: false };
+	}
+	try {
+		const raw = JSON.parse(fs.readFileSync(TEMPLATES_PATH, 'utf8'));
+		const items = persistedTemplates(Array.isArray(raw) ? raw : raw && raw.items);
+		return { items: items, seeded: true };
+	} catch (err) {
+		return { items: [], seeded: true };
+	}
+}
+
+function writeDiskTemplates(list) {
+	try {
+		fs.mkdirSync(DATA_DIR, { recursive: true });
+		fs.writeFileSync(TEMPLATES_PATH, JSON.stringify(persistedTemplates(list), null, 2));
+	} catch (err) {
+		console.warn('Template disk write failed: ' + err.message);
+	}
+}
+
 async function start() {
 	const app = express();
 	let port = Number(process.env.PORT) || 8080;
 	let state = clone(DEFAULT_STATE);
 	state.presets = loadDiskPresets();
+	const diskTemplates = loadDiskTemplates();
+	state.templates = diskTemplates.items;
+	state.templatesSeeded = diskTemplates.seeded;
 
 	app.get('/api/info', (_req, res) => {
 		res.json(makeInfo(port));
@@ -486,6 +573,14 @@ async function start() {
 				if (Object.prototype.hasOwnProperty.call(msg.patch, 'presets')) {
 					writeDiskPresets(state.presets);
 				}
+				if (
+					Object.prototype.hasOwnProperty.call(msg.patch, 'templates') ||
+					msg.patch.templateThumb ||
+					msg.patch.templateOps
+				) {
+					writeDiskTemplates(state.templates);
+					state.templatesSeeded = true;
+				}
 				broadcastState();
 				return;
 			}
@@ -577,7 +672,7 @@ async function start() {
 	}
 
 	const info = makeInfo(port, httpsPort);
-	console.log('Visual Synth');
+	console.log('ELO');
 	console.log('  local   ' + originFor('127.0.0.1', port));
 	console.log('  lan     ' + (info.ipOrigin || info.url));
 	console.log('  control ' + info.controlUrl);

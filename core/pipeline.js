@@ -38,7 +38,7 @@
 		const out = clone(def.defaults || {});
 		(def.params || []).forEach(function (spec) {
 			if (!spec || !spec.key) return;
-			if (spec.kind === 'xyz' && root.SynthParams) {
+			if (root.SynthParams && root.SynthParams.isVec(spec)) {
 				root.SynthParams.expand(spec).forEach(function (axis) {
 					const value = randomParam(axis);
 					if (value !== undefined) out[axis.key] = value;
@@ -185,6 +185,14 @@
 			p.scale = clamp(p.scale, 0.94, 1.04);
 			p.rotate = clamp(p.rotate, -3, 3);
 		}
+		if (inst.type === 'transform') {
+			p.translateX = clamp(p.translateX, -0.28, 0.28);
+			p.translateY = clamp(p.translateY, -0.28, 0.28);
+			p.rotate = clamp(p.rotate, -28, 28);
+			p.scaleX = clamp(p.scaleX, 0.72, 1.45);
+			p.scaleY = clamp(p.scaleY, 0.72, 1.45);
+			p.tile = pick(['hold', 'repeat', 'mirror']);
+		}
 		if (inst.type === 'screen') {
 			p.gain = 1;
 		}
@@ -207,9 +215,10 @@
 
 		const spatial = [];
 		if (chance(0.8)) spatial.push('warp');
+		if (chance(0.38)) spatial.push('transform');
 		if (chance(0.42)) spatial.push('displace');
 		if (chance(0.7)) spatial.push('kaleidoscope');
-		if (!spatial.length) spatial.push(pick(['warp', 'kaleidoscope', 'displace']));
+		if (!spatial.length) spatial.push(pick(['warp', 'transform', 'kaleidoscope', 'displace']));
 		types.push.apply(types, spatial);
 
 		if (types.indexOf('kaleidoscope') >= 0 && chance(0.22)) {
@@ -225,6 +234,7 @@
 
 		while (types.length > 8) {
 			if (dropLast(types, 'warp', 1)) continue;
+			if (dropLast(types, 'transform', 0)) continue;
 			if (dropLast(types, 'blur', 0)) continue;
 			if (dropLast(types, 'feedback', 0)) continue;
 			if (dropLast(types, 'displace', 0)) continue;

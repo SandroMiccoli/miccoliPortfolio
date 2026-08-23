@@ -22,7 +22,7 @@
 		}
 		if (!window.SynthNotify) return;
 		if (on) {
-			SynthNotify.show('success', 'Connected to Visual Synth');
+			SynthNotify.show('success', 'Connected to ELO');
 			warnedOffline = false;
 		} else if (!warnedOffline) {
 			warnedOffline = true;
@@ -36,6 +36,9 @@
 		SynthSync.sendPatch(patch);
 		if (patch.presets && window.SynthPresets) {
 			SynthPresets.syncDisk(SynthState.get().presets);
+		}
+		if ((patch.templates || patch.templateThumb || patch.templateOps) && window.SynthTemplates) {
+			SynthTemplates.syncDisk(SynthState.get().templates);
 		}
 	}
 
@@ -76,9 +79,14 @@
 		SynthSync.connect({
 			role: 'control',
 			onState: function (state) {
+				const incomingEmpty = !(state && state.templates && state.templates.length) && !(state && state.templatesSeeded);
 				applyingRemote = true;
 				SynthState.replace(state);
 				applyingRemote = false;
+				const next = SynthState.get();
+				if (incomingEmpty && next.templates && next.templates.length) {
+					userPatch({ templates: next.templates, templatesSeeded: true });
+				}
 			},
 			onStatus: setStatus,
 			onNotify: function (level, message) {

@@ -17,10 +17,10 @@
 			used[pipe.name] = true;
 		});
 		let n = 1;
-		let name = 'PIPE ' + pad(n);
+		let name = 'ELOS ' + pad(n);
 		while (used[name]) {
 			n += 1;
-			name = 'PIPE ' + pad(n);
+			name = 'ELOS ' + pad(n);
 		}
 		return name;
 	}
@@ -35,9 +35,20 @@
 	function createPipe(operators, name, id) {
 		return {
 			id: id || uid(),
-			name: name || 'PIPE 01',
+			name: name || 'ELOS 01',
 			thumbnail: '',
 			operators: operators || []
+		};
+	}
+
+	function asView(item, isTemplate) {
+		if (!item) return null;
+		return {
+			id: item.id,
+			name: item.name,
+			thumbnail: item.thumbnail || '',
+			operators: item.operators || [],
+			template: !!isTemplate
 		};
 	}
 
@@ -48,6 +59,15 @@
 			return pipe.id === state.activePipeId;
 		})[0];
 		return found || pipes[0];
+	}
+
+	function output(state) {
+		const previewId = state && state.previewTemplateId;
+		if (previewId && root.SynthTemplates) {
+			const tpl = root.SynthTemplates.find(state.templates, previewId);
+			if (tpl) return asView(tpl, true);
+		}
+		return active(state);
 	}
 
 	function visualSignature(pipe) {
@@ -68,11 +88,12 @@
 		nextName: nextName,
 		create: createPipe,
 		active: active,
+		output: output,
 		visualSignature: visualSignature,
 
 		createDefault: function () {
 			const ops = root.SynthPipeline.createDefault();
-			return createPipe(ops, 'PIPE 01', 'pipe_01');
+			return createPipe(ops, 'ELOS 01', 'pipe_01');
 		},
 
 		createNew: function (pipes) {

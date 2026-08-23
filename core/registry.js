@@ -12,7 +12,7 @@
 			id: 'effect',
 			label: 'Effects',
 			color: '#4AAE72',
-			about: 'Transforms the incoming image in space. Warp and Displace bend it. Kaleidoscope mirrors it. Feedback keeps a decaying trail and transforms that trail. An effect never starts a new picture on its own.'
+			about: 'Transforms the incoming image in space. Warp, Transform, and Displace bend it. Kaleidoscope mirrors it. Feedback keeps a decaying trail and transforms that trail. Spatial effects expose Tile (Hold, Repeat, Mirror) when UVs leave the frame. An effect never starts a new picture on its own.'
 		},
 		filter: {
 			id: 'filter',
@@ -111,9 +111,16 @@
 	};
 
 	const XYZ_AXES = ['X', 'Y', 'Z'];
+	const XY_AXES = ['X', 'Y'];
 
 	root.SynthParams = {
 		axes: XYZ_AXES,
+		isVec: function (spec) {
+			return !!(spec && (spec.kind === 'xyz' || spec.kind === 'xy'));
+		},
+		axesFor: function (spec) {
+			return spec && spec.kind === 'xy' ? XY_AXES : XYZ_AXES;
+		},
 		axisKey: function (spec, axis) {
 			return spec.key + String(axis).toUpperCase();
 		},
@@ -130,10 +137,39 @@
 			};
 		},
 		expand: function (spec) {
-			if (!spec || spec.kind !== 'xyz') return spec ? [spec] : [];
-			return XYZ_AXES.map(function (axis) {
+			if (!this.isVec(spec)) return spec ? [spec] : [];
+			return this.axesFor(spec).map(function (axis) {
 				return root.SynthParams.axisSpec(spec, axis);
 			});
+		}
+	};
+
+	const TILE_MODES = [
+		{ id: 'hold', label: 'Hold', value: 0 },
+		{ id: 'repeat', label: 'Repeat', value: 1 },
+		{ id: 'mirror', label: 'Mirror', value: 2 }
+	];
+
+	root.SynthTile = {
+		modes: TILE_MODES,
+		param: {
+			key: 'tile',
+			label: 'Tile',
+			kind: 'enum',
+			options: TILE_MODES.map(function (mode) {
+				return { id: mode.id, label: mode.label };
+			})
+		},
+		toUniform: function (id) {
+			if (id === 'repeat' || id === 1 || id === '1') return 1;
+			if (id === 'mirror' || id === 2 || id === '2') return 2;
+			return 0;
+		},
+		resolve: function (params, fallback) {
+			const p = params || {};
+			if (p.tile != null && p.tile !== '') return this.toUniform(p.tile);
+			if (p.wrap != null && p.wrap !== '') return this.toUniform(p.wrap);
+			return this.toUniform(fallback == null ? 'hold' : fallback);
 		}
 	};
 

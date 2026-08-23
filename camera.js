@@ -518,11 +518,17 @@
 	}
 
 	function neededPhone(state) {
-		const pipes = (state && state.pipes) || [];
-		const activeId = state && state.activePipeId;
-		let pipe = pipes.filter(function (item) {
-			return item.id === activeId;
-		})[0] || pipes[0];
+		const view = root.SynthPipes && root.SynthPipes.output
+			? root.SynthPipes.output(state)
+			: null;
+		let pipe = view;
+		if (!pipe) {
+			const pipes = (state && state.pipes) || [];
+			const activeId = state && state.activePipeId;
+			pipe = pipes.filter(function (item) {
+				return item.id === activeId;
+			})[0] || pipes[0];
+		}
 		if (!pipe) return null;
 		const ops = pipe.operators || [];
 		for (let i = 0; i < ops.length; i += 1) {

@@ -19,6 +19,7 @@
 	let livePreview = false;
 	let liveThumbAge = 0;
 	let camThumbTries = 0;
+	let tplThumbDue = 0;
 
 	function inLab() {
 		return document.body.classList.contains('lab-body');
@@ -30,6 +31,9 @@
 		SynthSync.sendPatch(patch);
 		if (patch.presets && window.SynthPresets) {
 			SynthPresets.syncDisk(SynthState.get().presets);
+		}
+		if ((patch.templates || patch.templateThumb || patch.templateOps) && window.SynthTemplates) {
+			SynthTemplates.syncDisk(SynthState.get().templates);
 		}
 	}
 
@@ -66,13 +70,38 @@
 		}
 		camThumbTries = 0;
 		thumbDirty = false;
-		userPatch({ pipeThumb: { id: pipe.id, thumbnail: url } });
+		if (pipe.template) {
+			userPatch({ templateThumb: { id: pipe.id, thumbnail: url } });
+		} else {
+			userPatch({ pipeThumb: { id: pipe.id, thumbnail: url } });
+		}
 		return true;
+	}
+
+	function viewPipe(state) {
+		if (window.SynthPipes && SynthPipes.output) return SynthPipes.output(state);
+		return window.SynthPipes ? SynthPipes.active(state) : null;
+	}
+
+	function scheduleTemplateThumbs(state) {
+		if (!window.SynthEngine || !SynthEngine.captureOperators) return;
+		if (capturingThumb || millis() < tplThumbDue) return;
+		const list = state.templates || [];
+		const missing = list.filter(function (item) {
+			return item && !item.thumbnail;
+		});
+		if (!missing.length) return;
+		const item = missing[0];
+		capturingThumb = true;
+		const url = SynthEngine.captureOperators(item.operators, millis() / 1000);
+		capturingThumb = false;
+		tplThumbDue = millis() + 240;
+		if (url) userPatch({ templateThumb: { id: item.id, thumbnail: url } });
 	}
 
 	function scheduleThumb(state) {
 		if (!window.SynthPipes || !window.SynthEngine || !SynthEngine.capture) return;
-		const pipe = SynthPipes.active(state);
+		const pipe = viewPipe(state);
 		if (!pipe) return;
 		const vis = SynthPipes.visualSignature(pipe);
 		const cam = cameraKey();
@@ -345,7 +374,7 @@
 		if (window.SynthCamera) {
 			SynthCamera.onChange(function () {
 				if (uiApi) uiApi.refresh();
-				const pipe = window.SynthPipes ? SynthPipes.active(SynthState.get()) : null;
+				const pipe = viewPipe(SynthState.get());
 				if (pipe && liveCameraOps(pipe).length && !cameraNotReady(pipe)) {
 					requestThumb(false);
 				}
@@ -361,9 +390,14 @@
 		SynthSync.connect({
 			role: 'display',
 			onState: function (state) {
+				const incomingEmpty = !(state && state.templates && state.templates.length) && !(state && state.templatesSeeded);
 				applyingRemote = true;
 				SynthState.replace(state);
 				applyingRemote = false;
+				const next = SynthState.get();
+				if (incomingEmpty && next.templates && next.templates.length) {
+					userPatch({ templates: next.templates, templatesSeeded: true });
+				}
 			},
 			onInfo: function (info) {
 				lastInfo = info;
@@ -405,6 +439,7 @@
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
 		scheduleThumb(state);
+		scheduleTemplateThumbs(state);
 		if (uiApi && uiApi.tick) uiApi.tick();
 		if (state.debug && state.debug.enabled) {
 			const fps = frameRate();

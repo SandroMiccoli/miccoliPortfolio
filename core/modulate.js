@@ -160,7 +160,7 @@
 			const spec = params[i];
 			if (!spec) continue;
 			if (spec.key === key) return spec;
-			if (spec.kind === 'xyz' && root.SynthParams) {
+			if (root.SynthParams && root.SynthParams.isVec(spec)) {
 				const axes = root.SynthParams.expand(spec);
 				for (let a = 0; a < axes.length; a += 1) {
 					if (axes[a].key === key) return axes[a];
