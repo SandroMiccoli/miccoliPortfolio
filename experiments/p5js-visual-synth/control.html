@@ -7,20 +7,20 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="theme-color" content="#101010">
-	<title>Visual Synth Control</title>
+	<title>ELO Control</title>
 	<link rel="stylesheet" href="style.css">
 </head>
 <body class="synth-body synth-control">
 	<header class="synth-chrome">
 		<div class="synth-chrome__inner">
 			<div class="synth-chrome__copy">
-				<h1 class="synth-chrome__title">Visual Synth</h1>
+				<h1 class="synth-chrome__title">ELO</h1>
 				<p id="sync-status" class="synth-status is-wait">Connecting</p>
 			</div>
 			<div id="synth-help-slot" class="synth-chrome__help"></div>
 		</div>
 	</header>
-	<main id="ui-root" class="synth-panel is-open is-page" aria-label="Visual Synth PIPEs"></main>
+	<main id="ui-root" class="synth-panel is-open is-page" aria-label="ELO"></main>
 
 	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Flip.min.js"></script>
@@ -34,6 +34,7 @@
 	<script src="operators/gradient.js"></script>
 	<script src="operators/camera.js"></script>
 	<script src="operators/warp.js"></script>
+	<script src="operators/transform.js"></script>
 	<script src="operators/lookup.js"></script>
 	<script src="operators/ramp.js"></script>
 	<script src="operators/hsv.js"></script>
@@ -54,6 +55,7 @@
 	<script src="core/fft.js"></script>
 	<script src="core/output.js"></script>
 	<script src="core/presets.js"></script>
+	<script src="core/templates.js"></script>
 	<script src="state.js"></script>
 	<script src="ui.js"></script>
 	<script src="sync.js"></script>

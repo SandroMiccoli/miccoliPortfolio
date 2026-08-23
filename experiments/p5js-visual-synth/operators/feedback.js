@@ -18,7 +18,7 @@
 		category: cat.id,
 		categoryLabel: cat.label,
 		color: cat.color,
-		help: 'Keeps a decaying trail of this operator\'s previous output and adds it back. Amount is how much trail returns. Decay fades it. Scale and Rotate transform the trail each frame, the analog-video tunnel move.',
+		help: 'Keeps a decaying trail of this operator\'s previous output and adds it back. Amount is how much trail returns. Decay fades it. Scale and Rotate transform the trail each frame, the analog-video tunnel move. Tile fills the trail when Scale or Offset leaves the frame: Hold, Repeat, or Mirror.',
 		implemented: true,
 		defaults: {
 			amount: 0.55,
@@ -26,13 +26,14 @@
 			scale: 1,
 			rotate: 0,
 			offsetX: 0,
-			offsetY: 0
+			offsetY: 0,
+			tile: 'hold'
 		},
 		presets: [
-			{ id: 'trail', name: 'Trail', parameters: { amount: 0.55, decay: 0.86, scale: 1, rotate: 0, offsetX: 0, offsetY: 0 } },
-			{ id: 'tunnel', name: 'Tunnel', parameters: { amount: 0.72, decay: 0.92, scale: 0.97, rotate: 0, offsetX: 0, offsetY: 0 } },
-			{ id: 'spin', name: 'Spin', parameters: { amount: 0.62, decay: 0.88, scale: 0.995, rotate: 1.8, offsetX: 0, offsetY: 0 } },
-			{ id: 'echo', name: 'Echo', parameters: { amount: 0.34, decay: 0.7, scale: 1.03, rotate: 0, offsetX: 0, offsetY: 0 } }
+			{ id: 'trail', name: 'Trail', parameters: { amount: 0.55, decay: 0.86, scale: 1, rotate: 0, offsetX: 0, offsetY: 0, tile: 'hold' } },
+			{ id: 'tunnel', name: 'Tunnel', parameters: { amount: 0.72, decay: 0.92, scale: 0.97, rotate: 0, offsetX: 0, offsetY: 0, tile: 'repeat' } },
+			{ id: 'spin', name: 'Spin', parameters: { amount: 0.62, decay: 0.88, scale: 0.995, rotate: 1.8, offsetX: 0, offsetY: 0, tile: 'hold' } },
+			{ id: 'echo', name: 'Echo', parameters: { amount: 0.34, decay: 0.7, scale: 1.03, rotate: 0, offsetX: 0, offsetY: 0, tile: 'hold' } }
 		],
 		params: [
 			{ key: 'amount', label: 'Amount', kind: 'range', min: 0, max: 1, step: 0.01 },
@@ -40,7 +41,8 @@
 			{ key: 'scale', label: 'Scale', kind: 'range', min: 0.85, max: 1.15, step: 0.001 },
 			{ key: 'rotate', label: 'Rotate', kind: 'range', min: -12, max: 12, step: 0.01, unit: '°' },
 			{ key: 'offsetX', label: 'Offset X', kind: 'range', min: -0.2, max: 0.2, step: 0.001 },
-			{ key: 'offsetY', label: 'Offset Y', kind: 'range', min: -0.2, max: 0.2, step: 0.001 }
+			{ key: 'offsetY', label: 'Offset Y', kind: 'range', min: -0.2, max: 0.2, step: 0.001 },
+			root.SynthTile.param
 		],
 		create: function (engine) {
 			const defaults = root.SynthRegistry.get('feedback').defaults;
@@ -88,7 +90,8 @@
 						u_offset: [
 							num(p.offsetX, defaults.offsetX),
 							num(p.offsetY, defaults.offsetY)
-						]
+						],
+						u_tile: root.SynthTile.resolve(p, defaults.tile)
 					});
 					engine.drawTo(trail, engine.shaders.copy, {
 						u_input: ctx.output,

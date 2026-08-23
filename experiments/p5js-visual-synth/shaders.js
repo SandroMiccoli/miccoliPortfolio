@@ -26,6 +26,14 @@
 		'}'
 	].join('\n');
 
+	const TILE_FN = [
+		'vec2 tileUv(vec2 st, float mode) {',
+		'  if (mode < 0.5) return clamp(st, 0.0, 1.0);',
+		'  if (mode < 1.5) return fract(st);',
+		'  return abs(fract(st * 0.5 + 0.5) * 2.0 - 1.0);',
+		'}'
+	].join('\n');
+
 	const BLEND_FN = [
 		'uniform sampler2D u_input;',
 		'uniform float u_hasInput;',
@@ -155,11 +163,13 @@
 
 	const KALEIDOSCOPE = [
 		FILTER,
+		TILE_FN,
 		'uniform float u_segments;',
 		'uniform float u_angle;',
 		'uniform float u_zoom;',
 		'uniform float u_offsetX;',
 		'uniform float u_offsetY;',
+		'uniform float u_tile;',
 		'',
 		'void main() {',
 		'  vec2 uv = vTexCoord - 0.5;',
@@ -178,17 +188,18 @@
 		'  vec2 st = vec2(cos(a), sin(a)) * r / max(u_zoom, 0.05);',
 		'  st.x /= u_resolution.x / max(u_resolution.y, 1.0);',
 		'  st += 0.5;',
-		'  st = abs(fract(st * 0.5 + 0.5) * 2.0 - 1.0);',
-		'  gl_FragColor = texture2D(u_input, st);',
+		'  gl_FragColor = texture2D(u_input, tileUv(st, u_tile));',
 		'}'
 	].join('\n');
 
 	const WARP = [
 		FILTER,
+		TILE_FN,
 		'uniform float u_amount;',
 		'uniform float u_frequency;',
 		'uniform float u_speed;',
 		'uniform float u_detail;',
+		'uniform float u_tile;',
 		'',
 		'void main() {',
 		'  vec2 st = uv();',
@@ -202,7 +213,7 @@
 		'    sin(q.y * u_frequency * 2.15 - t * 1.3),',
 		'    cos(q.x * u_frequency * 1.87 + t * 1.1)',
 		'  );',
-		'  gl_FragColor = texture2D(u_input, clamp(q, 0.0, 1.0));',
+		'  gl_FragColor = texture2D(u_input, tileUv(q, u_tile));',
 		'}'
 	].join('\n');
 
@@ -599,16 +610,12 @@
 
 	const DISPLACE = [
 		FILTER,
+		TILE_FN,
 		'uniform float u_amount;',
 		'uniform float u_angle;',
 		'uniform float u_center;',
 		'uniform float u_mode;',
-		'uniform float u_wrap;',
-		'',
-		'vec2 wrapUv(vec2 st) {',
-		'  if (u_wrap > 0.5) return fract(st);',
-		'  return clamp(st, 0.0, 1.0);',
-		'}',
+		'uniform float u_tile;',
 		'',
 		'void main() {',
 		'  vec2 st = uv();',
@@ -621,7 +628,7 @@
 		'    float ang = u_angle * 0.017453292;',
 		'    delta = vec2(cos(ang), sin(ang)) * (luma - u_center) * u_amount;',
 		'  }',
-		'  gl_FragColor = texture2D(u_input, wrapUv(st + delta));',
+		'  gl_FragColor = texture2D(u_input, tileUv(st + delta, u_tile));',
 		'}'
 	].join('\n');
 
@@ -651,12 +658,14 @@
 
 	const FEEDBACK = [
 		FILTER,
+		TILE_FN,
 		'uniform sampler2D u_feedback;',
 		'uniform float u_amount;',
 		'uniform float u_decay;',
 		'uniform float u_scale;',
 		'uniform float u_rotate;',
 		'uniform vec2 u_offset;',
+		'uniform float u_tile;',
 		'',
 		'void main() {',
 		'  vec2 st = uv() - 0.5;',
@@ -668,9 +677,34 @@
 		'  st *= max(u_scale, 0.2);',
 		'  st.x /= u_resolution.x / max(u_resolution.y, 1.0);',
 		'  st += 0.5 + u_offset;',
-		'  vec3 trail = texture2D(u_feedback, clamp(st, 0.0, 1.0)).rgb * clamp(u_decay, 0.0, 1.0);',
+		'  vec3 trail = texture2D(u_feedback, tileUv(st, u_tile)).rgb * clamp(u_decay, 0.0, 1.0);',
 		'  vec3 src = src().rgb;',
 		'  gl_FragColor = vec4(clamp(mix(src, src + trail, clamp(u_amount, 0.0, 1.0)), 0.0, 1.0), 1.0);',
+		'}'
+	].join('\n');
+
+	const TRANSFORM = [
+		FILTER,
+		TILE_FN,
+		'uniform vec2 u_translate;',
+		'uniform float u_rotate;',
+		'uniform vec2 u_scale;',
+		'uniform float u_tile;',
+		'',
+		'void main() {',
+		'  vec2 st = uv() - 0.5;',
+		'  st -= u_translate;',
+		'  float aspect = u_resolution.x / max(u_resolution.y, 1.0);',
+		'  st.x *= aspect;',
+		'  float ang = -u_rotate * 0.017453292;',
+		'  float c = cos(ang);',
+		'  float s = sin(ang);',
+		'  st = vec2(c * st.x - s * st.y, s * st.x + c * st.y);',
+		'  vec2 sc = max(u_scale, vec2(0.001));',
+		'  st /= sc;',
+		'  st.x /= aspect;',
+		'  st += 0.5;',
+		'  gl_FragColor = texture2D(u_input, tileUv(st, u_tile));',
 		'}'
 	].join('\n');
 
@@ -699,6 +733,7 @@
 		gradient: GRADIENT,
 		displace: DISPLACE,
 		blur: BLUR,
-		feedback: FEEDBACK
+		feedback: FEEDBACK,
+		transform: TRANSFORM
 	};
 })(window);

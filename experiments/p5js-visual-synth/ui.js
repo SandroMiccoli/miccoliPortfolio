@@ -61,9 +61,14 @@
 		}).join('|');
 	}
 
-	function gridSignature(pipes, activeId) {
-		return (pipes || []).map(function (pipe) {
-			return pipe.id + ':' + pipe.name;
+	function gridSignature(gallery, pipes, activeId, templates, selectedId) {
+		if (gallery === 'templates') {
+			return 'tpl|' + (templates || []).map(function (item) {
+				return item.id + ':' + item.name + ':' + (item.thumbnail ? '1' : '0');
+			}).join('|') + '#' + String(selectedId || '');
+		}
+		return 'set|' + (pipes || []).map(function (pipe) {
+			return pipe.id + ':' + pipe.name + ':' + (pipe.thumbnail ? '1' : '0');
 		}).join('|') + '#' + String(activeId || '');
 	}
 
@@ -80,6 +85,8 @@
 		let expandedId = null;
 		let expandedMaskId = null;
 		let lastMaskSig = null;
+		let galleryMode = 'set';
+		let selectedTemplateId = '';
 		let activeStage = 'pipeline';
 		let libInsertAt = 0;
 		let liveOn = false;
@@ -95,25 +102,39 @@
 			return root.SynthPipes ? root.SynthPipes.active(getState()) : null;
 		}
 
+		function viewingTemplate() {
+			return galleryMode === 'templates';
+		}
+
 		function ops() {
+			if (viewingTemplate()) {
+				const tpl = selectedTemplate();
+				return (tpl && tpl.operators) || [];
+			}
 			const pipe = activePipe();
 			return (pipe && pipe.operators) || [];
 		}
 
 		function patchOps(operators) {
+			if (viewingTemplate()) {
+				const tpl = selectedTemplate();
+				if (!tpl) return;
+				patch({ templateOps: { id: tpl.id, operators: operators } });
+				return;
+			}
 			patch({ operators: operators });
 		}
 
 		rootEl.innerHTML = '';
 
 		const preview = el('section', 'synth-preview');
-		preview.setAttribute('aria-label', 'PIPE output preview');
+		preview.setAttribute('aria-label', 'ELOS output preview');
 		const previewFrame = el('div', 'synth-preview__frame');
 		const previewImg = el('img');
 		previewImg.alt = '';
 		previewImg.hidden = true;
 		const previewEmpty = el('p', 'synth-preview__empty', 'Waiting for output');
-		const previewName = el('p', 'synth-preview__name', 'PIPE');
+		const previewName = el('p', 'synth-preview__name', 'ELOS');
 		previewFrame.appendChild(previewImg);
 		previewFrame.appendChild(previewEmpty);
 		previewFrame.appendChild(previewName);
@@ -131,21 +152,39 @@
 		rootEl.appendChild(preview);
 
 		const top = el('div', 'synth-panel__top');
-		top.appendChild(el('p', 'synth-panel__mark', 'Synth'));
+		top.appendChild(el('p', 'synth-panel__mark', 'ELO'));
 		rootEl.appendChild(top);
 
 		const pipesSec = el('section', 'synth-pipes');
-		const pipesHead = el('header', 'synth-sec__head');
-		pipesHead.appendChild(el('h2', 'synth-sec__label', 'PIPE Gallery'));
-		pipesSec.appendChild(pipesHead);
+		const galleryTabs = el('div', 'synth-gallery-tabs');
+		galleryTabs.setAttribute('role', 'tablist');
+		galleryTabs.setAttribute('aria-label', 'ELOS collections');
+		const galleryTabBtns = {};
+		[
+			{ id: 'set', label: 'Set' },
+			{ id: 'templates', label: 'Templates' }
+		].forEach(function (tab) {
+			const btn = el('button', 'synth-gallery-tab', tab.label);
+			btn.type = 'button';
+			btn.setAttribute('role', 'tab');
+			btn.setAttribute('aria-selected', tab.id === 'set' ? 'true' : 'false');
+			if (tab.id === 'set') btn.classList.add('is-active');
+			btn.dataset.gallery = tab.id;
+			btn.addEventListener('click', function () {
+				setGalleryMode(tab.id);
+			});
+			galleryTabBtns[tab.id] = btn;
+			galleryTabs.appendChild(btn);
+		});
+		pipesSec.appendChild(galleryTabs);
 		const grid = el('div', 'synth-pipe-grid');
-		grid.setAttribute('aria-label', 'PIPE grid');
+		grid.setAttribute('aria-label', 'SET');
 		pipesSec.appendChild(grid);
 		rootEl.appendChild(pipesSec);
 
 		const activeBar = el('section', 'synth-pipe-active');
 		const activeHead = el('header', 'synth-pipe-active__head');
-		const activeName = el('h2', 'synth-pipe-active__name', 'PIPE');
+		const activeName = el('h2', 'synth-pipe-active__name', 'ELOS');
 		activeHead.appendChild(activeName);
 		const activeTools = el('div', 'synth-pipe-active__tools');
 		activeHead.appendChild(activeTools);
@@ -153,7 +192,7 @@
 		rootEl.appendChild(activeBar);
 
 		const stack = el('div', 'synth-stack');
-		stack.setAttribute('aria-label', 'Operator stack');
+		stack.setAttribute('aria-label', 'Elo chain');
 		rootEl.appendChild(stack);
 
 		const debug = el('section', 'synth-sec synth-sec--debug');
@@ -244,8 +283,8 @@
 
 		top.appendChild(iconBtn(
 			'question',
-			'About Visual Synth',
-			'What this instrument is, and how operator families work.',
+			'About ELO',
+			'What this instrument is, and how Elo families work.',
 			openTypesHelp
 		));
 		const helpSlot = document.getElementById('synth-help-slot');
@@ -259,7 +298,7 @@
 		const tabBtns = {};
 		const stagePanels = {};
 		[
-			{ id: 'pipeline', label: 'Pipeline' },
+			{ id: 'pipeline', label: 'ELOS' },
 			{ id: 'mask', label: 'Mask' },
 			{ id: 'mapping', label: 'Mapping' }
 		].forEach(function (tab) {
@@ -381,7 +420,7 @@
 		});
 		cardRow.appendChild(cardToggle);
 		stageMap.appendChild(cardRow);
-		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the PIPE so you can pin corners to the display.'));
+		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the ELOS so you can pin corners to the display.'));
 
 		rootEl.insertBefore(stageTabs, debug);
 		rootEl.insertBefore(stagePipeline, debug);
@@ -734,13 +773,93 @@
 			}
 		}
 
-		function startRename(pipe) {
-			if (!pipe || renaming) return;
+		function templates() {
+			return root.SynthTemplates
+				? root.SynthTemplates.list((getState().templates) || [])
+				: (getState().templates || []);
+		}
+
+		function selectedTemplate() {
+			const items = templates();
+			if (!items.length) return null;
+			return root.SynthTemplates
+				? (root.SynthTemplates.find(items, selectedTemplateId) || items[0])
+				: (items.filter(function (item) { return item.id === selectedTemplateId; })[0] || items[0]);
+		}
+
+		function patchTemplates(list) {
+			patch({ templates: list, templatesSeeded: true });
+		}
+
+		function cancelRename() {
+			if (!renaming) return;
+			renaming = false;
+			const input = activeBar.querySelector('.synth-pipe-rename');
+			if (input && input.parentNode) input.replaceWith(activeName);
+		}
+
+		function setPreview(id) {
+			const next = id || '';
+			if ((getState().previewTemplateId || '') === next) return;
+			patch({ previewTemplateId: next });
+		}
+
+		function setGalleryMode(mode) {
+			const next = mode === 'templates' ? 'templates' : 'set';
+			if (galleryMode === next) return;
+			cancelRename();
+			galleryMode = next;
+			lastGridSig = null;
+			if (galleryMode === 'templates') {
+				if (!selectedTemplateId) {
+					const first = templates()[0];
+					selectedTemplateId = first ? first.id : '';
+				}
+				setPreview(selectedTemplateId);
+			} else {
+				setPreview('');
+			}
+			refresh();
+		}
+
+		function sendTemplateToSet(template) {
+			if (!template || !root.SynthTemplates) return;
+			const s = getState();
+			const copy = root.SynthTemplates.instantiate(template, s.pipes || []);
+			if (!copy) return;
+			expandedId = null;
+			galleryMode = 'set';
+			lastGridSig = null;
+			patch({
+				pipes: (s.pipes || []).concat([copy]),
+				activePipeId: copy.id,
+				previewTemplateId: ''
+			});
+			if (root.SynthNotify) root.SynthNotify.show('success', 'Added to SET');
+		}
+
+		function saveActiveToTemplates() {
+			const pipe = activePipe();
+			if (!pipe || !root.SynthTemplates) return;
+			const created = root.SynthTemplates.fromPipe(pipe, templates());
+			selectedTemplateId = created.id;
+			galleryMode = 'templates';
+			lastGridSig = null;
+			patch({
+				templates: root.SynthTemplates.upsert(templates(), created),
+				templatesSeeded: true,
+				previewTemplateId: created.id
+			});
+			if (root.SynthNotify) root.SynthNotify.show('success', 'Template saved to disk');
+		}
+
+		function startRename(item, kind) {
+			if (!item || renaming) return;
 			renaming = true;
 			const input = el('input', 'synth-pipe-rename');
 			input.type = 'text';
-			input.value = pipe.name;
-			input.setAttribute('aria-label', 'PIPE name');
+			input.value = item.name;
+			input.setAttribute('aria-label', kind === 'template' ? 'Template name' : 'ELOS name');
 			input.maxLength = 32;
 			activeName.replaceWith(input);
 			input.focus();
@@ -749,14 +868,18 @@
 			function commit() {
 				if (!renaming) return;
 				renaming = false;
-				const name = input.value.trim() || pipe.name;
+				const name = input.value.trim() || item.name;
 				if (input.parentNode) input.replaceWith(activeName);
 				activeName.textContent = name;
-				if (name !== pipe.name) {
-					patch({ pipeMeta: { id: pipe.id, name: name } });
-				} else {
+				if (name === item.name) {
 					refresh();
+					return;
 				}
+				if (kind === 'template' && root.SynthTemplates) {
+					patchTemplates(root.SynthTemplates.upsert(templates(), Object.assign({}, item, { name: name })));
+					return;
+				}
+				patch({ pipeMeta: { id: item.id, name: name } });
 			}
 
 			input.addEventListener('keydown', function (event) {
@@ -773,36 +896,82 @@
 			input.addEventListener('blur', commit);
 		}
 
-		activeTools.appendChild(iconBtn(
+		const renameBtn = iconBtn(
 			'pencil',
 			'Rename',
-			'Change the name of the active PIPE.',
+			'Change the name of the selected ELOS or template.',
 			function () {
+				if (galleryMode === 'templates') {
+					const tpl = selectedTemplate();
+					if (tpl) startRename(tpl, 'template');
+					return;
+				}
 				const pipe = activePipe();
-				if (pipe) startRename(pipe);
+				if (pipe) startRename(pipe, 'pipe');
 			}
-		));
-		activeTools.appendChild(iconBtn(
+		);
+		const dupBtn = iconBtn(
 			'copy',
-			'Duplicate PIPE',
-			'Create an independent copy of this PIPE and its operators.',
+			'Duplicate',
+			'Create an independent copy of the selected ELOS or template.',
 			function () {
 				const s = getState();
+				if (galleryMode === 'templates') {
+					const tpl = selectedTemplate();
+					if (!tpl || !root.SynthTemplates) return;
+					const copy = root.SynthTemplates.duplicate(tpl, templates());
+					if (!copy) return;
+					selectedTemplateId = copy.id;
+					lastGridSig = null;
+					patch({
+						templates: root.SynthTemplates.upsert(templates(), copy),
+						templatesSeeded: true,
+						previewTemplateId: copy.id
+					});
+					return;
+				}
 				const pipe = activePipe();
 				if (!pipe) return;
 				const copy = root.SynthPipes.duplicate(pipe, s.pipes);
+				expandedId = null;
 				patch({
 					pipes: (s.pipes || []).concat([copy]),
 					activePipeId: copy.id
 				});
-				expandedId = null;
 			}
-		));
+		);
+		const saveTplBtn = iconBtn(
+			'disk',
+			'Save template',
+			'Store this ELOS on disk and add it to TEMPLATES.',
+			saveActiveToTemplates
+		);
+		const addToSetBtn = iconBtn(
+			'plus',
+			'Add to SET',
+			'Copy this template into the SET so you can perform it.',
+			function () {
+				sendTemplateToSet(selectedTemplate());
+			}
+		);
 		const deletePipeBtn = iconBtn(
 			'trash',
-			'Delete PIPE',
-			'Remove this PIPE. Its operators are not shared with other PIPEs.',
+			'Delete',
+			'Remove the selected ELOS or template.',
 			function () {
+				if (galleryMode === 'templates') {
+					const tpl = selectedTemplate();
+					if (!tpl || !root.SynthTemplates) return;
+					const next = root.SynthTemplates.remove(templates(), tpl.id);
+					selectedTemplateId = next[0] ? next[0].id : '';
+					lastGridSig = null;
+					patch({
+						templates: next,
+						templatesSeeded: true,
+						previewTemplateId: selectedTemplateId
+					});
+					return;
+				}
 				const s = getState();
 				const pipe = activePipe();
 				if (!pipe || (s.pipes || []).length <= 1) return;
@@ -816,7 +985,12 @@
 				});
 			}
 		);
+		activeTools.appendChild(renameBtn);
+		activeTools.appendChild(dupBtn);
+		activeTools.appendChild(saveTplBtn);
+		activeTools.appendChild(addToSetBtn);
 		activeTools.appendChild(deletePipeBtn);
+		addToSetBtn.hidden = true;
 
 		const clockBar = el('div', 'synth-clock');
 		const tapBtn = el('button', 'synth-clock__tap');
@@ -1028,11 +1202,12 @@
 		}
 
 		function openTypesHelp() {
-			openSheet('Visual Synth');
+			openSheet('ELO');
 			sheetBody.innerHTML = '';
-			sheetBody.appendChild(el('p', 'synth-help__lead', 'Visual Synth is a visual instrument. You build PIPEs: ordered stacks of operators that process an image the way a synthesizer processes sound. Order is the patch.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick a PIPE in the grid, then edit its operators. Each operator reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the PIPE Gallery, three tabs split the rest of the instrument. Pipeline is the operator stack. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the template card covers the PIPE so you can align corners.'));
+			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. An Elo connects one thing to another. A sequence of connected Elos is an ELOS. Order is the patch.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick an ELOS in the grid, then edit its Elos. Each Elo reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES are stored examples you send into the SET. Save an ELOS from the SET to keep it on disk as a template.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. ELOS is the Elo chain. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the ELOS so you can align corners.'));
 			const cats = root.SynthCategories;
 			['generator', 'effect', 'filter', 'color', 'compositing', 'output'].forEach(function (id) {
 				const cat = cats[id];
@@ -1046,7 +1221,7 @@
 		}
 
 		function openOpHelp(def) {
-			openSheet(def.name || 'Operator');
+			openSheet(def.name || 'Elo');
 			sheetBody.innerHTML = '';
 			const block = el('article', 'synth-help__cat');
 			block.style.setProperty('--op-color', def.color || '#8E8E8E');
@@ -1057,7 +1232,7 @@
 
 		function openLibrary(index) {
 			libInsertAt = index;
-			openSheet('Add operator');
+			openSheet('Add Elo');
 			sheetBody.innerHTML = '';
 			const groups = root.SynthRegistry.listByCategory();
 			groups.forEach(function (group) {
@@ -1813,14 +1988,16 @@
 		}
 
 		function makeXyzField(op, spec) {
-			const wrap = el('div', 'synth-xyz');
+			const wrap = el('div', spec.kind === 'xy' ? 'synth-xyz synth-xyz--xy' : 'synth-xyz');
 			wrap.setAttribute('role', 'group');
 			wrap.setAttribute('aria-label', spec.label);
 			if (spec.visibleWhen) wrap.dataset.visibleWhen = spec.visibleWhen;
 			wrap.appendChild(el('div', 'synth-xyz__head', spec.label));
 			const axes = el('div', 'synth-xyz__axes');
 			const mods = el('div', 'synth-xyz__mods');
-			const letters = (root.SynthParams && root.SynthParams.axes) || ['X', 'Y', 'Z'];
+			const letters = (root.SynthParams && root.SynthParams.axesFor)
+				? root.SynthParams.axesFor(spec)
+				: (spec.kind === 'xy' ? ['X', 'Y'] : ['X', 'Y', 'Z']);
 			letters.forEach(function (axis) {
 				const axisSpec = root.SynthParams
 					? root.SynthParams.axisSpec(spec, axis)
@@ -1888,7 +2065,7 @@
 			field.appendChild(top);
 			const grid = el('div', 'synth-presets__grid');
 			grid.setAttribute('role', 'listbox');
-			grid.setAttribute('aria-label', 'Operator presets');
+			grid.setAttribute('aria-label', 'Elo presets');
 			field.appendChild(grid);
 			const tools = el('div', 'synth-presets__tools');
 			field.appendChild(tools);
@@ -1921,7 +2098,7 @@
 					'synth-preset-form__hint',
 					mode === 'rename'
 						? 'Change the name of this preset.'
-						: 'Session only, or save to disk to keep it after Visual Synth closes.'
+						: 'Session only, or save to disk to keep it after ELO closes.'
 				));
 				const input = el('input', 'synth-pipe-rename synth-preset-form__name');
 				input.type = 'text';
@@ -2837,11 +3014,11 @@
 			const wrap = el('div', isAdd ? 'synth-insert synth-insert--add' : 'synth-insert synth-insert--node');
 			const btn = el('button', 'synth-insert__btn');
 			btn.type = 'button';
-			btn.setAttribute('aria-label', 'Add operator here');
-			btn.dataset.tip = 'Add operator';
-			btn.dataset.tipDesc = 'Open the library and insert a new operator at this point in the stack.';
+			btn.setAttribute('aria-label', 'Add Elo here');
+			btn.dataset.tip = 'Add Elo';
+			btn.dataset.tipDesc = 'Open the library and insert a new Elo at this point in the chain.';
 			btn.appendChild(root.SynthIcons.svg('plus'));
-			if (isAdd) btn.appendChild(el('span', 'synth-insert__label', 'Add operator'));
+			if (isAdd) btn.appendChild(el('span', 'synth-insert__label', 'Add Elo'));
 			btn.addEventListener('click', function () {
 				openLibrary(index);
 			});
@@ -2980,7 +3157,7 @@
 		function paintCamStatus(card, op) {
 			if (!card || op.type !== 'camera') return;
 			const view = op.bypassed
-				? { phase: 'idle', message: 'Bypassed. Enable the operator to open the camera.', live: false, hasDevices: false }
+				? { phase: 'idle', message: 'Bypassed. Enable the Elo to open the camera.', live: false, hasDevices: false }
 				: cameraView(op);
 			const status = card.querySelector('.synth-cam-status');
 			if (status) {
@@ -3023,7 +3200,7 @@
 			grip.type = 'button';
 			grip.setAttribute('aria-label', 'Drag to reorder');
 			grip.dataset.tip = 'Reorder';
-			grip.dataset.tipDesc = 'Drag this handle to change the operator order in the stack.';
+			grip.dataset.tipDesc = 'Drag this handle to change the Elo order in the chain.';
 			grip.appendChild(root.SynthIcons.svg('grip'));
 			bindTip(grip);
 			bindGrip(grip, op.id);
@@ -3053,7 +3230,7 @@
 			tools.appendChild(iconBtn(
 				'question',
 				def.name || 'Help',
-				def.help || 'Operator help',
+				def.help || 'Elo help',
 				function () {
 					openOpHelp(def);
 				}
@@ -3062,7 +3239,7 @@
 			const bypassBtn = iconBtn(
 				op.bypassed ? 'eye-slash' : 'eye',
 				'Bypass',
-				'Skip this operator. The previous image passes through unchanged.',
+				'Skip this Elo. The previous image passes through unchanged.',
 				function () {
 					const current = ops().find(function (item) {
 						return item.id === op.id;
@@ -3075,23 +3252,23 @@
 			if (op.bypassed) bypassBtn.classList.add('is-active');
 			tools.appendChild(bypassBtn);
 
-			const upBtn = iconBtn('caret-up', 'Move up', 'Move this operator one step earlier in the stack.', function () {
+			const upBtn = iconBtn('caret-up', 'Move up', 'Move this Elo one step earlier in the chain.', function () {
 				patchOps(root.SynthPipeline.move(ops(), op.id, -1));
 			});
 			upBtn.disabled = index === 0;
 			tools.appendChild(upBtn);
 
-			const downBtn = iconBtn('caret-down', 'Move down', 'Move this operator one step later in the stack.', function () {
+			const downBtn = iconBtn('caret-down', 'Move down', 'Move this Elo one step later in the chain.', function () {
 				patchOps(root.SynthPipeline.move(ops(), op.id, 1));
 			});
 			downBtn.disabled = index === total - 1;
 			tools.appendChild(downBtn);
 
-			tools.appendChild(iconBtn('copy', 'Duplicate', 'Insert a copy of this operator directly below it.', function () {
+			tools.appendChild(iconBtn('copy', 'Duplicate', 'Insert a copy of this Elo directly below it.', function () {
 				patchOps(root.SynthPipeline.duplicate(ops(), op.id));
 			}));
 
-			tools.appendChild(iconBtn('trash', 'Delete', 'Remove this operator from the stack.', function () {
+			tools.appendChild(iconBtn('trash', 'Delete', 'Remove this Elo from the chain.', function () {
 				if (expandedId === op.id) expandedId = null;
 				patchOps(root.SynthPipeline.remove(ops(), op.id));
 			}));
@@ -3128,7 +3305,7 @@
 					inner.appendChild(field.wrap);
 					return;
 				}
-				if (spec.kind === 'xyz') {
+				if (spec.kind === 'xyz' || spec.kind === 'xy') {
 					inner.appendChild(makeXyzField(op, spec).wrap);
 					return;
 				}
@@ -3212,7 +3389,7 @@
 			stack.innerHTML = '';
 			stack.classList.toggle('is-empty', !pipeline.length);
 			if (!pipeline.length) {
-				stack.appendChild(el('p', 'synth-stack__empty', 'Tap Add operator to start the chain.'));
+				stack.appendChild(el('p', 'synth-stack__empty', 'Tap Add Elo to start the chain.'));
 				stack.appendChild(insertBtn(0, 'add'));
 				if (state && Flip && g) {
 					Flip.from(state, {
@@ -3260,14 +3437,15 @@
 		}
 
 		function refreshPreview(pipe) {
-			previewName.textContent = pipe ? pipe.name : 'PIPE';
+			const view = viewingTemplate() ? (selectedTemplate() || pipe) : pipe;
+			previewName.textContent = view ? view.name : 'ELOS';
 			if (liveOn && liveFrame) {
 				if (previewImg.getAttribute('src') !== liveFrame) previewImg.src = liveFrame;
 				previewImg.hidden = false;
 				previewEmpty.hidden = true;
 				return;
 			}
-			const url = pipe && pipe.thumbnail;
+			const url = view && view.thumbnail;
 			if (url) {
 				if (previewImg.getAttribute('src') !== url) previewImg.src = url;
 				previewImg.hidden = false;
@@ -3305,41 +3483,70 @@
 			previewEmpty.hidden = true;
 		}
 
-		function makePipeTile(pipe, activeId) {
+		function makeTile(item, activeId, kind) {
 			const tile = el('button', 'synth-pipe-tile');
 			tile.type = 'button';
-			tile.dataset.pipe = pipe.id;
-			tile.setAttribute('aria-pressed', pipe.id === activeId ? 'true' : 'false');
-			if (pipe.id === activeId) tile.classList.add('is-active');
+			tile.dataset.pipe = item.id;
+			tile.setAttribute('aria-pressed', item.id === activeId ? 'true' : 'false');
+			if (item.id === activeId) tile.classList.add('is-active');
 			const thumb = el('div', 'synth-pipe-tile__thumb');
 			const img = el('img');
 			img.alt = '';
-			if (pipe.thumbnail) img.src = pipe.thumbnail;
+			if (item.thumbnail) img.src = item.thumbnail;
 			else img.hidden = true;
 			thumb.appendChild(img);
 			tile.appendChild(thumb);
-			tile.appendChild(el('span', 'synth-pipe-tile__name', pipe.name));
+			tile.appendChild(el('span', 'synth-pipe-tile__name', item.name));
+			if (kind === 'template') {
+				tile.setAttribute('aria-label', item.name + '. Tap to select. Tap again to add to the SET.');
+				tile.addEventListener('click', function () {
+					if (selectedTemplateId === item.id) {
+						sendTemplateToSet(item);
+						return;
+					}
+					selectedTemplateId = item.id;
+					setPreview(item.id);
+					refresh();
+				});
+				return tile;
+			}
 			tile.addEventListener('click', function () {
 				expandedId = null;
 				if (typeof capturePipe === 'function') capturePipe();
-				if (getState().activePipeId === pipe.id) return;
-				patch({ activePipeId: pipe.id });
+				if (getState().activePipeId === item.id) return;
+				patch({ activePipeId: item.id });
 			});
 			return tile;
 		}
 
-		function rebuildGrid(pipes, activeId) {
+		function rebuildGrid(pipes, activeId, items, selectedId) {
 			grid.innerHTML = '';
+			if (galleryMode === 'templates') {
+				grid.setAttribute('aria-label', 'TEMPLATES');
+				if (!(items || []).length) {
+					grid.appendChild(el(
+						'p',
+						'synth-pipe-grid__empty',
+						'Save an ELOS from the SET to keep it here.'
+					));
+					return;
+				}
+				(items || []).forEach(function (item) {
+					grid.appendChild(makeTile(item, selectedId, 'template'));
+				});
+				return;
+			}
+			grid.setAttribute('aria-label', 'SET');
 			(pipes || []).forEach(function (pipe) {
-				grid.appendChild(makePipeTile(pipe, activeId));
+				grid.appendChild(makeTile(pipe, activeId, 'pipe'));
 			});
 			const add = el('button', 'synth-pipe-tile synth-pipe-tile--new');
 			add.type = 'button';
-			add.setAttribute('aria-label', 'New PIPE');
+			add.setAttribute('aria-label', 'New ELOS');
 			const plusWrap = el('span', 'synth-pipe-tile__plus');
 			plusWrap.appendChild(root.SynthIcons.svg('plus'));
 			add.appendChild(plusWrap);
-			add.appendChild(el('span', 'synth-pipe-tile__name', 'New PIPE'));
+			add.appendChild(el('span', 'synth-pipe-tile__name', 'New ELOS'));
 			add.addEventListener('click', function () {
 				const s = getState();
 				const pipe = root.SynthPipes.createNew(s.pipes);
@@ -3352,14 +3559,14 @@
 			grid.appendChild(add);
 		}
 
-		function refreshThumbs(pipes) {
-			(pipes || []).forEach(function (pipe) {
-				const tile = grid.querySelector('[data-pipe="' + pipe.id + '"]');
+		function refreshThumbs(items) {
+			(items || []).forEach(function (item) {
+				const tile = grid.querySelector('[data-pipe="' + item.id + '"]');
 				if (!tile) return;
 				const img = tile.querySelector('img');
 				if (!img) return;
-				if (pipe.thumbnail) {
-					if (img.getAttribute('src') !== pipe.thumbnail) img.src = pipe.thumbnail;
+				if (item.thumbnail) {
+					if (img.getAttribute('src') !== item.thumbnail) img.src = item.thumbnail;
 					img.hidden = false;
 				} else {
 					img.removeAttribute('src');
@@ -3368,32 +3575,67 @@
 			});
 		}
 
+		function refreshGalleryChrome() {
+			Object.keys(galleryTabBtns).forEach(function (id) {
+				const on = galleryMode === id;
+				galleryTabBtns[id].classList.toggle('is-active', on);
+				galleryTabBtns[id].setAttribute('aria-selected', on ? 'true' : 'false');
+			});
+			const onSet = galleryMode === 'set';
+			saveTplBtn.hidden = !onSet;
+			addToSetBtn.hidden = onSet;
+		}
+
 		function refresh() {
 			const s = getState();
 			const pipes = s.pipes || [];
+			const items = templates();
 			const pipeline = ops();
-			const gsig = gridSignature(pipes, s.activePipeId);
+			if (s.previewTemplateId && items.some(function (item) {
+				return item.id === s.previewTemplateId;
+			})) {
+				selectedTemplateId = s.previewTemplateId;
+			}
+			if (!selectedTemplateId && items[0]) selectedTemplateId = items[0].id;
+			if (selectedTemplateId && items.length && !items.some(function (item) {
+				return item.id === selectedTemplateId;
+			})) {
+				selectedTemplateId = items[0] ? items[0].id : '';
+			}
+			refreshGalleryChrome();
+			const activeId = galleryMode === 'templates' ? selectedTemplateId : s.activePipeId;
+			const gsig = gridSignature(galleryMode, pipes, s.activePipeId, items, selectedTemplateId);
 			if (gsig !== lastGridSig) {
 				lastGridSig = gsig;
-				rebuildGrid(pipes, s.activePipeId);
+				rebuildGrid(pipes, s.activePipeId, items, selectedTemplateId);
 			} else {
-				refreshThumbs(pipes);
-				pipes.forEach(function (pipe) {
-					const tile = grid.querySelector('[data-pipe="' + pipe.id + '"]');
+				refreshThumbs(galleryMode === 'templates' ? items : pipes);
+				(galleryMode === 'templates' ? items : pipes).forEach(function (item) {
+					const tile = grid.querySelector('[data-pipe="' + item.id + '"]');
 					if (!tile) return;
-					tile.classList.toggle('is-active', pipe.id === s.activePipeId);
-					tile.setAttribute('aria-pressed', pipe.id === s.activePipeId ? 'true' : 'false');
+					tile.classList.toggle('is-active', item.id === activeId);
+					tile.setAttribute('aria-pressed', item.id === activeId ? 'true' : 'false');
 				});
 			}
 
 			const pipe = activePipe();
+			const tpl = selectedTemplate();
 			if (!renaming) {
-				activeName.textContent = pipe ? pipe.name : 'PIPE';
+				if (galleryMode === 'templates') {
+					activeName.textContent = tpl ? tpl.name : 'TEMPLATE';
+				} else {
+					activeName.textContent = pipe ? pipe.name : 'ELOS';
+				}
 			}
 			refreshPreview(pipe);
-			deletePipeBtn.disabled = pipes.length <= 1;
+			const hasTarget = galleryMode === 'templates' ? !!tpl : !!pipe;
+			renameBtn.disabled = !hasTarget;
+			dupBtn.disabled = !hasTarget;
+			saveTplBtn.disabled = !pipe;
+			addToSetBtn.disabled = !tpl;
+			deletePipeBtn.disabled = galleryMode === 'templates' ? !tpl : pipes.length <= 1;
 
-			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '') + ':' + (
+			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '') + ':' + String(s.previewTemplateId || '') + ':' + (
 				root.SynthCamera && root.SynthCamera.signature ? root.SynthCamera.signature() : ''
 			);
 			if (signature !== lastSignature) {
@@ -3443,9 +3685,12 @@
 
 					card.querySelectorAll('[data-enum-key]').forEach(function (btn) {
 						const key = btn.dataset.enumKey;
+						const def = root.SynthRegistry.get(op.type);
+						const fallback = def && def.defaults ? def.defaults[key] : undefined;
+						const current = op.parameters[key] != null ? op.parameters[key] : fallback;
 						btn.classList.toggle(
 							'is-active',
-							String(op.parameters[key]) === String(btn.dataset.enumValue)
+							String(current) === String(btn.dataset.enumValue)
 						);
 					});
 					paintCamStatus(card, op);

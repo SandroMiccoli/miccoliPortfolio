@@ -1,18 +1,20 @@
-# Visual Synth — Product & Roadmap
+# ELO — Product & Roadmap
 
 ## 1. Vision
 
-**Visual Synth** is a modular visual instrument for creating generative and reactive geometric visuals.
+**ELO (Effect Linked Operators)** is a modular visual instrument for creating generative and reactive geometric visuals.
 
-The core idea is simple: instead of building a visual through a monolithic shader with dozens of parameters, the image is constructed through **PIPEs** — linear chains of visual operators.
+The core idea is simple: instead of building a visual through a monolithic shader with dozens of parameters, the image is constructed through **ELOs** — visual operators connected in a specific sequence.
 
-Each operator receives an input texture, transforms it, and passes the result to the next operator.
+An **Elo always connects one thing to another**.
+
+Each Elo receives visual data, transforms it, and passes the result to the next Elo.
 
 ```text
 Generator → Effect → Effect → Color → Output
 ```
 
-This creates a visual workflow closer to a **synthesizer signal chain** or a **VJ effects stack** than to a node-based programming environment.
+A sequence of connected Elos forms an **ELOS**.
 
 The system should remain fast to experiment with, immediate to manipulate, and expressive enough to become a performance instrument.
 
@@ -20,15 +22,19 @@ The fundamental interaction should always be:
 
 > **Create → modulate → combine → perform.**
 
+ELO is not intended to reproduce the architecture of a traditional synthesizer. Its “instrument” metaphor comes from the way simple, composable units can be combined, modulated, saved, and performed in real time.
+
 ---
 
 ## 2. Core Model
 
-### PIPE
+### ELO
 
-A PIPE is the fundamental visual unit.
+An **Elo** is a modular visual processing unit.
 
-It contains an ordered stack of operators:
+It represents one operation in the visual signal chain and connects an input to an output.
+
+For example:
 
 ```text
 [ Lines ]
@@ -46,13 +52,33 @@ The order is meaningful.
 
 `Lines → Warp` produces a different visual process from `Warp → Lines`.
 
-PIPEs can be created, duplicated, renamed, deleted and activated.
+An Elo can be created, configured, bypassed, duplicated, reordered, and connected to another Elo.
 
-The grid of PIPEs represents the user's collection of visual patches and eventually becomes the primary performance surface.
+### ELOS
+
+An **ELOS** is a sequence of connected Elos that forms a complete visual process.
+
+```text
+Lines
+  ↓
+Warp
+  ↓
+Kaleidoscope
+  ↓
+Color Lookup
+  ↓
+Screen
+```
+
+The sequence itself is the visual instrument's basic building block.
+
+Multiple Elos can be combined into different Elos configurations, duplicated, renamed, activated, and eventually performed.
+
+The collection of available Elos and their configurations becomes the user's visual vocabulary.
 
 ### Operators
 
-Operators are modular processing units.
+Operators are the implementation model behind Elos.
 
 Each operator should:
 
@@ -67,13 +93,17 @@ Each operator should:
 The executor should remain generic:
 
 ```text
-for operator in pipe.operators:
+for operator in elo.operators:
     texture = operator.process(texture)
 ```
 
 Adding an operator should not require changing the execution architecture.
 
-### Modulation
+The user interacts with **Elos**; the system implements them as **operators**.
+
+---
+
+## 3. Modulation
 
 Parameters are not only static values.
 
@@ -91,15 +121,21 @@ The modulation system maps a normalized 0–1 signal into the parameter's range.
 source → remap → parameter
 ```
 
-The modulation system should remain independent from the PIPE document itself. Modulation is resolved at runtime and must never overwrite the stored parameter value.
+The modulation system should remain independent from the ELO document itself. Modulation is resolved at runtime and must never overwrite the stored parameter value.
 
 This distinction is fundamental:
 
-**The patch stores the instrument. The modulation system performs it.**
+**The ELO stores the instrument. The modulation system performs it.**
+
+A stored ELO configuration describes what has been built.
+
+Runtime modulation describes what is happening now.
 
 ---
 
-## 3. Current Operator Vocabulary
+## 4. Current Operator Vocabulary
+
+Shipped Elos in the live instrument.
 
 ### Generators
 
@@ -107,15 +143,21 @@ This distinction is fundamental:
 
 **Noise** — procedural value-noise field.
 
+**Shape** — circle or regular polygon.
+
+**Gradient** — linear, radial, or sweep color field.
+
 **Camera Input** — live camera texture.
 
 ### Effects
 
-**Warp** — UV distortion.
+**Warp** — UV distortion. Tile (Hold / Repeat / Mirror) fills the frame when UVs leave the image.
+
+**Transform** — translate, rotate, and scale. Same Tile modes as Warp.
 
 **Kaleidoscope** — radial mirroring.
 
-**Displace** — self-mapped pixel offset.
+**Displace** — self-mapped pixel offset. Same Tile modes as Warp.
 
 **Feedback** — decaying trail.
 
@@ -143,18 +185,18 @@ This distinction is fundamental:
 
 **Screen** — displays the current texture.
 
-This vocabulary should grow organically around the same signal-chain model.
+This vocabulary should grow organically around the same Elo-based signal-chain model. Desired Elos live in Phase 3 and are ordered by how much new visual territory they open.
 
 ---
 
-# 4. Product Architecture
+# 5. Product Architecture
 
 The architecture should preserve three independent layers:
 
 ```text
 PATCH
   ↓
-PIPE / OPERATORS
+ELOS / OPERATORS
   ↓
 RUNTIME
   ↓
@@ -162,6 +204,8 @@ OUTPUT
 ```
 
 The patch describes **what exists**.
+
+The ELOS describe **how visual operations are connected**.
 
 The runtime describes **what is happening now**.
 
@@ -182,26 +226,28 @@ Remote control should remain a separate interface:
 ```text
 Phone
   ↓ WebSocket
-Visual Synth
+ELO
   ↓
 Renderer
 ```
 
-The phone controls the system; it does not need to render the visual.
+The phone controls the instrument; it does not need to render the visual.
 
 ---
 
-# 5. Roadmap
+# 6. Roadmap
+
+**Status:** Phase 1 complete. Phase 2 complete. Phase 3 ongoing. Phase 4 onward not started.
 
 ## Phase 1 — Make the Instrument Complete
 
-The immediate goal is to make the existing PIPE model useful enough to function as a complete visual instrument.
+**Complete.** The existing ELO model is useful enough to function as a visual instrument.
 
-### Mapping
+### Mapping — done
 
-Introduce an output mapping stage.
+Output mapping is an output-stage concern, not an Elo.
 
-First implementation:
+Shipped:
 
 **Corner Pin**
 
@@ -212,31 +258,26 @@ First implementation:
 │              │
 └──────────────┘
 
-        ↓
+      ↓
 
      4-point
    perspective
    deformation
 ```
 
-The mapping system should eventually support:
+Later expansions (not Phase 1 blockers):
 
-* Corner Pin
 * Perspective Warp
 * Bézier Warp
 
-Mapping belongs to the output stage rather than individual visual operators.
+### Masks — done
 
-### Masks
+Output masks are stackable and independent from mapping.
 
-Add output masks.
-
-First:
+Shipped:
 
 * Rectangle
 * Circle
-
-Masks should be stackable.
 
 ```text
 Output
@@ -248,37 +289,33 @@ Mask
 Mapping
 ```
 
-Later:
+Later expansions (not Phase 1 blockers):
 
 * Bézier shapes
 * arbitrary vector masks
 
-Masks should be reusable independently from mapping.
+### DEBUG / SYSTEM — done
 
-### DEBUG / SYSTEM
+A persistent system overlay renders above the visual output when enabled.
 
-Add a persistent system overlay.
-
-When enabled, DEBUG/SYSTEM must always render above the visual output.
-
-It should expose runtime information such as:
+It exposes runtime information such as:
 
 * FPS
 * CPU
 * rendering information
 * system state
 
-The overlay must never become part of the rendered visual texture.
+The overlay is never part of the rendered visual texture.
 
 ---
 
-# 6. Phase 2 — Parameter System
+# 7. Phase 2 — Parameter System
 
-The next major capability is turning operators into reusable instruments rather than fixed effects.
+**Complete.** Elos can store and recall parameter configurations independently from performance state.
 
 ## Operator Presets
 
-Every operator should be able to save and recall parameter configurations.
+Every operator can save and recall parameter configurations.
 
 Example:
 
@@ -290,9 +327,9 @@ Warp
 └── Broken
 ```
 
-Presets should store operator parameters, not runtime modulation state.
+Presets store operator parameters, not runtime modulation state.
 
-A preset should therefore describe:
+A preset therefore describes:
 
 ```text
 parameter values
@@ -310,57 +347,42 @@ This distinction allows the same preset to behave differently depending on the p
 
 ---
 
-# 7. Phase 3 — Expand the Visual Vocabulary
+# 8. Phase 3 — Expand the Visual Vocabulary
 
-Once the parameter architecture is stable, expand the operator library.
+**Ongoing.** The parameter architecture is stable. The operator library keeps growing. This phase does not close: new Elos are added according to how much new visual territory they create, not to inflate the catalog.
 
-## Generators
+Each new operator should be evaluated by how effectively it becomes a new **Elo** in the visual vocabulary.
 
-```text
-Gradient
-Particles
-Video
-```
+## Desired Elos (priority)
 
-## Effects
+Ordered by new visual territory first. Compositing Elos on this list are vocabulary; multi-ELOS compositing architecture is Phase 4.
 
-```text
-Displace
-Blur
-Feedback
-```
+| Pri | Elo | Category | Why it is next |
+| --- | --- | --- | --- |
+| 1 | **Particles** | Generator | New motion language. Fields, trails, and organic structure that geometry generators cannot produce. |
+| 2 | **Video** | Generator | A second timed source besides Camera. File and stream input for performable footage. |
+| 3 | **Blend** | Compositing | First true mix Elo. Unlocks combining two textures and is the bridge into Phase 4. |
+| 4 | **Mask** | Compositing | Spatial mix as an Elo, independent from output masks. Reveals, holes, and layered forms inside the chain. |
+| 5 | **Add** | Compositing | Dedicated additive mix. May later collapse into Blend modes if Blend covers it well. |
+| 6 | **Multiply** | Compositing | Dedicated multiplicative mix. Same note as Add. |
+| 7 | **Texture** | Output | Named render target. Lets an ELOS write somewhere other than Screen. |
+| 8 | **Syphon / Spout** | Output | Desktop visual interop. Share the image with other performance software. |
+| 9 | **NDI** | Output | Network video out. Same patch, another destination. |
 
-## Compositing
-
-```text
-Blend
-Mask
-Add
-Multiply
-```
-
-## Output
-
-```text
-Texture
-Syphon / Spout
-NDI
-```
-
-Operators should be added according to how much new visual territory they create, not simply to increase the number of available effects.
+Revisit this table whenever a new Elo is proposed. Promote, demote, or drop items based on territory, not count.
 
 ---
 
-# 8. Phase 4 — Compositing
+# 9. Phase 4 — Compositing
 
-The current system is fundamentally a single texture chain.
+**Not started.** The current system is a single texture chain.
 
 The next conceptual expansion is combining multiple visual sources.
 
 For example:
 
 ```text
-PIPE A
+ELOS A
 Lines
   ↓
 Warp
@@ -370,7 +392,7 @@ Color
       ┐
       ├── Blend → Output
       │
-PIPE B
+ELOS B
 Noise
   ↓
 Kaleidoscope
@@ -378,17 +400,19 @@ Kaleidoscope
 Color
 ```
 
-This is the point where compositing becomes important.
+This introduces a second meaning for connection: an Elo does not necessarily have to connect only to the immediately previous operation.
+
+The system can eventually support multiple visual sources converging into a compositing operation.
 
 The existing operator architecture should already make this possible because operators are based around input/output textures.
 
 ---
 
-# 9. Phase 5 — From PIPEs to a Graph
+# 10. Phase 5 — From Linear ELOS to a Graph
 
-The linear PIPE model should remain the primary interaction model for as long as possible.
+**Not started.** The linear ELOS model should remain the primary interaction model for as long as possible.
 
-Eventually, however, multiple inputs and compositing create situations where a linear stack becomes insufficient.
+Eventually, however, multiple inputs and compositing create situations where a linear sequence becomes insufficient.
 
 The long-term architecture can therefore evolve from:
 
@@ -404,12 +428,16 @@ A ─────┤      ├→ D
        └→ C ──┘
 ```
 
-This should be an evolution of the existing system, not a rewrite.
+This should be an evolution of the existing ELO system, not a rewrite.
+
+The concept remains the same: **ELO means connection**.
+
+The visual graph is simply a more expressive form of connected Elos.
 
 Operators should remain unaware of whether their input comes from:
 
-* the previous operator in a PIPE;
-* another PIPE;
+* the previous operator in an ELOS;
+* another ELOS;
 * a graph connection;
 * a texture source.
 
@@ -417,7 +445,7 @@ The execution model should absorb this complexity.
 
 ---
 
-# 10. Performance
+# 11. Performance
 
 Performance is a product feature, not an implementation detail.
 
@@ -443,7 +471,7 @@ Avoid unnecessary framebuffer allocations and texture copies.
 
 **Preview efficiency**
 
-PIPE thumbnails should remain based on actual rendered output while using reduced-resolution buffers.
+ELOS thumbnails should remain based on actual rendered output while using reduced-resolution buffers.
 
 **Runtime monitoring**
 
@@ -451,7 +479,7 @@ DEBUG/SYSTEM should provide enough information to identify expensive operators a
 
 ---
 
-# 11. Remote Performance
+# 12. Remote Performance
 
 The mobile controller should eventually become more than a remote configuration interface.
 
@@ -462,7 +490,7 @@ Phone
   ↓
 WebSocket
   ↓
-Visual Synth
+ELO
 ```
 
 The long-term goal is a performance interface where the phone becomes a physical controller for the visual instrument.
@@ -480,25 +508,25 @@ The visual rendering remains on the main machine.
 
 ---
 
-# 12. Performance Model
+# 13. Performance Model
 
 The system should increasingly distinguish between **authoring** and **performance**.
 
-Authoring:
+### Authoring
 
 ```text
-Create PIPE
-Add operators
+Create ELOS
+Add Elos
 Tune parameters
 Save presets
-Build visual system
+Build visual systems
 ```
 
-Performance:
+### Performance
 
 ```text
-Activate PIPE
-Switch PIPE
+Activate ELOS
+Switch ELOS
 Modulate parameters
 Change BPM
 React to audio
@@ -511,7 +539,7 @@ A good visual instrument should allow the user to stop thinking about implementa
 
 ---
 
-# 13. Long-Term Operator Taxonomy
+# 14. Long-Term Operator Taxonomy
 
 The operator library should converge toward a consistent vocabulary:
 
@@ -529,9 +557,9 @@ COMPOSITE
 OUTPUT
 ```
 
-Not every PIPE needs every category.
+Not every ELOS needs every category.
 
-A valid PIPE could be:
+A valid ELOS could be:
 
 ```text
 Noise → Warp → Screen
@@ -563,60 +591,58 @@ The system should encourage experimentation without forcing a rigid recipe.
 
 ---
 
-# 14. Product Principles
+# 15. Product Principles
 
-### 1. The stack is the instrument
+### 1. The ELOS are the instrument
 
-The power of Visual Synth should come from combining simple operators rather than making individual operators excessively complex.
+The power of ELO should come from connecting simple operators rather than making individual operators excessively complex.
 
-### 2. Modulation should be universal
+### 2. Every Elo connects
+
+An Elo exists as part of a relationship between an input and an output.
+
+Connection is the fundamental organizing principle of the system.
+
+### 3. Modulation should be universal
 
 If a parameter exists, it should eventually be possible to modulate it.
 
-### 3. Runtime state must not destroy authoring state
+### 4. Runtime state must not destroy authoring state
 
 Performance should never overwrite the underlying patch.
 
-### 4. Operators should remain composable
+### 5. Operators should remain composable
 
 An operator should not care where its input comes from or where its output goes.
 
-### 5. The GPU does the work
+### 6. The GPU does the work
 
 Visual processing should happen where it is most efficient.
 
-### 6. Immediate feedback
+### 7. Immediate feedback
 
 Every meaningful interaction should produce an immediate visual response.
 
-### 7. Complexity should emerge from combination
+### 8. Complexity should emerge from combination
 
-Prefer ten simple operators that combine well over one operator with fifty unrelated controls.
+Prefer ten simple operators that connect well over one operator with fifty unrelated controls.
 
-### 8. The system should remain performable
+### 9. The system should remain performable
 
-Visual Synth is not only a visual programming environment.
+ELO is not only a visual programming environment.
 
-It is an **instrument**.
+It is a **modular visual instrument**.
 
 The interface, timing system, modulation, presets and remote control should ultimately support live visual performance.
 
 ---
 
-# 15. Current Priority
+# 16. Current Priority
 
-The immediate roadmap is:
+Phase 1 and Phase 2 are done. Immediate work:
 
 ```text
-DEBUG / SYSTEM
-      ↓
-Corner Pin Mapping
-      ↓
-Masks
-      ↓
-Operator Presets
-      ↓
-New Operators
+New Operators (Phase 3, ongoing)
       ↓
 Compositing
       ↓
@@ -625,6 +651,18 @@ Multi-input Processing
 Graph Architecture
 ```
 
+Next Elo to ship: **Particles**, then **Video**, then **Blend**.
+
 The strategic objective is not to add features as quickly as possible.
 
-It is to progressively transform the existing PIPE system from a **visual effect builder** into a **complete visual instrument**.
+It is to progressively transform the existing visual effect system into **ELO — a complete modular visual instrument built from Effect Linked Operators**.
+
+The core abstraction is no longer the pipeline.
+
+It is the **Elo**:
+
+> **An Elo connects one thing to another.**
+
+A sequence of connected Elos forms an **ELOS**.
+
+Together, they form the instrument.

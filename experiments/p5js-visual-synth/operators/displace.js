@@ -7,20 +7,20 @@
 		category: cat.id,
 		categoryLabel: cat.label,
 		color: cat.color,
-		help: 'Offsets the incoming image using itself as a map. Luma slides pixels along Angle. Chroma uses red and green as X and Y. Center is the value that stays still. Wrap repeats the edges instead of clamping them.',
+		help: 'Offsets the incoming image using itself as a map. Luma slides pixels along Angle. Chroma uses red and green as X and Y. Center is the value that stays still. Tile decides what happens when pixels leave the frame: Hold, Repeat, or Mirror.',
 		implemented: true,
 		defaults: {
 			amount: 0.16,
 			angle: 0,
 			center: 0.5,
 			mode: 'luma',
-			wrap: 0
+			tile: 'hold'
 		},
 		presets: [
-			{ id: 'soft', name: 'Soft', parameters: { amount: 0.08, angle: 0, center: 0.5, mode: 'luma', wrap: 0 } },
-			{ id: 'heavy', name: 'Heavy', parameters: { amount: 0.48, angle: 18, center: 0.5, mode: 'luma', wrap: 0 } },
-			{ id: 'melt', name: 'Melt', parameters: { amount: 0.32, angle: 90, center: 0.42, mode: 'luma', wrap: 0 } },
-			{ id: 'chroma', name: 'Chroma', parameters: { amount: 0.22, angle: 0, center: 0.5, mode: 'chroma', wrap: 1 } }
+			{ id: 'soft', name: 'Soft', parameters: { amount: 0.08, angle: 0, center: 0.5, mode: 'luma', tile: 'hold' } },
+			{ id: 'heavy', name: 'Heavy', parameters: { amount: 0.48, angle: 18, center: 0.5, mode: 'luma', tile: 'hold' } },
+			{ id: 'melt', name: 'Melt', parameters: { amount: 0.32, angle: 90, center: 0.42, mode: 'luma', tile: 'hold' } },
+			{ id: 'chroma', name: 'Chroma', parameters: { amount: 0.22, angle: 0, center: 0.5, mode: 'chroma', tile: 'repeat' } }
 		],
 		params: [
 			{ key: 'amount', label: 'Amount', kind: 'range', min: 0, max: 1.2, step: 0.01 },
@@ -35,10 +35,7 @@
 					{ id: 'chroma', label: 'Chroma' }
 				]
 			},
-			{ key: 'wrap', label: 'Wrap', kind: 'enum', options: [
-				{ id: 0, label: 'Clamp' },
-				{ id: 1, label: 'Repeat' }
-			]}
+			root.SynthTile.param
 		],
 		create: function (engine) {
 			const defaults = root.SynthRegistry.get('displace').defaults;
@@ -57,7 +54,7 @@
 						u_angle: num(p.angle, defaults.angle),
 						u_center: num(p.center, defaults.center),
 						u_mode: p.mode === 'chroma' ? 1 : 0,
-						u_wrap: num(p.wrap, defaults.wrap)
+						u_tile: root.SynthTile.resolve(p, defaults.tile)
 					});
 				}
 			};

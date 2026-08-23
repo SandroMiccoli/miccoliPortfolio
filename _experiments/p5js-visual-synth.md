@@ -1,5 +1,5 @@
 ---
-title: "p5.js — Visual Synth"
+title: "p5.js — ELO"
 slug: "p5js-visual-synth"
 tags:
   - p5js
@@ -12,7 +12,7 @@ show_on_home: false
 tile_size: "1x1"
 thumbnail: "thumb.png"
 description: |
-  A modular visual instrument organized as a grid of PIPEs. Each PIPE is a reusable operator chain (Lines → Warp → Color Lookup → Bloom → Screen) running as a linear, non-destructive dataflow. Same sketch in the lab and on a Raspberry Pi, with phone control over WebSocket.
+  ELO (Effect Linked Operators) is a modular visual instrument. Each Elo connects one thing to another. A sequence of Elos is an ELOS (Lines → Warp → Color Lookup → Bloom → Screen). Same sketch in the lab and on a Raspberry Pi, with phone control over WebSocket.
 stack:
   - p5.js
   - WebGL

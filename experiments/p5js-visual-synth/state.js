@@ -24,11 +24,15 @@
 	function defaultState() {
 		const pipe = root.SynthPipes && root.SynthPipes.createDefault
 			? root.SynthPipes.createDefault()
-			: { id: 'pipe_01', name: 'PIPE 01', thumbnail: '', operators: [] };
+			: { id: 'pipe_01', name: 'ELOS 01', thumbnail: '', operators: [] };
+		const templates = root.SynthTemplates ? root.SynthTemplates.initial() : [];
 		return {
 			pipes: [pipe],
 			activePipeId: pipe.id,
 			presets: root.SynthPresets ? root.SynthPresets.initial() : [],
+			templates: templates,
+			templatesSeeded: true,
+			previewTemplateId: '',
 			clock: root.SynthClock ? root.SynthClock.defaults() : { bpm: 120, originMs: Date.now() },
 			debug: { enabled: false },
 			output: root.SynthOutput ? root.SynthOutput.defaults() : {
@@ -36,6 +40,39 @@
 				masks: { enabled: true, invert: false, items: [] }
 			}
 		};
+	}
+
+	function migrateOperator(op) {
+		if (!op || !op.parameters) return op;
+		const spatial = {
+			warp: true,
+			transform: true,
+			displace: true,
+			kaleidoscope: true,
+			feedback: true
+		};
+		if (!spatial[op.type]) return op;
+		const p = op.parameters;
+		if (p.tile != null && p.tile !== '') return op;
+		const next = clone(op);
+		next.parameters = Object.assign({}, p);
+		if (op.type === 'displace' && (p.wrap === 1 || p.wrap === '1')) {
+			next.parameters.tile = 'repeat';
+		} else if (op.type === 'kaleidoscope') {
+			next.parameters.tile = 'mirror';
+		} else {
+			next.parameters.tile = 'hold';
+		}
+		return next;
+	}
+
+	function migrateOperators(items) {
+		return (items || []).map(function (item) {
+			if (!item) return item;
+			return Object.assign({}, item, {
+				operators: (item.operators || []).map(migrateOperator)
+			});
+		});
 	}
 
 	function migrate(raw) {
@@ -50,82 +87,101 @@
 		const presets = root.SynthPresets
 			? root.SynthPresets.listUser(raw.presets)
 			: (Array.isArray(raw.presets) ? clone(raw.presets) : []);
+		const seeded = !!raw.templatesSeeded || !!(raw.templates && raw.templates.length);
+		const templates = root.SynthTemplates
+			? (seeded ? root.SynthTemplates.list(raw.templates) : root.SynthTemplates.factory())
+			: (Array.isArray(raw.templates) ? clone(raw.templates) : []);
+		let state;
 		if (raw.pipes && raw.pipes.length) {
-			return {
+			state = {
 				pipes: clone(raw.pipes),
 				activePipeId: raw.activePipeId || raw.pipes[0].id,
 				presets: presets,
+				templates: templates,
+				templatesSeeded: true,
+				previewTemplateId: raw.previewTemplateId || '',
 				clock: clock,
 				debug: raw.debug || { enabled: false },
 				output: output
 			};
-		}
-		if (raw.pipeline) {
+		} else if (raw.pipeline) {
 			const pipe = root.SynthPipes
-				? root.SynthPipes.create(raw.pipeline, 'PIPE 01', 'pipe_01')
-				: { id: 'pipe_01', name: 'PIPE 01', thumbnail: '', operators: clone(raw.pipeline) };
-			return {
+				? root.SynthPipes.create(raw.pipeline, 'ELOS 01', 'pipe_01')
+				: { id: 'pipe_01', name: 'ELOS 01', thumbnail: '', operators: clone(raw.pipeline) };
+			state = {
 				pipes: [pipe],
 				activePipeId: pipe.id,
 				presets: presets,
+				templates: templates,
+				templatesSeeded: true,
+				previewTemplateId: raw.previewTemplateId || '',
 				clock: clock,
 				debug: raw.debug || { enabled: false },
 				output: output
 			};
+		} else {
+			state = deepMerge(base, raw);
 		}
-		return deepMerge(base, raw);
+		state.pipes = migrateOperators(state.pipes);
+		state.templates = migrateOperators(state.templates);
+		return state;
+	}
+
+	function mapChain(items, fn) {
+		return (items || []).map(function (item) {
+			const operators = (item.operators || []).map(fn);
+			return Object.assign({}, item, { operators: operators });
+		});
 	}
 
 	function applyOpParam(state, opParam) {
 		if (!opParam || !opParam.id) return state;
 		const next = clone(state);
-		next.pipes = (next.pipes || []).map(function (pipe) {
-			const operators = (pipe.operators || []).map(function (op) {
-				if (op.id !== opParam.id) return op;
-				const updated = clone(op);
-				updated.parameters = updated.parameters || {};
-				if (opParam.parameters) {
-					Object.keys(opParam.parameters).forEach(function (key) {
-						updated.parameters[key] = opParam.parameters[key];
-					});
-				} else if (Object.prototype.hasOwnProperty.call(opParam, 'key')) {
-					updated.parameters[opParam.key] = opParam.value;
-				}
-				if (typeof opParam.bypassed === 'boolean') {
-					updated.bypassed = opParam.bypassed;
-				}
-				if (Object.prototype.hasOwnProperty.call(opParam, 'presetId')) {
-					if (opParam.presetId) updated.presetId = opParam.presetId;
-					else delete updated.presetId;
-				}
-				return updated;
-			});
-			return Object.assign({}, pipe, { operators: operators });
-		});
+		function eachOp(op) {
+			if (op.id !== opParam.id) return op;
+			const updated = clone(op);
+			updated.parameters = updated.parameters || {};
+			if (opParam.parameters) {
+				Object.keys(opParam.parameters).forEach(function (key) {
+					updated.parameters[key] = opParam.parameters[key];
+				});
+			} else if (Object.prototype.hasOwnProperty.call(opParam, 'key')) {
+				updated.parameters[opParam.key] = opParam.value;
+			}
+			if (typeof opParam.bypassed === 'boolean') {
+				updated.bypassed = opParam.bypassed;
+			}
+			if (Object.prototype.hasOwnProperty.call(opParam, 'presetId')) {
+				if (opParam.presetId) updated.presetId = opParam.presetId;
+				else delete updated.presetId;
+			}
+			return updated;
+		}
+		next.pipes = mapChain(next.pipes, eachOp);
+		next.templates = mapChain(next.templates, eachOp);
 		return next;
 	}
 
 	function applyOpMod(state, opMod) {
 		if (!opMod || !opMod.id || !opMod.key) return state;
 		const next = clone(state);
-		next.pipes = (next.pipes || []).map(function (pipe) {
-			const operators = (pipe.operators || []).map(function (op) {
-				if (op.id !== opMod.id) return op;
-				const updated = clone(op);
-				updated.modulations = updated.modulations || {};
-				if (!opMod.modulation) {
-					delete updated.modulations[opMod.key];
-					return updated;
-				}
-				updated.modulations[opMod.key] = Object.assign(
-					{},
-					updated.modulations[opMod.key] || {},
-					opMod.modulation
-				);
+		function eachOp(op) {
+			if (op.id !== opMod.id) return op;
+			const updated = clone(op);
+			updated.modulations = updated.modulations || {};
+			if (!opMod.modulation) {
+				delete updated.modulations[opMod.key];
 				return updated;
-			});
-			return Object.assign({}, pipe, { operators: operators });
-		});
+			}
+			updated.modulations[opMod.key] = Object.assign(
+				{},
+				updated.modulations[opMod.key] || {},
+				opMod.modulation
+			);
+			return updated;
+		}
+		next.pipes = mapChain(next.pipes, eachOp);
+		next.templates = mapChain(next.templates, eachOp);
 		return next;
 	}
 
@@ -145,6 +201,11 @@
 		pipes: true,
 		activePipeId: true,
 		presets: true,
+		templates: true,
+		templatesSeeded: true,
+		previewTemplateId: true,
+		templateOps: true,
+		templateThumb: true,
 		operators: true,
 		pipeline: true,
 		opParam: true,
@@ -169,6 +230,39 @@
 			next.presets = root.SynthPresets
 				? root.SynthPresets.listUser(patch.presets)
 				: clone(patch.presets);
+		}
+		if (Object.prototype.hasOwnProperty.call(patch, 'templates')) {
+			next = clone(next);
+			next.templates = root.SynthTemplates
+				? root.SynthTemplates.list(patch.templates)
+				: clone(patch.templates);
+			next.templatesSeeded = true;
+		}
+		if (Object.prototype.hasOwnProperty.call(patch, 'templatesSeeded')) {
+			next = clone(next);
+			next.templatesSeeded = !!patch.templatesSeeded;
+		}
+		if (Object.prototype.hasOwnProperty.call(patch, 'previewTemplateId')) {
+			next = clone(next);
+			next.previewTemplateId = patch.previewTemplateId ? String(patch.previewTemplateId) : '';
+		}
+		if (patch.templateOps && patch.templateOps.id) {
+			next = clone(next);
+			next.templates = (next.templates || []).map(function (item) {
+				if (item.id !== patch.templateOps.id) return item;
+				const updated = clone(item);
+				updated.operators = clone(patch.templateOps.operators || []);
+				return updated;
+			});
+		}
+		if (patch.templateThumb && patch.templateThumb.id) {
+			next = clone(next);
+			next.templates = (next.templates || []).map(function (item) {
+				if (item.id !== patch.templateThumb.id) return item;
+				const updated = clone(item);
+				updated.thumbnail = patch.templateThumb.thumbnail || '';
+				return updated;
+			});
 		}
 		if (Object.prototype.hasOwnProperty.call(patch, 'operators')) {
 			next = setActiveOperators(next, patch.operators);

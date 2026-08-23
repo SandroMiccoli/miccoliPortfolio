@@ -9,7 +9,7 @@
 	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
 	<link rel="manifest" href="/images/favicon/site.webmanifest">
 	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
-	<title>Visual Synth</title>
+	<title>ELO</title>
 	<link rel="stylesheet" href="style.css">
 </head>
 <body class="synth-body synth-display">
@@ -17,7 +17,7 @@
 
 	<button type="button" id="synth-handle" class="synth-handle" hidden aria-hidden="true"></button>
 
-	<aside id="ui-root" class="synth-panel" aria-label="Visual Synth PIPEs"></aside>
+	<aside id="ui-root" class="synth-panel" aria-label="ELO"></aside>
 
 	<button type="button" id="qr-btn" class="synth-qr-btn" hidden aria-label="Show access QR code">QR</button>
 
@@ -28,7 +28,7 @@
 
 	<div id="boot-overlay" class="synth-boot" hidden>
 		<div class="synth-boot__card">
-			<h1 class="synth-boot__title">Synth</h1>
+			<h1 class="synth-boot__title">ELO</h1>
 			<p id="boot-url" class="synth-boot__url">http://visual-synth.local:8080</p>
 			<div id="boot-qr" class="synth-boot__qr"></div>
 			<p class="synth-boot__hint">Scan to control from your phone</p>
@@ -49,6 +49,7 @@
 	<script src="operators/gradient.js"></script>
 	<script src="operators/camera.js"></script>
 	<script src="operators/warp.js"></script>
+	<script src="operators/transform.js"></script>
 	<script src="operators/lookup.js"></script>
 	<script src="operators/ramp.js"></script>
 	<script src="operators/hsv.js"></script>
@@ -69,6 +70,7 @@
 	<script src="core/fft.js"></script>
 	<script src="core/output.js"></script>
 	<script src="core/presets.js"></script>
+	<script src="core/templates.js"></script>
 	<script src="state.js"></script>
 	<script src="core/executor.js"></script>
 	<script src="engine.js"></script>

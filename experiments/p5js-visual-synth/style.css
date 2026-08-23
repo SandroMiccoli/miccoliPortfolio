@@ -1,6 +1,6 @@
-/* Visual Synth UI
+/* ELO UI
    tokens: off-black / off-white / hairline
-   radius: 0 for chrome / grid / sheets; 12px for operator blocks (pipe building blocks)
+   radius: 0 for chrome / grid / sheets; 12px for Elo blocks (ELOS building blocks)
    z: preview 18, chrome 20, map overlay 115, hud 120, panel 130, picker 148, qr 140, sheet 145, boot 160, toasts 180, tip 185
 */
 
@@ -315,6 +315,51 @@ body.synth-control {
 
 .synth-pipes .synth-sec__head {
 	min-height: 40px;
+}
+
+.synth-gallery-tabs {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	margin: 0 0 10px;
+	border: 1px solid var(--line);
+}
+
+.synth-gallery-tab {
+	min-height: 40px;
+	padding: 0 8px;
+	border: 0;
+	border-right: 1px solid var(--line);
+	background: transparent;
+	color: var(--muted);
+	font: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	cursor: pointer;
+	appearance: none;
+}
+
+.synth-gallery-tab:last-child {
+	border-right: 0;
+}
+
+.synth-gallery-tab.is-active {
+	background: var(--fg);
+	color: var(--bg);
+}
+
+.synth-gallery-tab:active {
+	transform: scale(0.98);
+}
+
+.synth-pipe-grid__empty {
+	grid-column: 1 / -1;
+	margin: 0;
+	padding: 18px 8px;
+	color: var(--muted);
+	font-size: 12px;
+	letter-spacing: 0.04em;
 }
 
 .synth-pipe-grid {
@@ -1078,6 +1123,10 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	transform: none;
 }
 
+.synth-icon[hidden] {
+	display: none !important;
+}
+
 .synth-icon:focus-visible {
 	outline: 1px solid var(--fg);
 	outline-offset: -1px;
@@ -1551,6 +1600,10 @@ body.synth-display .synth-panel.is-open .synth-icon--grip {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 8px;
 	align-items: start;
+}
+
+.synth-xyz--xy .synth-xyz__axes {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .synth-xyz__axis {
@@ -2715,7 +2768,7 @@ body.synth-control .synth-toasts {
 	color: var(--bad);
 }
 
-/* Stage tabs: Pipeline / Mask / Mapping */
+/* Stage tabs: ELOS / Mask / Mapping */
 
 .synth-stage-tabs {
 	display: grid;

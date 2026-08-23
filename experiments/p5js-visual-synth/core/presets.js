@@ -55,7 +55,7 @@
 		((def && def.params) || []).forEach(function (spec) {
 			if (!spec || !spec.key || spec.kind === 'palette' || spec.kind === 'ramp') return;
 			if (SKIP[spec.key]) return;
-			if (spec.kind === 'xyz' && root.SynthParams) {
+			if (root.SynthParams && root.SynthParams.isVec(spec)) {
 				root.SynthParams.expand(spec).forEach(function (axis) {
 					keys.push(axis.key);
 				});

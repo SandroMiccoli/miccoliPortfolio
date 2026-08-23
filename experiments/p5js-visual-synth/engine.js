@@ -70,6 +70,8 @@
 	}
 
 	let liveExecutor = null;
+	let thumbExecutor = null;
+	let thumbComp = null;
 	let composition = null;
 	let maskPing = null;
 	let maskPong = null;
@@ -273,7 +275,9 @@
 	function operatorsOf(stateOrOps) {
 		if (Array.isArray(stateOrOps)) return stateOrOps;
 		if (root.SynthPipes) {
-			const pipe = root.SynthPipes.active(stateOrOps);
+			const pipe = root.SynthPipes.output
+				? root.SynthPipes.output(stateOrOps)
+				: root.SynthPipes.active(stateOrOps);
 			if (pipe) return pipe.operators || [];
 		}
 		return (stateOrOps && stateOrOps.pipeline) || [];
@@ -289,10 +293,11 @@
 		init: function () {
 			const src = root.SYNTH_SHADERS;
 			const vert = src.vert;
-			['lines', 'noise', 'camera', 'warp', 'lookup', 'ramp', 'hsv', 'levels', 'contrast', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy', 'maskShape', 'cornerPin', 'testCard', 'shape', 'gradient', 'displace', 'blur', 'feedback'].forEach(function (name) {
+			['lines', 'noise', 'camera', 'warp', 'lookup', 'ramp', 'hsv', 'levels', 'contrast', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy', 'maskShape', 'cornerPin', 'testCard', 'shape', 'gradient', 'displace', 'blur', 'feedback', 'transform'].forEach(function (name) {
 				shaders[name] = compile(vert, src[name]);
 			});
 			liveExecutor = root.SynthExecutor.create(root.SynthEngine);
+			thumbExecutor = root.SynthExecutor.create(root.SynthEngine);
 		},
 
 		resize: function () {
@@ -324,6 +329,31 @@
 			lastThumbLuma = thumbLuma(gfx);
 			try {
 				const q = quality == null ? 0.72 : quality;
+				return gfx.toDataURL('image/jpeg', q);
+			} catch (err) {
+				return '';
+			}
+		},
+
+		captureOperators: function (operators, time, quality) {
+			if (!thumbExecutor) return '';
+			if (!thumbComp) thumbComp = makeFbo(THUMB_W, THUMB_H);
+			const state = root.SynthState ? root.SynthState.get() : null;
+			clearFbo(thumbComp);
+			thumbExecutor.run(operators || [], time || 0, {
+				dest: thumbComp,
+				width: THUMB_W,
+				height: THUMB_H,
+				nowMs: Date.now(),
+				clock: root.SynthClock && state ? root.SynthClock.fromState(state) : null,
+				fft: root.SynthFft ? root.SynthFft.levels() : null
+			});
+			lastThumbLuma = 0;
+			const gfx = readFrom(thumbComp, false);
+			if (!gfx) return '';
+			lastThumbLuma = thumbLuma(gfx);
+			try {
+				const q = quality == null ? 0.62 : quality;
 				return gfx.toDataURL('image/jpeg', q);
 			} catch (err) {
 				return '';
