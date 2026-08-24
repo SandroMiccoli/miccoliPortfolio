@@ -1,8 +1,8 @@
 (function (root) {
 	function fpsTone(fps) {
 		if (!(fps >= 0)) return '';
-		if (fps > 24) return 'ok';
-		if (fps >= 18) return 'warn';
+		if (fps >= 20) return 'ok';
+		if (fps >= 15) return 'warn';
 		return 'bad';
 	}
 
@@ -17,6 +17,47 @@
 		if (!el) return;
 		el.classList.remove('is-ok', 'is-warn', 'is-bad');
 		if (tone) el.classList.add('is-' + tone);
+	}
+
+	function formatMs(ms) {
+		if (!(ms >= 0) || !isFinite(ms)) return '-';
+		if (ms >= 100) return Math.round(ms) + 'ms';
+		if (ms >= 10) return ms.toFixed(0) + 'ms';
+		return ms.toFixed(1) + 'ms';
+	}
+
+	function formatSize(size) {
+		if (!size || !(size.w > 0) || !(size.h > 0)) return '-';
+		return Math.round(size.w) + '\u00d7' + Math.round(size.h);
+	}
+
+	function nextLoadLevel(fps, prev) {
+		if (!(fps >= 1)) return prev || 0;
+		if (fps < 10) return 2;
+		if (fps < 12 && prev >= 2) return 2;
+		if (fps < 15) return 1;
+		if (fps < 17 && prev >= 1) return 1;
+		return 0;
+	}
+
+	function heavyOps(ops) {
+		const active = (ops || []).filter(function (op) {
+			return op && !op.bypassed && op.ms > 0;
+		});
+		if (!active.length) return [];
+		const sorted = active.slice().sort(function (a, b) {
+			return b.ms - a.ms;
+		});
+		const total = sorted.reduce(function (sum, op) {
+			return sum + op.ms;
+		}, 0);
+		const picks = [];
+		sorted.forEach(function (op) {
+			if (picks.length >= 3) return;
+			const share = total > 0 ? op.ms / total : 0;
+			if (share >= 0.16 || picks.length === 0) picks.push(op);
+		});
+		return picks;
 	}
 
 	root.SynthMeters = {
@@ -92,6 +133,8 @@
 		let libInsertAt = 0;
 		let liveOn = false;
 		let liveFrame = '';
+		let lastStats = null;
+		let loadLevel = 0;
 		const sliders = {};
 		const outSliders = {};
 		const palettes = {};
@@ -186,6 +229,9 @@
 		const activeBar = el('section', 'synth-pipe-active');
 		const activeHead = el('header', 'synth-pipe-active__head');
 		const activeName = el('h2', 'synth-pipe-active__name', 'ELOS');
+		activeName.tabIndex = 0;
+		activeName.setAttribute('role', 'button');
+		activeName.setAttribute('aria-label', 'Rename ELOS');
 		activeHead.appendChild(activeName);
 		const activeTools = el('div', 'synth-pipe-active__tools');
 		activeHead.appendChild(activeTools);
@@ -196,28 +242,37 @@
 		stack.setAttribute('aria-label', 'Elo chain');
 		rootEl.appendChild(stack);
 
-		const debug = el('section', 'synth-sec synth-sec--debug');
-		const debugHead = el('header', 'synth-sec__head');
-		debugHead.appendChild(el('h2', 'synth-sec__label', 'Sys'));
-		const debugToggle = el('button', 'synth-btn synth-toggle', 'Off');
-		debugToggle.type = 'button';
-		debugToggle.setAttribute('aria-pressed', 'false');
-		debugToggle.addEventListener('click', function () {
-			const dbg = getState().debug || {};
-			patch({ debug: { enabled: !dbg.enabled } });
-		});
-		debugHead.appendChild(debugToggle);
-		debug.appendChild(debugHead);
-		const debugStats = el('div', 'synth-debug-stats');
-		debugStats.hidden = true;
-		debugStats.appendChild(el('span', 'synth-debug-stats__key', 'Fps'));
-		const fpsVal = el('span', 'synth-meter', '-');
-		debugStats.appendChild(fpsVal);
-		debugStats.appendChild(el('span', 'synth-debug-stats__key', 'Cpu'));
-		const tempVal = el('span', 'synth-meter', '-');
-		debugStats.appendChild(tempVal);
-		debug.appendChild(debugStats);
-		rootEl.appendChild(debug);
+		const sysSlot = document.getElementById('synth-sys-slot');
+		let fpsVal = null;
+		let tempVal = null;
+		let drawVal = null;
+		let sizeVal = null;
+		let sysWarn = null;
+		if (sysSlot) {
+			sysSlot.innerHTML = '';
+			const sys = el('div', 'synth-sys');
+			sys.setAttribute('aria-label', 'System performance');
+			const sysRow = el('div', 'synth-sys__row');
+			const makeSysCell = function (key) {
+				const cell = el('div', 'synth-sys__cell');
+				cell.appendChild(el('span', 'synth-sys__key', key));
+				const val = el('span', 'synth-meter', '-');
+				cell.appendChild(val);
+				sysRow.appendChild(cell);
+				return val;
+			};
+			fpsVal = makeSysCell('Fps');
+			tempVal = makeSysCell('Cpu');
+			drawVal = makeSysCell('Ms');
+			sizeVal = makeSysCell('Out');
+			sys.appendChild(sysRow);
+			sysWarn = el('p', 'synth-sys__warn');
+			sysWarn.hidden = true;
+			sysWarn.setAttribute('role', 'status');
+			sysWarn.setAttribute('aria-live', 'polite');
+			sys.appendChild(sysWarn);
+			sysSlot.appendChild(sys);
+		}
 
 		const sheet = el('div', 'synth-sheet');
 		sheet.hidden = true;
@@ -277,8 +332,7 @@
 			btn.dataset.tip = name;
 			btn.dataset.tipDesc = description;
 			btn.appendChild(root.SynthIcons.svg(iconName));
-			btn.addEventListener('pointerup', function (event) {
-				if (event.pointerType === 'mouse' && event.button !== 0) return;
+			btn.addEventListener('click', function (event) {
 				event.preventDefault();
 				event.stopPropagation();
 				if (onClick) onClick(event);
@@ -439,10 +493,10 @@
 		stageMap.appendChild(cardRow);
 		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the ELOS so you can pin corners to the display.'));
 
-		rootEl.insertBefore(stageTabs, debug);
-		rootEl.insertBefore(stagePipeline, debug);
-		rootEl.insertBefore(stageMask, debug);
-		rootEl.insertBefore(stageMap, debug);
+		rootEl.insertBefore(stageTabs, sheet);
+		rootEl.insertBefore(stagePipeline, sheet);
+		rootEl.insertBefore(stageMask, sheet);
+		rootEl.insertBefore(stageMap, sheet);
 
 		function setActiveStage(id) {
 			activeStage = id === 'mask' || id === 'mapping' ? id : 'pipeline';
@@ -604,10 +658,17 @@
 			}
 			g.set(body, { overflow: 'hidden', display: 'block' });
 			const vars = { height: open ? 'auto' : 0, autoAlpha: open ? 1 : 0 };
-			if (instant) g.set(body, vars);
-			else g.to(body, Object.assign({
+			if (instant) {
+				g.set(body, vars);
+				if (open) g.set(body, { height: 'auto' });
+				return;
+			}
+			g.to(body, Object.assign({
 				duration: open ? dur(0.32) : dur(0.22),
-				ease: open ? 'power2.out' : 'power2.in'
+				ease: open ? 'power2.out' : 'power2.in',
+				onComplete: function () {
+					if (open) g.set(body, { height: 'auto' });
+				}
 			}, vars));
 		}
 
@@ -874,20 +935,29 @@
 		}
 
 		function startRename(item, kind) {
-			if (!item || renaming) return;
+			if (!item) return;
+			if (renaming) cancelRename();
 			renaming = true;
 			const input = el('input', 'synth-pipe-rename');
 			input.type = 'text';
 			input.value = item.name;
 			input.setAttribute('aria-label', kind === 'template' ? 'Template name' : 'ELOS name');
+			input.setAttribute('enterkeyhint', 'done');
+			input.autocomplete = 'off';
+			input.autocapitalize = 'characters';
+			input.spellcheck = false;
 			input.maxLength = 32;
 			activeName.replaceWith(input);
-			input.focus();
-			input.select();
+
+			let armed = false;
+			function arm() {
+				armed = true;
+			}
 
 			function commit() {
 				if (!renaming) return;
 				renaming = false;
+				armed = false;
 				const name = input.value.trim() || item.name;
 				if (input.parentNode) input.replaceWith(activeName);
 				activeName.textContent = name;
@@ -909,26 +979,52 @@
 				}
 				if (event.key === 'Escape') {
 					renaming = false;
-					input.replaceWith(activeName);
+					armed = false;
+					if (input.parentNode) input.replaceWith(activeName);
 					refresh();
 				}
 			});
-			input.addEventListener('blur', commit);
+			input.addEventListener('blur', function () {
+				window.setTimeout(function () {
+					if (!renaming || !armed) return;
+					if (!input.parentNode) return;
+					if (document.activeElement === input) return;
+					commit();
+				}, 0);
+			});
+
+			input.focus();
+			if (typeof input.setSelectionRange === 'function') {
+				input.setSelectionRange(0, input.value.length);
+			} else {
+				input.select();
+			}
+			input.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+			window.setTimeout(arm, 250);
 		}
+
+		function beginRename() {
+			if (galleryMode === 'templates') {
+				const tpl = selectedTemplate();
+				if (tpl) startRename(tpl, 'template');
+				return;
+			}
+			const pipe = activePipe();
+			if (pipe) startRename(pipe, 'pipe');
+		}
+
+		activeName.addEventListener('click', beginRename);
+		activeName.addEventListener('keydown', function (event) {
+			if (event.key !== 'Enter' && event.key !== ' ') return;
+			event.preventDefault();
+			beginRename();
+		});
 
 		const renameBtn = iconBtn(
 			'pencil',
 			'Rename',
 			'Change the name of the selected ELOS or template.',
-			function () {
-				if (galleryMode === 'templates') {
-					const tpl = selectedTemplate();
-					if (tpl) startRename(tpl, 'template');
-					return;
-				}
-				const pipe = activePipe();
-				if (pipe) startRename(pipe, 'pipe');
-			}
+			beginRename
 		);
 		const dupBtn = iconBtn(
 			'copy',
@@ -1698,10 +1794,19 @@
 				panel.querySelectorAll('[data-src]').forEach(function (btn) {
 					btn.classList.toggle('is-active', btn.dataset.src === source);
 				});
-				if (modeRow) modeRow.hidden = source === 'fft';
-				if (timeRow) timeRow.hidden = source !== 'time';
-				if (bpmRow) bpmRow.hidden = source !== 'bpm';
-				if (fftRow) fftRow.hidden = source !== 'fft';
+				const nextMode = source === 'fft';
+				const nextTime = source !== 'time';
+				const nextBpm = source !== 'bpm';
+				const nextFft = source !== 'fft';
+				const changed = (modeRow && modeRow.hidden !== nextMode)
+					|| (timeRow && timeRow.hidden !== nextTime)
+					|| (bpmRow && bpmRow.hidden !== nextBpm)
+					|| (fftRow && fftRow.hidden !== nextFft);
+				if (modeRow) modeRow.hidden = nextMode;
+				if (timeRow) timeRow.hidden = nextTime;
+				if (bpmRow) bpmRow.hidden = nextBpm;
+				if (fftRow) fftRow.hidden = nextFft;
+				if (changed && modOn && opId) relayoutOpBody(opId);
 			}
 
 			function setModeUi(mode) {
@@ -1959,6 +2064,7 @@
 
 			function setMod(mod) {
 				const on = !!(mod && mod.enabled);
+				const wasOn = modOn;
 				modOn = on;
 				wrap.classList.toggle('is-mod', on);
 				slider.classList.toggle('is-mod', on);
@@ -1980,6 +2086,14 @@
 					}
 				}
 				render();
+				if (on !== wasOn && opId) {
+					relayoutOpBody(opId);
+					if (on && panel) {
+						window.requestAnimationFrame(function () {
+							panel.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+						});
+					}
+				}
 			}
 
 			current = clamp(current);
@@ -2064,8 +2178,20 @@
 			const body = card.querySelector('.synth-op__body');
 			if (!body) return;
 			const g = getGsap();
-			if (g) g.set(body, { height: 'auto', overflow: 'hidden' });
-			else body.style.height = 'auto';
+			if (g) {
+				g.killTweensOf(body);
+				g.set(body, {
+					height: 'auto',
+					overflow: 'hidden',
+					autoAlpha: 1,
+					display: 'block'
+				});
+			} else {
+				body.style.display = 'block';
+				body.style.height = 'auto';
+				body.style.opacity = '1';
+				body.style.visibility = 'visible';
+			}
 		}
 
 		function userPresets() {
@@ -3145,10 +3271,17 @@
 			}
 			g.set(body, { overflow: 'hidden', display: 'block' });
 			const vars = { height: open ? 'auto' : 0, autoAlpha: open ? 1 : 0 };
-			if (instant) g.set(body, vars);
-			else g.to(body, Object.assign({
+			if (instant) {
+				g.set(body, vars);
+				if (open) g.set(body, { height: 'auto' });
+				return;
+			}
+			g.to(body, Object.assign({
 				duration: open ? dur(0.38) : dur(0.26),
-				ease: open ? 'power2.out' : 'power2.in'
+				ease: open ? 'power2.out' : 'power2.in',
+				onComplete: function () {
+					if (open) g.set(body, { height: 'auto' });
+				}
 			}, vars));
 		}
 
@@ -3251,6 +3384,9 @@
 			head.appendChild(ident);
 
 			const headTools = el('div', 'synth-op__head-tools');
+			const cost = el('span', 'synth-op__cost synth-meter');
+			cost.hidden = true;
+			headTools.appendChild(cost);
 			if (def.category === 'generator') {
 				const soloBtn = el('button', 'synth-icon synth-op__solo', 'S');
 				soloBtn.type = 'button';
@@ -3677,8 +3813,10 @@
 			if (!renaming) {
 				if (galleryMode === 'templates') {
 					activeName.textContent = tpl ? tpl.name : 'TEMPLATE';
+					activeName.setAttribute('aria-label', 'Rename template');
 				} else {
 					activeName.textContent = pipe ? pipe.name : 'ELOS';
+					activeName.setAttribute('aria-label', 'Rename ELOS');
 				}
 			}
 			refreshPreview(pipe);
@@ -3755,12 +3893,7 @@
 			}
 
 			refreshOutput();
-
-			const dbgOn = !!(s.debug && s.debug.enabled);
-			debugToggle.textContent = dbgOn ? 'On' : 'Off';
-			debugToggle.classList.toggle('is-active', dbgOn);
-			debugToggle.setAttribute('aria-pressed', dbgOn ? 'true' : 'false');
-			debugStats.hidden = !dbgOn;
+			paintOpLoad();
 
 			if (root.SynthClock && !editingBpm) {
 				bpmVal.textContent = String(Math.round(root.SynthClock.fromState(s).bpm));
@@ -3807,20 +3940,91 @@
 			});
 		}
 
+		function paintOpLoad() {
+			const stats = lastStats;
+			const heavy = loadLevel > 0 ? heavyOps(stats && stats.ops) : [];
+			const heavyIds = {};
+			heavy.forEach(function (op) {
+				if (op.id) heavyIds[op.id] = op;
+			});
+			const costs = {};
+			let totalMs = 0;
+			(stats && stats.ops ? stats.ops : []).forEach(function (op) {
+				if (!op || !op.id) return;
+				costs[op.id] = op;
+				if (!op.bypassed && op.ms > 0) totalMs += op.ms;
+			});
+			const showCost = loadLevel > 0 && totalMs >= 4;
+			stack.querySelectorAll('.synth-op').forEach(function (card) {
+				const hit = heavyIds[card.dataset.id];
+				card.classList.toggle('is-heavy', !!hit);
+				card.classList.toggle('is-heavy-bad', !!(hit && loadLevel > 1));
+				const costEl = card.querySelector('.synth-op__cost');
+				if (!costEl) return;
+				const sample = costs[card.dataset.id];
+				if (!showCost || !sample || sample.bypassed) {
+					costEl.hidden = true;
+					costEl.textContent = '';
+					applyTone(costEl, '');
+					return;
+				}
+				costEl.hidden = false;
+				costEl.textContent = formatMs(sample.ms);
+				applyTone(costEl, hit ? (loadLevel > 1 ? 'bad' : 'warn') : '');
+			});
+		}
+
 		function refreshStats(stats) {
 			if (!stats) return;
-			if (stats.fps != null) {
-				fpsVal.textContent = Number(stats.fps).toFixed(1);
-				applyTone(fpsVal, fpsTone(stats.fps));
-			}
-			if (!Object.prototype.hasOwnProperty.call(stats, 'tempC')) return;
-			if (stats.tempC == null) {
-				tempVal.textContent = '-';
-				applyTone(tempVal, '');
+			if (lastStats) {
+				lastStats = Object.assign({}, lastStats, stats);
+				if (stats.ops) lastStats.ops = stats.ops;
 			} else {
-				tempVal.textContent = Number(stats.tempC).toFixed(1) + ' C';
-				applyTone(tempVal, tempTone(stats.tempC));
+				lastStats = Object.assign({}, stats);
 			}
+			const current = lastStats;
+			if (current.fps != null && fpsVal) {
+				fpsVal.textContent = Number(current.fps).toFixed(1);
+				applyTone(fpsVal, fpsTone(current.fps));
+			}
+			if (Object.prototype.hasOwnProperty.call(stats, 'tempC') && tempVal) {
+				if (stats.tempC == null) {
+					tempVal.textContent = '-';
+					applyTone(tempVal, '');
+				} else {
+					tempVal.textContent = Number(stats.tempC).toFixed(1) + '\u00b0C';
+					applyTone(tempVal, tempTone(stats.tempC));
+				}
+			}
+			if (drawVal) {
+				const ms = current.fps > 0 ? 1000 / Number(current.fps) : null;
+				drawVal.textContent = formatMs(ms);
+				if (current.fps != null) applyTone(drawVal, fpsTone(current.fps));
+			}
+			if (sizeVal && current.size) {
+				sizeVal.textContent = formatSize(current.size);
+			}
+			if (current.fps != null) {
+				loadLevel = nextLoadLevel(Number(current.fps), loadLevel);
+			}
+			if (sysSlot) {
+				document.body.classList.toggle('is-sys-warn', loadLevel > 0);
+				document.body.classList.toggle('is-sys-bad', loadLevel > 1);
+			}
+			if (sysWarn) {
+				if (loadLevel <= 0) {
+					sysWarn.hidden = true;
+					sysWarn.textContent = '';
+				} else {
+					const names = heavyOps(current.ops).map(function (op) {
+						return op.name || op.type;
+					});
+					const head = loadLevel > 1 ? 'Chain is too heavy' : 'Chain is getting heavy';
+					sysWarn.textContent = names.length ? head + ' \u00b7 ' + names.join(', ') : head;
+					sysWarn.hidden = false;
+				}
+			}
+			paintOpLoad();
 		}
 
 		rootEl.addEventListener('pointerdown', function (event) {

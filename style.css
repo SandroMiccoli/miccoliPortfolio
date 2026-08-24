@@ -1,7 +1,7 @@
 /* ELO UI
    tokens: off-black / off-white / hairline
    radius: 0 for chrome / grid / sheets; 12px for Elo blocks (ELOS building blocks)
-   z: preview 18, chrome 20, map overlay 115, hud 120, panel 130, picker 148, qr 140, sheet 145, boot 160, toasts 180, tip 185
+   z: preview 18, chrome 20, map overlay 115, panel 130, picker 148, qr 140, sheet 145, boot 160, toasts 180, tip 185
 */
 
 :root {
@@ -13,7 +13,9 @@
 	--ok: #6e9a62;
 	--warn: #c4a035;
 	--bad: #c45c52;
-	--chrome-h: calc(72px + env(safe-area-inset-top, 0px));
+	--chrome-inner: 72px;
+	--sys-h: 0px;
+	--chrome-h: calc(var(--chrome-inner) + var(--sys-h) + env(safe-area-inset-top, 0px));
 	--pad: 16px;
 	--hit: 48px;
 	--font: ui-monospace, "Cascadia Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
@@ -72,6 +74,15 @@ body.synth-control {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+body.synth-control,
+body.synth-display {
+	--sys-h: 42px;
+}
+
+body.is-sys-warn {
+	--sys-h: 68px;
+}
+
 .synth-stage,
 .synth-stage canvas,
 #app,
@@ -96,7 +107,6 @@ body.synth-control {
 .synth-chrome,
 .synth-boot,
 .synth-toasts,
-.synth-debug-hud,
 .synth-qr-btn,
 .synth-map-overlay {
 	font-family: var(--font);
@@ -109,6 +119,12 @@ body.synth-control {
 .synth-boot *,
 .synth-toasts * {
 	font-family: inherit;
+}
+
+.synth-panel input,
+.synth-panel textarea {
+	-webkit-user-select: text;
+	user-select: text;
 }
 
 .synth-panel h1,
@@ -150,6 +166,39 @@ body.synth-control {
 
 .lab-body .synth-panel {
 	padding-top: 72px;
+}
+
+/* Display overlay uses the same control page chrome + panel */
+
+body.synth-display .synth-ui {
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 130;
+	width: min(520px, 100vw);
+	overflow: auto;
+	overscroll-behavior: contain;
+	background: var(--bg);
+	border-left: 1px solid var(--line);
+	transform: translateX(100%);
+	transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+	touch-action: pan-y;
+}
+
+body.synth-display .synth-ui.is-open {
+	transform: translateX(0);
+}
+
+body.synth-display .synth-ui .synth-chrome {
+	flex: 0 0 auto;
+}
+
+body.synth-display .synth-ui .synth-panel.is-page {
+	flex: 1 0 auto;
+	width: 100%;
 }
 
 /* Phone control page */
@@ -601,6 +650,8 @@ body.synth-control {
 .synth-pipe-active__name {
 	margin: 0;
 	min-width: 0;
+	min-height: 44px;
+	line-height: 44px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -608,6 +659,7 @@ body.synth-control {
 	font-weight: 500;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
+	cursor: pointer;
 }
 
 .synth-pipe-active__tools {
@@ -624,15 +676,20 @@ body.synth-control {
 	background: var(--bg);
 	color: var(--fg);
 	font: inherit;
-	font-size: 12px;
+	font-size: 16px;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
+	-webkit-user-select: text;
+	user-select: text;
+	scroll-margin-top: calc(var(--chrome-h) + var(--preview-h) + 12px);
 }
 
 .synth-pipe-rename:focus {
 	outline: none;
 }
 
+body.synth-display .synth-ui.is-open,
+body.synth-display .synth-ui.is-open *,
 body.synth-display .synth-panel.is-open,
 body.synth-display .synth-picker,
 body.synth-display .synth-boot,
@@ -1011,6 +1068,36 @@ body.synth-display .synth-float-tip {
 		0 0 0 2px var(--fg);
 }
 
+.synth-op.is-heavy {
+	z-index: 3;
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, #ededed 16%, transparent),
+		inset 0 -1px 0 color-mix(in srgb, #101010 28%, transparent),
+		0 0 0 2px var(--warn);
+}
+
+.synth-op.is-heavy-bad {
+	z-index: 3;
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, #ededed 16%, transparent),
+		inset 0 -1px 0 color-mix(in srgb, #101010 28%, transparent),
+		0 0 0 2px var(--bad);
+}
+
+.synth-op__cost {
+	min-width: 3.2em;
+	padding: 0 8px 0 0;
+	font-size: 10px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.04em;
+	color: var(--muted);
+	text-align: right;
+}
+
+.synth-op__cost[hidden] {
+	display: none !important;
+}
+
 .synth-op__head {
 	display: grid;
 	grid-template-columns: 44px minmax(0, 1fr) auto;
@@ -1251,9 +1338,10 @@ body.synth-display .synth-float-tip {
 	top: 0;
 	z-index: 20;
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
+	gap: 0;
 	min-height: var(--chrome-h);
 	padding: env(safe-area-inset-top, 0px) calc(var(--pad) + env(safe-area-inset-right, 0px)) 0 calc(var(--pad) + env(safe-area-inset-left, 0px));
 	background: var(--bg);
@@ -1281,6 +1369,68 @@ body.synth-display .synth-float-tip {
 
 .synth-chrome__help {
 	flex: 0 0 auto;
+}
+
+.synth-chrome__sys {
+	width: 100%;
+	min-height: var(--sys-h);
+	border-top: 1px solid var(--line);
+}
+
+.synth-sys {
+	min-height: var(--sys-h);
+}
+
+.synth-sys__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px 16px;
+	min-height: 34px;
+	padding: 6px 0 8px;
+}
+
+.synth-sys__cell {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.synth-sys__key {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.synth-sys__warn {
+	margin: 0;
+	padding: 0 0 8px;
+	font-size: 11px;
+	line-height: 1.35;
+	letter-spacing: 0.04em;
+	color: var(--warn);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.synth-sys__warn[hidden] {
+	display: none !important;
+}
+
+body.is-sys-bad .synth-sys__warn {
+	color: var(--bad);
+}
+
+body.is-sys-warn .synth-chrome__sys {
+	background: color-mix(in srgb, var(--warn) 12%, var(--bg));
+}
+
+body.is-sys-bad .synth-chrome__sys {
+	background: color-mix(in srgb, var(--bad) 14%, var(--bg));
 }
 
 .synth-chrome__title {
@@ -1455,8 +1605,7 @@ body.synth-display .synth-float-tip {
 }
 
 .synth-sec__hint[hidden],
-.synth-cam-params[hidden],
-.synth-debug-stats[hidden] {
+.synth-cam-params[hidden] {
 	display: none !important;
 }
 
@@ -2470,6 +2619,7 @@ body.synth-display .synth-float-tip {
 	flex-direction: column;
 	gap: 8px;
 	padding: 4px 0 2px;
+	scroll-margin-top: calc(var(--chrome-h) + var(--preview-h) + 12px);
 }
 
 .synth-mod[hidden],
@@ -2749,43 +2899,6 @@ body.synth-control .synth-toasts {
 .synth-field[hidden],
 .synth-field[data-visible-when][hidden] {
 	display: none !important;
-}
-
-/* Debug HUD on the renderer */
-
-.synth-debug-hud {
-	position: fixed;
-	top: 12px;
-	left: 12px;
-	z-index: 120;
-	padding: 8px 10px;
-	border: 1px solid var(--line);
-	background: rgba(16, 16, 16, 0.88);
-	font-family: var(--font);
-	font-size: 12px;
-	letter-spacing: 0.04em;
-	line-height: 1.5;
-	pointer-events: none;
-	color: var(--muted);
-}
-
-.synth-debug-hud[hidden] {
-	display: none !important;
-}
-
-.synth-debug-stats {
-	display: grid;
-	grid-template-columns: 40px 1fr;
-	gap: 6px 12px;
-	padding-top: 4px;
-	font-size: 13px;
-}
-
-.synth-debug-stats__key {
-	color: var(--muted);
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	font-size: 11px;
 }
 
 .synth-meter {
@@ -3142,6 +3255,7 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 
 @media (prefers-reduced-motion: reduce) {
 	.synth-panel,
+	.synth-ui,
 	.synth-boot,
 	.synth-toast,
 	.synth-qr-btn,

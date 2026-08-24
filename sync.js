@@ -114,8 +114,11 @@
 		sendNotify: function (level, message) {
 			send({ type: 'notify', level: level, message: message });
 		},
-		sendStats: function (fps) {
-			send({ type: 'stats', fps: fps });
+		sendStats: function (fpsOrStats) {
+			const stats = typeof fpsOrStats === 'number'
+				? { fps: fpsOrStats }
+				: (fpsOrStats || {});
+			send(Object.assign({ type: 'stats' }, stats));
 		},
 		sendLive: function (enabled) {
 			send({ type: 'live', enabled: !!enabled });

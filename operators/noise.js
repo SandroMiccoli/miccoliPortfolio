@@ -14,7 +14,7 @@
 			translateX: 0,
 			translateY: 0,
 			translateZ: 0,
-			speedX: 0.18,
+			speedX: 0,
 			speedY: 0,
 			speedZ: 0,
 			amplitude: 1,

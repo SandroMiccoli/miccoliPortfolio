@@ -17,14 +17,20 @@
 
 	<button type="button" id="synth-handle" class="synth-handle" hidden aria-hidden="true"></button>
 
-	<aside id="ui-root" class="synth-panel" aria-label="ELO"></aside>
+	<div id="synth-ui" class="synth-ui" aria-hidden="true">
+		<header class="synth-chrome">
+			<div class="synth-chrome__inner">
+				<div class="synth-chrome__copy">
+					<h1 class="synth-chrome__title">ELO</h1>
+				</div>
+				<div id="synth-help-slot" class="synth-chrome__help"></div>
+			</div>
+			<div id="synth-sys-slot" class="synth-chrome__sys"></div>
+		</header>
+		<aside id="ui-root" class="synth-panel is-page" aria-label="ELO"></aside>
+	</div>
 
 	<button type="button" id="qr-btn" class="synth-qr-btn" hidden aria-label="Show access QR code">QR</button>
-
-	<div id="debug-hud" class="synth-debug-hud" hidden>
-		<div>FPS <span id="debug-fps" class="synth-meter">-</span></div>
-		<div>CPU <span id="debug-temp" class="synth-meter">-</span></div>
-	</div>
 
 	<div id="boot-overlay" class="synth-boot" hidden>
 		<div class="synth-boot__card">

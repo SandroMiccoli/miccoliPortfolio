@@ -481,7 +481,7 @@ async function start() {
 
 	const server = http.createServer(app);
 	const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
-	let latestStats = { fps: null, tempC: readCpuTemp() };
+	let latestStats = { fps: null, tempC: readCpuTemp(), frameMs: null, size: null, ops: [] };
 	let livePreview = false;
 	let cameras = [];
 	let lastNotify = null;
@@ -511,11 +511,22 @@ async function start() {
 		});
 	}
 
+	function statsPayload() {
+		return {
+			type: 'stats',
+			fps: latestStats.fps,
+			tempC: latestStats.tempC,
+			frameMs: latestStats.frameMs,
+			size: latestStats.size,
+			ops: latestStats.ops
+		};
+	}
+
 	function broadcastStats() {
 		latestStats.tempC = readCpuTemp();
-		const payload = { type: 'stats', fps: latestStats.fps, tempC: latestStats.tempC };
+		const packed = JSON.stringify(statsPayload());
 		wss.clients.forEach((client) => {
-			if (client.readyState === 1) client.send(JSON.stringify(payload));
+			if (client.readyState === 1) client.send(packed);
 		});
 	}
 
@@ -532,7 +543,7 @@ async function start() {
 				ws.role = msg.role || '';
 				ws.send(JSON.stringify({ type: 'state', state: state }));
 				ws.send(JSON.stringify(Object.assign({ type: 'info' }, makeInfo(port, httpsPort))));
-				ws.send(JSON.stringify({ type: 'stats', fps: latestStats.fps, tempC: latestStats.tempC }));
+				ws.send(JSON.stringify(statsPayload()));
 				ws.send(JSON.stringify({ type: 'live', enabled: livePreview }));
 				ws.send(JSON.stringify({ type: 'cameras', devices: cameras }));
 				if (lastNotify && ws.role === 'control' && Date.now() - lastNotify.at < 60000) {
@@ -630,6 +641,21 @@ async function start() {
 
 			if (msg.type === 'stats' && msg.fps != null) {
 				latestStats.fps = Number(msg.fps);
+				latestStats.frameMs = msg.frameMs != null && isFinite(Number(msg.frameMs))
+					? Number(msg.frameMs)
+					: null;
+				latestStats.size = msg.size && isFinite(Number(msg.size.w)) && isFinite(Number(msg.size.h))
+					? { w: Math.round(Number(msg.size.w)), h: Math.round(Number(msg.size.h)) }
+					: null;
+				latestStats.ops = Array.isArray(msg.ops)
+					? msg.ops.slice(0, 64).map((op) => ({
+						id: String(op.id || ''),
+						type: String(op.type || ''),
+						name: String(op.name || op.type || ''),
+						ms: Number(op.ms) || 0,
+						bypassed: !!op.bypassed
+					}))
+					: [];
 				broadcastStats();
 				return;
 			}

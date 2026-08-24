@@ -197,7 +197,7 @@ Shipped Elos in the live instrument.
 
 **Screen** — displays the current texture.
 
-This vocabulary should grow organically around the same Elo-based signal-chain model. Desired Elos live in Phase 3 and are ordered by how much new visual territory they open.
+This vocabulary should grow organically around the same Elo-based signal-chain model. New generators, outputs, and operators after 0.1.0-beta are ordered by how much new visual territory they open.
 
 ---
 
@@ -249,42 +249,63 @@ The phone controls the instrument; it does not need to render the visual.
 
 # 6. Roadmap
 
-**Status:** Phase 1 complete. Phase 2 complete. Phase 3 ongoing. Phase 4 onward not started.
+**Status:** 0.1.0-beta is the initial release / MVP. Architecture below is the launch target. After launch: composition operators first, then new sources, professional video I/O, and expressive remote control.
 
-## Phase 1 — Make the Instrument Complete
+---
 
-**Complete.** The existing ELO model is useful enough to function as a visual instrument.
+## Version 0.1.0-beta — Initial Release
 
-### Mapping — done
+This version defines the ELO MVP. It establishes the visual instrument's foundation by unifying the **linear rendering engine** with the first **composition and reuse** architecture.
+
+The linear chain remains the interaction model. Composition happens without a node graph.
+
+### Stable Linear Engine
+
+Fluid execution of operators — Generators, Effects, Filters, Color — designed to run in browsers and on mobile devices.
+
+```text
+for operator in elo.operators:
+    texture = operator.process(texture)
+```
+
+Adding an operator should not require changing the execution architecture.
+
+### Modulation System
+
+Parameters react to BPM and audio signals (FFT), fully independent of the state saved in the patch.
+
+The ELO stores the instrument. The modulation system performs it.
+
+### State Management
+
+Save, load, and switch between:
+
+* operator presets
+* complete ELOS configurations
+
+Presets store operator parameters, not runtime modulation state.
+
+A preset therefore describes:
+
+```text
+parameter values
+```
+
+rather than:
+
+```text
+parameter values + current BPM phase + FFT state
+```
+
+The same preset can behave differently depending on the performance context.
+
+### Output Mapping and Masks
 
 Output mapping is an output-stage concern, not an Elo.
 
-Shipped:
+**Corner Pin** — 4-point perspective deformation of the final image.
 
-**Corner Pin**
-
-```text
-┌──────────────┐
-│              │
-│    IMAGE     │
-│              │
-└──────────────┘
-
-      ↓
-
-     4-point
-   perspective
-   deformation
-```
-
-Later expansions (not Phase 1 blockers):
-
-* Perspective Warp
-* Bézier Warp
-
-### Masks — done
-
-Output masks are stackable and independent from mapping.
+**Masks** — stackable and independent from mapping.
 
 Shipped:
 
@@ -301,130 +322,146 @@ Mask
 Mapping
 ```
 
-Later expansions (not Phase 1 blockers):
+Later expansions (not 0.1.0-beta blockers):
 
-* Bézier shapes
-* arbitrary vector masks
+* Perspective Warp
+* Bézier Warp
+* Bézier / arbitrary vector masks
 
-### DEBUG / SYSTEM — done
+### DEBUG / SYSTEM
 
 A persistent system overlay renders above the visual output when enabled.
 
-It exposes runtime information such as:
-
-* FPS
-* CPU
-* rendering information
-* system state
+It exposes runtime information such as FPS, CPU, rendering information, and system state.
 
 The overlay is never part of the rendered visual texture.
 
+### ELOS Reuse (Sub-patching)
+
+A new operator inserts a previously saved ELOS into a new chain as a single block.
+
+```text
+[ Saved ELOS ]
+      ↓
+[ Warp ]
+      ↓
+[ Color Lookup ]
+      ↓
+[ Screen ]
+```
+
+The nested ELOS is one Elo in the parent chain. Internally it is still a sequence of operators.
+
+### Secondary Inputs via Parameter
+
+Operators that need a second map — Displace, Blend, and similar — expose a simple dropdown in the UI to pull the texture from another existing ELOS.
+
+No node graph.
+
+```text
+ELOS A (main chain)              ELOS B (texture source)
+Lines                            Noise
+  ↓                                ↓
+Warp                             Kaleidoscope
+  ↓
+Displace  ←── dropdown ────────── output
+  ↓
+Screen
+```
+
+The secondary input is a parameter, not a visual cable.
+
+### Internal Dependency Resolver
+
+The rendering core calculates execution order behind the scenes.
+
+It resolves nested chains (sub-patches) and secondary texture sources before processing the main chain.
+
+```text
+1. Resolve nested ELOS
+2. Resolve secondary texture sources
+3. Execute the main chain
+```
+
+Operators stay unaware of whether their input comes from the previous Elo, a nested ELOS, or another ELOS selected in a dropdown. The executor absorbs that complexity.
+
 ---
 
-# 7. Phase 2 — Parameter System
+# 7. Next Steps — Continuous Evolution
 
-**Complete.** Elos can store and recall parameter configurations independently from performance state.
+With the central architecture established in 0.1.0-beta, development first **validates composition**, then expands sources and professional video I/O.
 
-## Operator Presets
+Priority is fluid. The table below is the current order.
 
-Every operator can save and recall parameter configurations.
+### Composition Operators
 
-Example:
+The first Elos after launch exist to prove the secondary-input architecture in real patches.
 
-```text
-Warp
-├── Soft
-├── Heavy
-├── Liquid
-└── Broken
-```
+**Blend** — the first Elo to make real use of the secondary-input dropdown, opening the composition era.
 
-Presets store operator parameters, not runtime modulation state.
+**Mask** — spatial cuts inside the chain, using other ELOS as reference, independent from output masks.
 
-A preset therefore describes:
+**Add** / **Multiply** — dedicated mix Elos. Useful for testing multi-input stability. May later collapse into Blend modes.
 
-```text
-parameter values
-```
+### New Generator Sources
 
-rather than:
+Organic and temporal generators, after composition is proven:
 
-```text
-parameter values + current BPM phase + FFT state
-```
+**Video** — file and stream input. A second timed source besides Camera, for performable footage.
 
-The modulation system remains external.
+**Particles** — GPU-based particle fields, trails, and organic structure that geometry generators cannot produce. GPU work is required to keep performance viable. Moved below composition so it does not delay architecture validation.
 
-This distinction allows the same preset to behave differently depending on the performance context.
+### Professional Video Communication
 
----
+Integration with VJ software and networks:
 
-# 8. Phase 3 — Expand the Visual Vocabulary
+**Syphon / Spout** — same-computer texture exchange with other performance software.
 
-**Ongoing.** The parameter architecture is stable. The operator library keeps growing. This phase does not close: new Elos are added according to how much new visual territory they create, not to inflate the catalog.
+**NDI** — send video over the network. Same patch, another destination.
 
-Each new operator should be evaluated by how effectively it becomes a new **Elo** in the visual vocabulary.
+### Remote Control Evolution
+
+Expand WebSocket so the phone becomes an expressive live controller, not only a remote configuration UI.
+
+Control sources:
+
+* touch
+* accelerometer
+* gyroscope
+
+These signals modulate parameters in real time. Visual rendering remains on the main machine.
+
+### Continuous Vocabulary Expansion
+
+Organic addition of new effect and color operators, always evaluated by their potential to create new visual territories — not to inflate the catalog.
+
+Each new operator should become a useful **Elo** in the visual vocabulary.
 
 ## Desired Elos (priority)
 
-Ordered by new visual territory first. Compositing Elos on this list are vocabulary; multi-ELOS compositing architecture is Phase 4.
-
 | Pri | Elo | Category | Why it is next |
 | --- | --- | --- | --- |
-| 1 | **Particles** | Generator | New motion language. Fields, trails, and organic structure that geometry generators cannot produce. |
-| 2 | **Video** | Generator | A second timed source besides Camera. File and stream input for performable footage. |
-| 3 | **Blend** | Compositing | First true mix Elo. Unlocks combining two textures and is the bridge into Phase 4. |
-| 4 | **Mask** | Compositing | Spatial mix as an Elo, independent from output masks. Reveals, holes, and layered forms inside the chain. |
-| 5 | **Add** | Compositing | Dedicated additive mix. May later collapse into Blend modes if Blend covers it well. |
-| 6 | **Multiply** | Compositing | Dedicated multiplicative mix. Same note as Add. |
+| 1 | **Blend** | Compositing | First Elo to make real use of the secondary-input dropdown from 0.1.0-beta, opening the composition era. |
+| 2 | **Mask** | Compositing | Spatial cuts inside the chain using other ELOS as reference, independent from output masks. |
+| 3 | **Add** | Compositing | Dedicated additive mix. Tests multi-input flow stability. May later be absorbed by Blend. |
+| 4 | **Multiply** | Compositing | Dedicated multiplicative mix. Same logic as Add. |
+| 5 | **Video** | Generator | Timed source besides Camera. After composition, still essential for expanding sources. |
+| 6 | **Particles** | Generator | New motion language. Below composition so it does not delay architecture validation. |
 | 7 | **Texture** | Output | Named render target. Lets an ELOS write somewhere other than Screen. |
-| 8 | **Syphon / Spout** | Output | Desktop visual interop. Share the image with other performance software. |
-| 9 | **NDI** | Output | Network video out. Same patch, another destination. |
+| 8 | **Syphon / Spout** | Output | Desktop interop. Connect ELO to software such as Resolume or TouchDesigner. |
+| 9 | **NDI** | Output | Network video out. The same patch sending image to other devices. |
 
 Revisit this table whenever a new Elo is proposed. Promote, demote, or drop items based on territory, not count.
 
 ---
 
-# 9. Phase 4 — Compositing
+# 8. Later Evolution — From Linear ELOS to a Graph
 
-**Not started.** The current system is a single texture chain.
+The linear ELOS model remains the primary interaction model for as long as possible.
 
-The next conceptual expansion is combining multiple visual sources.
+0.1.0-beta already combines multiple sources through sub-patching and dropdown secondary inputs. A visual graph is not required for that.
 
-For example:
-
-```text
-ELOS A
-Lines
-  ↓
-Warp
-  ↓
-Color
-  ↓
-      ┐
-      ├── Blend → Output
-      │
-ELOS B
-Noise
-  ↓
-Kaleidoscope
-  ↓
-Color
-```
-
-This introduces a second meaning for connection: an Elo does not necessarily have to connect only to the immediately previous operation.
-
-The system can eventually support multiple visual sources converging into a compositing operation.
-
-The existing operator architecture should already make this possible because operators are based around input/output textures.
-
----
-
-# 10. Phase 5 — From Linear ELOS to a Graph
-
-**Not started.** The linear ELOS model should remain the primary interaction model for as long as possible.
-
-Eventually, however, multiple inputs and compositing create situations where a linear sequence becomes insufficient.
+Eventually, however, nested reuse and multi-input operators may create situations where a linear sequence becomes insufficient.
 
 The long-term architecture can therefore evolve from:
 
@@ -449,7 +486,8 @@ The visual graph is simply a more expressive form of connected Elos.
 Operators should remain unaware of whether their input comes from:
 
 * the previous operator in an ELOS;
-* another ELOS;
+* a nested ELOS (sub-patch);
+* another ELOS selected as a secondary input;
 * a graph connection;
 * a texture source.
 
@@ -457,7 +495,7 @@ The execution model should absorb this complexity.
 
 ---
 
-# 11. Performance
+# 9. Performance
 
 Performance is a product feature, not an implementation detail.
 
@@ -491,9 +529,9 @@ DEBUG/SYSTEM should provide enough information to identify expensive operators a
 
 ---
 
-# 12. Remote Performance
+# 10. Remote Performance
 
-The mobile controller should eventually become more than a remote configuration interface.
+The mobile controller should become more than a remote configuration interface.
 
 The system already supports:
 
@@ -505,9 +543,9 @@ WebSocket
 ELO
 ```
 
-The long-term goal is a performance interface where the phone becomes a physical controller for the visual instrument.
+After 0.1.0-beta, the WebSocket layer expands so the phone is an expressive physical controller.
 
-Potential control sources include:
+Control sources:
 
 * touch
 * accelerometer
@@ -520,7 +558,7 @@ The visual rendering remains on the main machine.
 
 ---
 
-# 13. Performance Model
+# 11. Performance Model
 
 The system should increasingly distinguish between **authoring** and **performance**.
 
@@ -551,7 +589,7 @@ A good visual instrument should allow the user to stop thinking about implementa
 
 ---
 
-# 14. Long-Term Operator Taxonomy
+# 12. Long-Term Operator Taxonomy
 
 The operator library should converge toward a consistent vocabulary:
 
@@ -603,7 +641,7 @@ The system should encourage experimentation without forcing a rigid recipe.
 
 ---
 
-# 15. Product Principles
+# 13. Product Principles
 
 ### 1. The ELOS are the instrument
 
@@ -649,21 +687,35 @@ The interface, timing system, modulation, presets and remote control should ulti
 
 ---
 
-# 16. Current Priority
+# 14. Current Priority
 
-Phase 1 and Phase 2 are done. Immediate work:
+Immediate work is the 0.1.0-beta MVP:
 
 ```text
-New Operators (Phase 3, ongoing)
+Stable linear engine
       ↓
-Compositing
+Sub-patching (ELOS reuse)
       ↓
-Multi-input Processing
+Secondary inputs via parameter
       ↓
-Graph Architecture
+Internal dependency resolver
 ```
 
-Next Elo to ship: **Particles**, then **Video**, then **Blend**.
+After launch, continuous evolution:
+
+```text
+Blend → Mask → Add → Multiply
+      ↓
+Video → Particles
+      ↓
+Texture → Syphon / Spout → NDI
+      ↓
+Expressive remote control
+      ↓
+New effect and color operators
+```
+
+A visual node graph is not on the launch path. Composition in 0.1.0-beta is sub-patching plus dropdown secondary inputs.
 
 The strategic objective is not to add features as quickly as possible.
 

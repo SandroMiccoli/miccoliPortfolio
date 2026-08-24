@@ -138,6 +138,7 @@
 			thumbDue = millis() + 90;
 			liveThumbAge += 90;
 			SynthSync.sendPreview(url, pipe.id);
+			if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(url);
 			if (liveThumbAge >= 2000 || switched || changed) {
 				liveThumbAge = 0;
 				persistThumb(pipe, url);
@@ -167,6 +168,7 @@
 	function isUiChrome(target) {
 		if (!target || !target.closest) return false;
 		return !!(
+			target.closest('#synth-ui') ||
 			target.closest('.synth-panel') ||
 			target.closest('.synth-picker') ||
 			target.closest('.synth-float-tip') ||
@@ -176,8 +178,15 @@
 
 	function setPanel(open) {
 		panelOpen = open;
+		const ui = document.getElementById('synth-ui');
 		const panel = document.getElementById('ui-root');
-		if (panel) panel.classList.toggle('is-open', open);
+		if (ui) {
+			ui.classList.toggle('is-open', open);
+			ui.setAttribute('aria-hidden', open ? 'false' : 'true');
+			if ('inert' in ui) ui.inert = !open;
+		} else if (panel) {
+			panel.classList.toggle('is-open', open);
+		}
 		if (open) {
 			revealChrome(true);
 			return;
@@ -337,28 +346,7 @@
 		}
 	}
 
-	function setDebugHud(on) {
-		const hud = document.getElementById('debug-hud');
-		if (hud) hud.hidden = !on;
-	}
-
-	function updateDebugHud(stats) {
-		const fpsEl = document.getElementById('debug-fps');
-		const tempEl = document.getElementById('debug-temp');
-		const meters = window.SynthMeters;
-		if (fpsEl && stats.fps != null) {
-			fpsEl.textContent = Number(stats.fps).toFixed(1);
-			if (meters) meters.apply(fpsEl, meters.fpsTone(stats.fps));
-		}
-		if (tempEl && Object.prototype.hasOwnProperty.call(stats, 'tempC')) {
-			if (stats.tempC == null) {
-				tempEl.textContent = '-';
-				if (meters) meters.apply(tempEl, '');
-			} else {
-				tempEl.textContent = Number(stats.tempC).toFixed(1) + '°C';
-				if (meters) meters.apply(tempEl, meters.tempTone(stats.tempC));
-			}
-		}
+	function updateStats(stats) {
 		if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 	}
 
@@ -385,6 +373,12 @@
 			captureTemplates: function () {
 				tplThumbForce = true;
 				tplThumbDue = 0;
+			},
+			setLivePreview: function (on) {
+				livePreview = !!on;
+				thumbDue = 0;
+				liveThumbAge = 2000;
+				SynthSync.sendLive(on);
 			}
 		});
 
@@ -397,9 +391,8 @@
 			});
 		}
 
-		SynthState.subscribe(function (state) {
+		SynthState.subscribe(function () {
 			if (uiApi) uiApi.refresh();
-			setDebugHud(!!(state.debug && state.debug.enabled));
 		});
 
 		if (window.SynthCamera) {
@@ -416,7 +409,6 @@
 		setupIdleChrome();
 		setupBoot();
 		setPanel(false);
-		setDebugHud(false);
 
 		SynthSync.connect({
 			role: 'display',
@@ -441,12 +433,13 @@
 				if (window.SynthNotify) SynthNotify.show(level, message);
 			},
 			onStats: function (stats) {
-				updateDebugHud(stats);
+				updateStats(stats);
 			},
 			onLive: function (enabled) {
 				livePreview = !!enabled;
 				thumbDue = 0;
 				liveThumbAge = 2000;
+				if (uiApi && uiApi.setLiveMode) uiApi.setLiveMode(!!enabled);
 			},
 			onFft: function (msg) {
 				if (window.SynthFft) SynthFft.setRemote(msg);
@@ -471,13 +464,21 @@
 		scheduleThumb(state);
 		scheduleTemplateThumbs(state);
 		if (uiApi && uiApi.tick) uiApi.tick();
-		if (state.debug && state.debug.enabled) {
+		if (millis() - lastFpsSent > 500) {
 			const fps = frameRate();
-			updateDebugHud({ fps: fps });
-			if (millis() - lastFpsSent > 500) {
-				lastFpsSent = millis();
-				SynthSync.sendStats(fps);
-			}
+			if (!(fps >= 1)) return;
+			lastFpsSent = millis();
+			const profile = window.SynthEngine && SynthEngine.profile ? SynthEngine.profile() : null;
+			const stats = {
+				fps: fps,
+				frameMs: profile && profile.frameMs != null
+					? profile.frameMs
+					: (fps > 0 ? 1000 / fps : null),
+				size: { w: width, h: height },
+				ops: (profile && profile.ops) || []
+			};
+			if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
+			SynthSync.sendStats(stats);
 		}
 	}
 

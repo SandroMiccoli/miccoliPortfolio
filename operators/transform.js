@@ -26,7 +26,7 @@
 		params: [
 			{ key: 'translate', label: 'Translate', kind: 'xy', min: -1, max: 1, step: 0.01 },
 			{ key: 'rotate', label: 'Rotate', kind: 'range', min: -180, max: 180, step: 0.1, unit: '°' },
-			{ key: 'scale', label: 'Scale', kind: 'xy', min: 0.1, max: 4, step: 0.01 },
+			{ key: 'scale', label: 'Scale', kind: 'xy', min: 0, max: 4, step: 0.01 },
 			root.SynthTile.param
 		],
 		create: function (engine) {
