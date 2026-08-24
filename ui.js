@@ -40,26 +40,6 @@
 		return 0;
 	}
 
-	function heavyOps(ops) {
-		const active = (ops || []).filter(function (op) {
-			return op && !op.bypassed && op.ms > 0;
-		});
-		if (!active.length) return [];
-		const sorted = active.slice().sort(function (a, b) {
-			return b.ms - a.ms;
-		});
-		const total = sorted.reduce(function (sum, op) {
-			return sum + op.ms;
-		}, 0);
-		const picks = [];
-		sorted.forEach(function (op) {
-			if (picks.length >= 3) return;
-			const share = total > 0 ? op.ms / total : 0;
-			if (share >= 0.16 || picks.length === 0) picks.push(op);
-		});
-		return picks;
-	}
-
 	root.SynthMeters = {
 		fpsTone: fpsTone,
 		tempTone: tempTone,
@@ -3384,9 +3364,6 @@
 			head.appendChild(ident);
 
 			const headTools = el('div', 'synth-op__head-tools');
-			const cost = el('span', 'synth-op__cost synth-meter');
-			cost.hidden = true;
-			headTools.appendChild(cost);
 			if (def.category === 'generator') {
 				const soloBtn = el('button', 'synth-icon synth-op__solo', 'S');
 				soloBtn.type = 'button';
@@ -3893,7 +3870,6 @@
 			}
 
 			refreshOutput();
-			paintOpLoad();
 
 			if (root.SynthClock && !editingBpm) {
 				bpmVal.textContent = String(Math.round(root.SynthClock.fromState(s).bpm));
@@ -3940,48 +3916,9 @@
 			});
 		}
 
-		function paintOpLoad() {
-			const stats = lastStats;
-			const heavy = loadLevel > 0 ? heavyOps(stats && stats.ops) : [];
-			const heavyIds = {};
-			heavy.forEach(function (op) {
-				if (op.id) heavyIds[op.id] = op;
-			});
-			const costs = {};
-			let totalMs = 0;
-			(stats && stats.ops ? stats.ops : []).forEach(function (op) {
-				if (!op || !op.id) return;
-				costs[op.id] = op;
-				if (!op.bypassed && op.ms > 0) totalMs += op.ms;
-			});
-			const showCost = loadLevel > 0 && totalMs >= 4;
-			stack.querySelectorAll('.synth-op').forEach(function (card) {
-				const hit = heavyIds[card.dataset.id];
-				card.classList.toggle('is-heavy', !!hit);
-				card.classList.toggle('is-heavy-bad', !!(hit && loadLevel > 1));
-				const costEl = card.querySelector('.synth-op__cost');
-				if (!costEl) return;
-				const sample = costs[card.dataset.id];
-				if (!showCost || !sample || sample.bypassed) {
-					costEl.hidden = true;
-					costEl.textContent = '';
-					applyTone(costEl, '');
-					return;
-				}
-				costEl.hidden = false;
-				costEl.textContent = formatMs(sample.ms);
-				applyTone(costEl, hit ? (loadLevel > 1 ? 'bad' : 'warn') : '');
-			});
-		}
-
 		function refreshStats(stats) {
 			if (!stats) return;
-			if (lastStats) {
-				lastStats = Object.assign({}, lastStats, stats);
-				if (stats.ops) lastStats.ops = stats.ops;
-			} else {
-				lastStats = Object.assign({}, stats);
-			}
+			lastStats = lastStats ? Object.assign({}, lastStats, stats) : Object.assign({}, stats);
 			const current = lastStats;
 			if (current.fps != null && fpsVal) {
 				fpsVal.textContent = Number(current.fps).toFixed(1);
@@ -4016,15 +3953,10 @@
 					sysWarn.hidden = true;
 					sysWarn.textContent = '';
 				} else {
-					const names = heavyOps(current.ops).map(function (op) {
-						return op.name || op.type;
-					});
-					const head = loadLevel > 1 ? 'Chain is too heavy' : 'Chain is getting heavy';
-					sysWarn.textContent = names.length ? head + ' \u00b7 ' + names.join(', ') : head;
+					sysWarn.textContent = loadLevel > 1 ? 'Chain is too heavy' : 'Chain is getting heavy';
 					sysWarn.hidden = false;
 				}
 			}
-			paintOpLoad();
 		}
 
 		rootEl.addEventListener('pointerdown', function (event) {

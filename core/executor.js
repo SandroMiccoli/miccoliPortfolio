@@ -17,29 +17,6 @@
 			let bufW = 0;
 			let bufH = 0;
 			const runtimes = {};
-			const emaMs = {};
-			let lastProfile = { frameMs: 0, ops: [] };
-
-			function nowMs() {
-				return (root.performance && performance.now) ? performance.now() : Date.now();
-			}
-
-			function blendMs(id, sample) {
-				const prev = emaMs[id];
-				const next = prev == null ? sample : prev * 0.82 + sample * 0.18;
-				emaMs[id] = next;
-				return next;
-			}
-
-			function snapshotOp(op, ms, bypassed) {
-				return {
-					id: op.id,
-					type: op.type,
-					name: op.name || op.type,
-					ms: Math.round(Math.max(0, ms) * 10) / 10,
-					bypassed: !!bypassed
-				};
-			}
 
 			function ensureBuffers(w, h) {
 				w = Math.max(2, Math.floor(w || width));
@@ -77,7 +54,6 @@
 					if (live[id]) return;
 					if (runtimes[id] && runtimes[id].dispose) runtimes[id].dispose();
 					delete runtimes[id];
-					delete emaMs[id];
 				});
 			}
 
@@ -111,20 +87,11 @@
 					let read = null;
 					let writePing = true;
 					let drewScreen = false;
-					const samples = [];
-					const tFrame = nowMs();
 
 					(pipeline || []).forEach(function (op) {
-						if (op.bypassed) {
-							emaMs[op.id] = 0;
-							samples.push(snapshotOp(op, 0, true));
-							return;
-						}
+						if (op.bypassed) return;
 						const rt = runtimeFor(op);
-						if (!rt || !rt.process) {
-							samples.push(snapshotOp(op, 0, false));
-							return;
-						}
+						if (!rt || !rt.process) return;
 
 						const isScreen = op.type === 'screen';
 						const output = isScreen ? dest : (writePing ? ping : pong);
@@ -140,7 +107,6 @@
 							? root.SynthModulate.resolveOp(op, ctx)
 							: (op.parameters || {});
 
-						const t0 = nowMs();
 						rt.process({
 							input: read || dummy,
 							hasInput: !!read,
@@ -151,7 +117,6 @@
 							height: h,
 							engine: engine
 						});
-						samples.push(snapshotOp(op, blendMs(op.id, nowMs() - t0), false));
 
 						if (isScreen) {
 							drewScreen = true;
@@ -164,15 +129,6 @@
 						if (read) copyTo(read, dest, 1);
 						else if (!dest) background(0);
 					}
-
-					lastProfile = {
-						frameMs: Math.round((nowMs() - tFrame) * 10) / 10,
-						ops: samples
-					};
-				},
-
-				profile: function () {
-					return lastProfile;
 				},
 
 				dispose: function () {

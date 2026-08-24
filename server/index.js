@@ -481,7 +481,7 @@ async function start() {
 
 	const server = http.createServer(app);
 	const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
-	let latestStats = { fps: null, tempC: readCpuTemp(), frameMs: null, size: null, ops: [] };
+	let latestStats = { fps: null, tempC: readCpuTemp(), frameMs: null, size: null };
 	let livePreview = false;
 	let cameras = [];
 	let lastNotify = null;
@@ -517,8 +517,7 @@ async function start() {
 			fps: latestStats.fps,
 			tempC: latestStats.tempC,
 			frameMs: latestStats.frameMs,
-			size: latestStats.size,
-			ops: latestStats.ops
+			size: latestStats.size
 		};
 	}
 
@@ -647,15 +646,6 @@ async function start() {
 				latestStats.size = msg.size && isFinite(Number(msg.size.w)) && isFinite(Number(msg.size.h))
 					? { w: Math.round(Number(msg.size.w)), h: Math.round(Number(msg.size.h)) }
 					: null;
-				latestStats.ops = Array.isArray(msg.ops)
-					? msg.ops.slice(0, 64).map((op) => ({
-						id: String(op.id || ''),
-						type: String(op.type || ''),
-						name: String(op.name || op.type || ''),
-						ms: Number(op.ms) || 0,
-						bypassed: !!op.bypassed
-					}))
-					: [];
 				broadcastStats();
 				return;
 			}

@@ -357,10 +357,6 @@
 			applyOutput(state);
 		},
 
-		profile: function () {
-			return liveExecutor && liveExecutor.profile ? liveExecutor.profile() : null;
-		},
-
 		capture: function (quality, flipY) {
 			lastThumbLuma = 0;
 			const gfx = readFrom(composition, !!flipY);

@@ -1,13 +1,9 @@
 (function () {
 	const EDGE = 48;
-	const BOOT_MS = 10000;
 	const CHROME_IDLE_MS = 2800;
 	let uiApi = null;
 	let panelOpen = false;
 	let applyingRemote = false;
-	let bootTimer = 0;
-	let lastInfo = null;
-	let bootShown = false;
 	let chromeTimer = 0;
 	let lastFpsSent = 0;
 	let thumbDirty = true;
@@ -16,15 +12,15 @@
 	let watchVis = '';
 	let watchCam = '';
 	let capturingThumb = false;
+	let hitchThisFrame = false;
+	let lastDrawAt = 0;
+	const fpsDts = [];
+	const FPS_SAMPLES = 45;
 	let livePreview = false;
 	let liveThumbAge = 0;
 	let camThumbTries = 0;
 	let tplThumbDue = 0;
 	let tplThumbForce = false;
-
-	function inLab() {
-		return document.body.classList.contains('lab-body');
-	}
 
 	function userPatch(patch) {
 		if (applyingRemote) return;
@@ -102,6 +98,7 @@
 		}
 		const item = pending[0];
 		capturingThumb = true;
+		hitchThisFrame = true;
 		const url = SynthEngine.captureOperators(item.operators, millis() / 1000);
 		capturingThumb = false;
 		tplThumbDue = millis() + (tplThumbForce ? 0 : 80);
@@ -132,6 +129,7 @@
 		if (livePreview) {
 			if (capturingThumb || millis() < thumbDue) return;
 			capturingThumb = true;
+			hitchThisFrame = true;
 			const url = SynthEngine.capture(0.52, flipCam);
 			capturingThumb = false;
 			if (!url) return;
@@ -153,16 +151,12 @@
 			return;
 		}
 		capturingThumb = true;
+		hitchThisFrame = true;
 		const url = SynthEngine.capture(undefined, flipCam);
 		capturingThumb = false;
 		if (!persistThumb(pipe, url)) {
 			thumbDue = millis() + 160;
 		}
-	}
-
-	function bootIsUp() {
-		const overlay = document.getElementById('boot-overlay');
-		return overlay && !overlay.hidden && !overlay.classList.contains('is-leaving');
 	}
 
 	function isUiChrome(target) {
@@ -171,8 +165,7 @@
 			target.closest('#synth-ui') ||
 			target.closest('.synth-panel') ||
 			target.closest('.synth-picker') ||
-			target.closest('.synth-float-tip') ||
-			target.closest('#boot-overlay')
+			target.closest('.synth-float-tip')
 		);
 	}
 
@@ -196,10 +189,7 @@
 	}
 
 	function revealChrome(keep) {
-		if (bootIsUp()) return;
 		document.body.classList.add('is-chrome-visible');
-		const qrBtn = document.getElementById('qr-btn');
-		if (qrBtn && lastInfo) qrBtn.hidden = false;
 		clearTimeout(chromeTimer);
 		if (keep || panelOpen) return;
 		chromeTimer = setTimeout(function () {
@@ -209,12 +199,9 @@
 
 	function setupIdleChrome() {
 		window.addEventListener('pointermove', function () {
-			if (bootIsUp()) return;
 			revealChrome();
 		});
-		window.addEventListener('pointerdown', function (event) {
-			if (event.target.closest && event.target.closest('#boot-overlay')) return;
-			if (bootIsUp()) return;
+		window.addEventListener('pointerdown', function () {
 			revealChrome();
 		});
 	}
@@ -231,7 +218,6 @@
 		window.addEventListener('pointerdown', function (event) {
 			if (event.pointerType === 'mouse' && event.button !== 0) return;
 			if (isUiChrome(event.target)) return;
-			if (bootIsUp()) return;
 			const x = event.clientX;
 			const w = window.innerWidth;
 			if (x >= w - EDGE || panelOpen) {
@@ -281,69 +267,6 @@
 			event.preventDefault();
 			setPanel(!panelOpen);
 		});
-	}
-
-	function hideBoot() {
-		const overlay = document.getElementById('boot-overlay');
-		if (!overlay || overlay.hidden) return;
-		if (bootTimer) {
-			clearTimeout(bootTimer);
-			bootTimer = 0;
-		}
-		overlay.classList.add('is-leaving');
-		let done = false;
-		function finish() {
-			if (done) return;
-			done = true;
-			overlay.removeEventListener('transitionend', finish);
-			overlay.hidden = true;
-			overlay.classList.remove('is-leaving');
-		}
-		overlay.addEventListener('transitionend', finish);
-		setTimeout(finish, 1000);
-	}
-
-	function showBoot(info) {
-		if (inLab()) return;
-		lastInfo = info;
-		const overlay = document.getElementById('boot-overlay');
-		const urlEl = document.getElementById('boot-url');
-		const qrEl = document.getElementById('boot-qr');
-		if (!overlay || !urlEl || !qrEl) return;
-
-		const lines = [info.url, info.ipOrigin].filter(function (line, i, arr) {
-			return line && arr.indexOf(line) === i;
-		});
-		urlEl.textContent = lines.join('\n') || 'http://visual-synth.local:8080';
-		qrEl.innerHTML = '';
-		if (typeof QRCode === 'function' && (info.controlUrl || info.url)) {
-			new QRCode(qrEl, {
-				text: info.controlUrl || info.url,
-				width: 176,
-				height: 176,
-				colorDark: '#000000',
-				colorLight: '#ffffff',
-				correctLevel: QRCode.CorrectLevel.M
-			});
-		}
-
-		overlay.classList.remove('is-leaving');
-		overlay.hidden = false;
-		if (bootTimer) clearTimeout(bootTimer);
-		bootTimer = setTimeout(hideBoot, BOOT_MS);
-	}
-
-	function setupBoot() {
-		const overlay = document.getElementById('boot-overlay');
-		const qrBtn = document.getElementById('qr-btn');
-		if (overlay) {
-			overlay.addEventListener('click', hideBoot);
-		}
-		if (qrBtn) {
-			qrBtn.addEventListener('click', function () {
-				if (lastInfo) showBoot(lastInfo);
-			});
-		}
 	}
 
 	function updateStats(stats) {
@@ -407,7 +330,6 @@
 
 		setupGestures();
 		setupIdleChrome();
-		setupBoot();
 		setPanel(false);
 
 		SynthSync.connect({
@@ -420,13 +342,6 @@
 				const next = SynthState.get();
 				if (incomingEmpty && next.templates && next.templates.length) {
 					userPatch({ templates: next.templates, templatesSeeded: true });
-				}
-			},
-			onInfo: function (info) {
-				lastInfo = info;
-				if (!bootShown) {
-					bootShown = true;
-					showBoot(info);
 				}
 			},
 			onNotify: function (level, message) {
@@ -458,24 +373,46 @@
 		if (window.SynthCamera) SynthCamera.probeDisplay();
 	}
 
+	function noteFrame() {
+		const now = (window.performance && performance.now) ? performance.now() : Date.now();
+		if (lastDrawAt > 0) {
+			const dt = now - lastDrawAt;
+			if (!hitchThisFrame && dt >= 8 && dt <= 220) {
+				fpsDts.push(dt);
+				if (fpsDts.length > FPS_SAMPLES) fpsDts.shift();
+			}
+		}
+		lastDrawAt = now;
+		hitchThisFrame = false;
+	}
+
+	function smoothFps() {
+		if (fpsDts.length < 10) return 0;
+		const sorted = fpsDts.slice().sort(function (a, b) {
+			return a - b;
+		});
+		const drop = Math.max(1, Math.floor(sorted.length * 0.12));
+		const slice = sorted.slice(0, sorted.length - drop);
+		let sum = 0;
+		for (let i = 0; i < slice.length; i += 1) sum += slice[i];
+		return 1000 / (sum / slice.length);
+	}
+
 	function draw() {
+		noteFrame();
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
 		scheduleThumb(state);
 		scheduleTemplateThumbs(state);
 		if (uiApi && uiApi.tick) uiApi.tick();
 		if (millis() - lastFpsSent > 500) {
-			const fps = frameRate();
+			const fps = smoothFps();
 			if (!(fps >= 1)) return;
 			lastFpsSent = millis();
-			const profile = window.SynthEngine && SynthEngine.profile ? SynthEngine.profile() : null;
 			const stats = {
 				fps: fps,
-				frameMs: profile && profile.frameMs != null
-					? profile.frameMs
-					: (fps > 0 ? 1000 / fps : null),
-				size: { w: width, h: height },
-				ops: (profile && profile.ops) || []
+				frameMs: 1000 / fps,
+				size: { w: width, h: height }
 			};
 			if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 			SynthSync.sendStats(stats);

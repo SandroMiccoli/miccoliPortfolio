@@ -1,7 +1,7 @@
 /* ELO UI
    tokens: off-black / off-white / hairline
    radius: 0 for chrome / grid / sheets; 12px for Elo blocks (ELOS building blocks)
-   z: preview 18, chrome 20, map overlay 115, panel 130, picker 148, qr 140, sheet 145, boot 160, toasts 180, tip 185
+   z: preview 18, chrome 20, map overlay 115, panel 130, picker 148, sheet 145, toasts 180, tip 185
 */
 
 :root {
@@ -105,9 +105,7 @@ body.is-sys-warn {
 
 .synth-panel,
 .synth-chrome,
-.synth-boot,
 .synth-toasts,
-.synth-qr-btn,
 .synth-map-overlay {
 	font-family: var(--font);
 	color: var(--fg);
@@ -116,7 +114,6 @@ body.is-sys-warn {
 
 .synth-panel *,
 .synth-chrome *,
-.synth-boot *,
 .synth-toasts * {
 	font-family: inherit;
 }
@@ -131,9 +128,7 @@ body.is-sys-warn {
 .synth-panel h2,
 .synth-panel h3,
 .synth-panel p,
-.synth-chrome p,
-.synth-boot h1,
-.synth-boot p {
+.synth-chrome p {
 	margin: 0;
 	color: inherit;
 	font-size: inherit;
@@ -692,7 +687,6 @@ body.synth-display .synth-ui.is-open,
 body.synth-display .synth-ui.is-open *,
 body.synth-display .synth-panel.is-open,
 body.synth-display .synth-picker,
-body.synth-display .synth-boot,
 body.synth-display .synth-toasts,
 body.synth-display .synth-float-tip {
 	cursor: auto;
@@ -1066,36 +1060,6 @@ body.synth-display .synth-float-tip {
 	box-shadow:
 		inset 0 1px 0 color-mix(in srgb, #ededed 16%, transparent),
 		0 0 0 2px var(--fg);
-}
-
-.synth-op.is-heavy {
-	z-index: 3;
-	box-shadow:
-		inset 0 1px 0 color-mix(in srgb, #ededed 16%, transparent),
-		inset 0 -1px 0 color-mix(in srgb, #101010 28%, transparent),
-		0 0 0 2px var(--warn);
-}
-
-.synth-op.is-heavy-bad {
-	z-index: 3;
-	box-shadow:
-		inset 0 1px 0 color-mix(in srgb, #ededed 16%, transparent),
-		inset 0 -1px 0 color-mix(in srgb, #101010 28%, transparent),
-		0 0 0 2px var(--bad);
-}
-
-.synth-op__cost {
-	min-width: 3.2em;
-	padding: 0 8px 0 0;
-	font-size: 10px;
-	font-variant-numeric: tabular-nums;
-	letter-spacing: 0.04em;
-	color: var(--muted);
-	text-align: right;
-}
-
-.synth-op__cost[hidden] {
-	display: none !important;
 }
 
 .synth-op__head {
@@ -2692,99 +2656,6 @@ body.is-sys-bad .synth-chrome__sys {
 	gap: 4px;
 }
 
-/* Boot QR */
-
-.synth-boot {
-	position: fixed;
-	inset: 0;
-	z-index: 160;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: var(--bg);
-	opacity: 1;
-	transition: opacity 0.7s ease;
-}
-
-.synth-boot.is-leaving {
-	opacity: 0;
-	pointer-events: none;
-}
-
-.synth-boot[hidden],
-.synth-qr-btn[hidden] {
-	display: none !important;
-}
-
-.synth-boot__card {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 16px;
-	padding: 24px;
-	width: min(320px, calc(100vw - 32px));
-}
-
-.synth-boot__title {
-	font-size: 13px;
-	font-weight: 500;
-	letter-spacing: 0.16em;
-	text-transform: uppercase;
-}
-
-.synth-boot__url {
-	font-size: 12px;
-	color: var(--muted);
-	white-space: pre-line;
-	word-break: break-all;
-}
-
-.synth-boot__qr {
-	padding: 0;
-	background: #fff;
-	border: 1px solid var(--fg);
-}
-
-.synth-boot__qr img,
-.synth-boot__qr canvas {
-	display: block;
-}
-
-.synth-boot__hint {
-	font-size: 12px;
-	color: var(--muted);
-}
-
-.synth-qr-btn {
-	position: fixed;
-	left: 16px;
-	bottom: 16px;
-	z-index: 140;
-	width: 48px;
-	height: 48px;
-	border: 1px solid var(--line);
-	border-radius: 0;
-	background: var(--bg);
-	color: var(--fg);
-	font-family: var(--font);
-	font-size: 11px;
-	font-weight: 500;
-	letter-spacing: 0.1em;
-	cursor: pointer;
-	opacity: 0;
-	pointer-events: none;
-	transition: opacity 0.2s ease;
-}
-
-body.is-chrome-visible .synth-qr-btn:not([hidden]) {
-	opacity: 1;
-	pointer-events: auto;
-}
-
-.lab-body .synth-qr-btn {
-	display: none !important;
-}
-
 /* Toasts */
 
 .synth-toasts {
@@ -3256,9 +3127,7 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 @media (prefers-reduced-motion: reduce) {
 	.synth-panel,
 	.synth-ui,
-	.synth-boot,
 	.synth-toast,
-	.synth-qr-btn,
 	.synth-btn,
 	.synth-chip,
 	.synth-icon,
