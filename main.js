@@ -38,7 +38,17 @@
 	}
 
 	function consumeShare() {
-		if (window.SynthShare) SynthShare.consume(userPatch);
+		if (!window.SynthShare) return;
+		SynthShare.consume(function (patch) {
+			SynthState.patch(patch);
+			SynthSync.sendPatch(patch);
+			if (patch.presets && window.SynthPresets) {
+				SynthPresets.syncDisk(SynthState.get().presets);
+			}
+			if ((patch.templates || patch.templateThumb || patch.templateOps) && window.SynthTemplates) {
+				SynthTemplates.syncDisk(SynthState.get().templates);
+			}
+		});
 	}
 
 	function mergeOfflineLibrary() {
@@ -401,14 +411,14 @@
 		}
 		Promise.all(libraryJobs).then(function () {
 			if (!sawRemoteState) mergeOfflineLibrary();
-			if (!sawRemoteState && !(window.SynthSync && SynthSync.connected())) consumeShare();
 		});
 		window.setTimeout(function () {
 			if (sawRemoteState) return;
-			if (window.SynthSync && SynthSync.connected()) return;
 			mergeOfflineLibrary();
-			consumeShare();
-		}, 900);
+			if (document.body.classList.contains('lab-body') || !(window.SynthSync && SynthSync.connected())) {
+				consumeShare();
+			}
+		}, 2500);
 	}
 
 	function noteFrame() {

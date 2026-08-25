@@ -212,7 +212,7 @@
 	}
 
 	function parseText(text) {
-		const src = String(text || '').trim();
+		const src = String(text || '').trim().replace(/%23/gi, '#');
 		if (!src) return Promise.resolve(null);
 		const hashIdx = src.indexOf('#');
 		if (hashIdx >= 0) {
@@ -354,21 +354,33 @@
 	function alreadyLoaded(state, payload) {
 		if (!payload || !state) return false;
 		const key = fingerprint(payload);
-		if (!key) return false;
 		if (payload.kind === 'preset') {
+			const want = payload.parameters || {};
 			return (state.presets || []).some(function (item) {
-				return item && fingerprint({
-					kind: 'preset',
-					type: item.type,
-					parameters: item.parameters
-				}) === key;
+				if (!item || item.type !== payload.type) return false;
+				const have = item.parameters || {};
+				return Object.keys(want).every(function (k) {
+					return JSON.stringify(have[k]) === JSON.stringify(want[k]);
+				});
 			});
 		}
+		const src = compactOperators(payload.operators || []);
 		return (state.pipes || []).some(function (pipe) {
-			return pipe && (pipe.shareKey === key || fingerprint({
-				kind: 'elos',
-				operators: pipe.operators
-			}) === key);
+			if (!pipe) return false;
+			if (key && pipe.shareKey === key) return true;
+			const live = compactOperators(pipe.operators || []);
+			if (live.length !== src.length) return false;
+			for (let i = 0; i < src.length; i += 1) {
+				if (!live[i] || live[i].type !== src[i].type) return false;
+				if (!!live[i].bypassed !== !!src[i].bypassed) return false;
+				const want = src[i].parameters || {};
+				const have = live[i].parameters || {};
+				const keys = Object.keys(want);
+				for (let k = 0; k < keys.length; k += 1) {
+					if (JSON.stringify(have[keys[k]]) !== JSON.stringify(want[keys[k]])) return false;
+				}
+			}
+			return true;
 		});
 	}
 
