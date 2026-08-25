@@ -289,7 +289,7 @@
 		});
 
 		window.addEventListener('keydown', function (event) {
-			if (event.key !== 'u' && event.key !== 'U') return;
+			if (event.key !== 'e' && event.key !== 'E') return;
 			const tag = event.target && event.target.tagName;
 			if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 			event.preventDefault();
