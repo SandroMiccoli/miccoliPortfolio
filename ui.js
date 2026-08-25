@@ -113,6 +113,8 @@
 		let libInsertAt = 0;
 		let liveOn = false;
 		let liveFrame = '';
+		let liveFrameId = '';
+		let previewSeq = 0;
 		let lastStats = null;
 		let loadLevel = 0;
 		const sliders = {};
@@ -157,6 +159,8 @@
 		const previewImg = el('img');
 		previewImg.alt = '';
 		previewImg.hidden = true;
+		previewImg.draggable = false;
+		previewImg.decoding = 'async';
 		const previewEmpty = el('p', 'synth-preview__empty', 'Waiting for output');
 		const previewName = el('p', 'synth-preview__name', 'ELOS');
 		previewFrame.appendChild(previewImg);
@@ -174,10 +178,16 @@
 		previewFrame.appendChild(liveBtn);
 		preview.appendChild(previewFrame);
 		rootEl.appendChild(preview);
+		if (document.body.classList.contains('synth-control') && root.SynthPreview && SynthPreview.attach) {
+			SynthPreview.attach(previewFrame);
+		}
+
+		const panelBody = el('div', 'synth-panel__body');
+		rootEl.appendChild(panelBody);
 
 		const top = el('div', 'synth-panel__top');
 		top.appendChild(el('p', 'synth-panel__mark', 'ELO'));
-		rootEl.appendChild(top);
+		panelBody.appendChild(top);
 
 		const pipesSec = el('section', 'synth-pipes');
 		const galleryTabs = el('div', 'synth-gallery-tabs');
@@ -204,7 +214,7 @@
 		const grid = el('div', 'synth-pipe-grid');
 		grid.setAttribute('aria-label', 'SET');
 		pipesSec.appendChild(grid);
-		rootEl.appendChild(pipesSec);
+		panelBody.appendChild(pipesSec);
 
 		const activeBar = el('section', 'synth-pipe-active');
 		const activeHead = el('header', 'synth-pipe-active__head');
@@ -216,11 +226,11 @@
 		const activeTools = el('div', 'synth-pipe-active__tools');
 		activeHead.appendChild(activeTools);
 		activeBar.appendChild(activeHead);
-		rootEl.appendChild(activeBar);
+		panelBody.appendChild(activeBar);
 
 		const stack = el('div', 'synth-stack');
 		stack.setAttribute('aria-label', 'Elo chain');
-		rootEl.appendChild(stack);
+		panelBody.appendChild(stack);
 
 		const sysSlot = document.getElementById('synth-sys-slot');
 		let fpsVal = null;
@@ -3724,13 +3734,13 @@
 		function refreshPreview(pipe) {
 			const view = viewingTemplate() ? (selectedTemplate() || pipe) : pipe;
 			previewName.textContent = view ? view.name : 'ELOS';
-			if (liveOn && liveFrame) {
-				if (previewImg.getAttribute('src') !== liveFrame) previewImg.src = liveFrame;
-				previewImg.hidden = false;
+			if (root.SynthPreview && SynthPreview.active && SynthPreview.active()) {
+				previewImg.hidden = true;
 				previewEmpty.hidden = true;
 				return;
 			}
-			const url = view && view.thumbnail;
+			if (view && liveFrameId && liveFrameId !== view.id) liveFrame = '';
+			const url = liveFrame || (view && view.thumbnail);
 			if (url) {
 				if (previewImg.getAttribute('src') !== url) previewImg.src = url;
 				previewImg.hidden = false;
@@ -3748,24 +3758,31 @@
 			liveBtn.setAttribute('aria-pressed', liveOn ? 'true' : 'false');
 			preview.classList.toggle('is-live', liveOn);
 			if (!liveOn) {
-				liveFrame = '';
 				previewEmpty.textContent = 'Waiting for output';
 				refreshPreview(activePipe());
 				return;
 			}
 			previewEmpty.textContent = 'Waiting for live';
-			if (!liveFrame) {
+			if (!liveFrame && previewImg.hidden) {
 				previewEmpty.hidden = false;
 			}
 		}
 
-		function setPreviewFrame(url) {
+		function setPreviewFrame(url, pipeId) {
+			if (root.SynthPreview && SynthPreview.active && SynthPreview.active()) return;
 			if (!url) return;
 			liveFrame = url;
-			if (!liveOn) return;
-			if (previewImg.getAttribute('src') !== url) previewImg.src = url;
-			previewImg.hidden = false;
-			previewEmpty.hidden = true;
+			if (pipeId) liveFrameId = pipeId;
+			previewSeq += 1;
+			const seq = previewSeq;
+			const loader = new Image();
+			loader.onload = function () {
+				if (seq !== previewSeq) return;
+				if (previewImg.getAttribute('src') !== url) previewImg.src = url;
+				previewImg.hidden = false;
+				previewEmpty.hidden = true;
+			};
+			loader.src = url;
 		}
 
 		function makeTile(item, activeId, kind) {

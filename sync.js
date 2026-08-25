@@ -3,7 +3,9 @@
 	let role = 'display';
 	let connected = false;
 	let handlers = {};
+	let connGen = 0;
 	const pending = [];
+	const PREVIEW_BACKPRESSURE = 96 * 1024;
 
 	function enqueue(payload) {
 		if (!payload || (payload.type !== 'notify' && payload.type !== 'cameras' && payload.type !== 'cameraStatus')) return;
@@ -23,9 +25,18 @@
 	function send(payload) {
 		if (!socket || socket.readyState !== WebSocket.OPEN) {
 			enqueue(payload);
-			return;
+			return false;
 		}
-		socket.send(JSON.stringify(payload));
+		try {
+			socket.send(JSON.stringify(payload));
+			return true;
+		} catch (err) {
+			return false;
+		}
+	}
+
+	function previewBusy() {
+		return !socket || socket.readyState !== WebSocket.OPEN || socket.bufferedAmount > PREVIEW_BACKPRESSURE;
 	}
 
 	function flushPending() {
@@ -42,17 +53,33 @@
 			return;
 		}
 
+		const gen = ++connGen;
+		const prev = socket;
+		socket = null;
+		if (prev) {
+			try {
+				prev.close();
+			} catch (err) {}
+		}
+
 		let ws;
 		try {
 			ws = new WebSocket(wsUrl());
 		} catch (err) {
 			if (handlers.onStatus) handlers.onStatus(false);
+			if (!inLab()) {
+				setTimeout(function () {
+					if (gen !== connGen) return;
+					connect(handlers);
+				}, 1500);
+			}
 			return;
 		}
 
 		socket = ws;
 
 		ws.addEventListener('open', function () {
+			if (gen !== connGen) return;
 			connected = true;
 			send({ type: 'hello', role: role });
 			flushPending();
@@ -60,6 +87,7 @@
 		});
 
 		ws.addEventListener('message', function (event) {
+			if (gen !== connGen) return;
 			let msg;
 			try {
 				msg = JSON.parse(event.data);
@@ -92,17 +120,22 @@
 		});
 
 		ws.addEventListener('close', function () {
+			if (gen !== connGen) return;
 			connected = false;
 			if (handlers.onStatus) handlers.onStatus(false);
 			if (!inLab()) {
 				setTimeout(function () {
+					if (gen !== connGen) return;
 					connect(handlers);
 				}, 1500);
 			}
 		});
 
 		ws.addEventListener('error', function () {
-			ws.close();
+			if (gen !== connGen) return;
+			try {
+				ws.close();
+			} catch (err) {}
 		});
 	}
 
@@ -124,8 +157,11 @@
 			send({ type: 'live', enabled: !!enabled });
 		},
 		sendPreview: function (url, pipeId) {
-			send({ type: 'preview', url: url, pipeId: pipeId || '' });
+			if (!url || url.length > 900000) return false;
+			if (previewBusy()) return false;
+			return send({ type: 'preview', url: url, pipeId: pipeId || '' });
 		},
+		previewBusy: previewBusy,
 		sendFft: function (levels) {
 			send({
 				type: 'fft',

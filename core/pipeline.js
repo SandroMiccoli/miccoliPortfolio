@@ -179,6 +179,12 @@
 			p.spread = clamp(p.spread, 0.35, 1.6);
 			p.position = clamp(p.position, 0.25, 0.75);
 		}
+		if (inst.type === 'warpedConstellations') {
+			p.speed = clamp(p.speed, 0.35, 1.4);
+			p.scale = clamp(p.scale, 0.6, 1.35);
+			p.glow = clamp(p.glow, 0.75, 1.45);
+			p.warp = clamp(p.warp, 0.55, 1.4);
+		}
 		if (inst.type === 'displace') {
 			p.amount = clamp(p.amount, 0.08, 0.55);
 		}
@@ -236,7 +242,7 @@
 
 	// Generator → [blend generator] → warp/kaleido → [edge] → [lookup] → [bloom] → screen
 	function randomTypes() {
-		const generators = ['lines', 'noise', 'tape', 'shape', 'gradient'];
+		const generators = ['lines', 'noise', 'tape', 'shape', 'gradient', 'warpedConstellations'];
 		const types = [pick(generators)];
 
 		if (chance(0.38)) {

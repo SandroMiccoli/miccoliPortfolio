@@ -60,21 +60,21 @@ Graph architecture
 
 ## Run locally
 
-Static preview:
+Jekyll is a **static preview only**. It has no WebSocket, so the phone cannot sync or show live output.
 
-```bash
-bundle exec jekyll serve
-```
-
-Open `/` for the renderer and `/control.html` for the phone UI.
-
-With the local Node server:
+For the renderer + phone control, use the Node server:
 
 ```bash
 cd server && npm install && npm start
 ```
 
-Then open `http://127.0.0.1:8080/` and `http://127.0.0.1:8080/control.html`.
+Then on this machine open `http://127.0.0.1:8080/`, and on the phone open the printed `control` URL (same LAN IP, port 8080). Bind to a specific address with `HOST=192.168.0.6 npm start` if you need to.
+
+Static preview (no phone sync):
+
+```bash
+bundle exec jekyll serve
+```
 
 ## Share visuals
 

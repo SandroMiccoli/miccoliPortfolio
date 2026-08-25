@@ -5,6 +5,7 @@
 	let warnedOffline = false;
 	let seenLive = false;
 	let sawRemoteState = false;
+	let sawStaticServer = false;
 
 	if (window.SynthShare && SynthShare.captureLocation) SynthShare.captureLocation();
 
@@ -27,10 +28,28 @@
 		if (on) {
 			SynthNotify.show('success', 'Connected to ELO');
 			warnedOffline = false;
+			sawStaticServer = false;
 		} else if (!warnedOffline) {
 			warnedOffline = true;
-			SynthNotify.show('warning', 'Connection lost. Reconnecting.');
+			if (seenLive) SynthNotify.show('warning', 'Connection lost. Reconnecting.');
+			else checkSyncServer();
 		}
+	}
+
+	function checkSyncServer() {
+		fetch('/api/info', { cache: 'no-store' }).then(function (res) {
+			if (res.ok || seenLive) return;
+			sawStaticServer = true;
+			const el = document.getElementById('sync-status');
+			if (el) {
+				el.textContent = 'No sync server';
+				el.classList.remove('is-wait', 'is-on');
+				el.classList.add('is-off');
+			}
+			if (window.SynthNotify) {
+				SynthNotify.show('warning', 'Jekyll has no WebSocket. Run cd server && npm start, then open that URL on the phone.');
+			}
+		}).catch(function () {});
 	}
 
 	function userPatch(patch) {
@@ -77,6 +96,10 @@
 			},
 			patch: userPatch,
 			setLivePreview: function (on) {
+				if (window.SynthPreview && SynthPreview.setLive) {
+					SynthPreview.setLive(on);
+					return;
+				}
 				SynthSync.sendLive(on);
 			}
 		});
@@ -95,6 +118,7 @@
 
 		SynthState.subscribe(function () {
 			if (uiApi) uiApi.refresh();
+			if (window.SynthPreview && SynthPreview.nudge) SynthPreview.nudge();
 			if (window.SynthCamera) SynthCamera.syncControl(SynthState.get());
 		});
 
@@ -126,10 +150,12 @@
 				if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 			},
 			onPreview: function (msg) {
-				if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(msg.url);
+				if (window.SynthPreview && SynthPreview.active && SynthPreview.active()) return;
+				if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(msg.url, msg.pipeId);
 			},
 			onLive: function (enabled) {
 				if (uiApi && uiApi.setLiveMode) uiApi.setLiveMode(!!enabled);
+				if (window.SynthPreview && SynthPreview.setLive) SynthPreview.setLive(!!enabled);
 			},
 			onFft: function (msg) {
 				if (window.SynthFft) SynthFft.setRemote(msg);

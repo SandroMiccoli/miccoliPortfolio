@@ -6,7 +6,7 @@
 			id: 'generator',
 			label: 'Generators',
 			color: '#B45CC8',
-			about: 'Creates a visual from nothing. Lines, Noise, VHS Tape, Shape, Gradient, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
+			about: 'Creates a visual from nothing. Lines, Noise, VHS Tape, Shape, Gradient, Warped Constellations, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
 		},
 		effect: {
 			id: 'effect',

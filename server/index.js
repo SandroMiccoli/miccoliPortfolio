@@ -349,8 +349,8 @@ function makeInfo(port, httpsPort) {
 		hostname: os.hostname(),
 		url: mdns,
 		ipOrigin: ipOrigin,
-		controlUrl: (ipOrigin || mdns) + '/control.html',
-		httpsControlUrl: httpsOrigin ? httpsOrigin + '/control.html' : ''
+		controlUrl: (ipOrigin || mdns) + '/control',
+		httpsControlUrl: httpsOrigin ? httpsOrigin + '/control' : ''
 	};
 }
 
@@ -382,10 +382,11 @@ function ensureCerts() {
 }
 
 function listen(server, port) {
+	const host = process.env.HOST || '0.0.0.0';
 	return new Promise((resolve, reject) => {
 		const onError = (err) => reject(err);
 		server.once('error', onError);
-		server.listen(port, () => {
+		server.listen(port, host, () => {
 			server.off('error', onError);
 			resolve(port);
 		});
@@ -784,10 +785,20 @@ async function start() {
 	app.get('/api/info', (_req, res) => {
 		res.json(makeInfo(port));
 	});
+	app.get('/control/', (_req, res) => {
+		res.redirect(302, '/control');
+	});
+	app.get('/control', (_req, res) => {
+		res.sendFile(path.join(ROOT, 'control.html'));
+	});
 	app.use(express.static(ROOT));
 
 	const server = http.createServer(app);
-	const wss = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 * 1024 });
+	const wss = new WebSocketServer({
+		noServer: true,
+		maxPayload: 8 * 1024 * 1024,
+		perMessageDeflate: false
+	});
 	let latestStats = { fps: null, tempC: readCpuTemp(), frameMs: null, size: null };
 	let livePreview = false;
 	let cameras = [];
@@ -865,7 +876,17 @@ async function start() {
 			}
 
 			if (msg.type === 'preview' && msg.url) {
-				broadcast({ type: 'preview', url: msg.url, pipeId: msg.pipeId || '' }, ws);
+				if (typeof msg.url !== 'string' || msg.url.length > 900000) return;
+				const packed = JSON.stringify({
+					type: 'preview',
+					url: msg.url,
+					pipeId: msg.pipeId || ''
+				});
+				wss.clients.forEach((client) => {
+					if (client === ws || client.readyState !== 1 || client.role !== 'control') return;
+					if (client.bufferedAmount > 256 * 1024) return;
+					client.send(packed);
+				});
 				return;
 			}
 

@@ -18,6 +18,11 @@
 	const FPS_SAMPLES = 45;
 	let livePreview = false;
 	let liveThumbAge = 0;
+	let idleThumbDue = 0;
+	const LIVE_MS = 55;
+	const STILL_MS = 1400;
+	const PERSIST_MS = 8000;
+	let persistThumbDue = 0;
 	let camThumbTries = 0;
 	let tplThumbDue = 0;
 	let tplThumbForce = false;
@@ -156,35 +161,57 @@
 
 		if (livePreview) {
 			if (capturingThumb || millis() < thumbDue) return;
+			if (SynthSync.previewBusy && SynthSync.previewBusy()) return;
 			capturingThumb = true;
-			hitchThisFrame = true;
-			const url = SynthEngine.capture(0.52, flipCam);
+			const url = SynthEngine.capturePreview
+				? SynthEngine.capturePreview(0.7, flipCam)
+				: SynthEngine.capture(0.7, flipCam);
 			capturingThumb = false;
 			if (!url) return;
-			thumbDue = millis() + 90;
-			liveThumbAge += 90;
-			SynthSync.sendPreview(url, pipe.id);
-			if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(url);
-			if (liveThumbAge >= 2000 || switched || changed) {
+			if (!SynthSync.sendPreview(url, pipe.id)) return;
+			thumbDue = millis() + LIVE_MS;
+			liveThumbAge += LIVE_MS;
+			if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(url, pipe.id);
+			if (liveThumbAge >= PERSIST_MS || switched || changed) {
 				liveThumbAge = 0;
-				persistThumb(pipe, url);
+				const thumb = SynthEngine.capture(undefined, flipCam);
+				if (thumb) persistThumb(pipe, thumb);
 			}
 			return;
 		}
 
-		if (!thumbDirty || capturingThumb) return;
-		if (millis() < thumbDue) return;
+		const stillDue = millis() >= idleThumbDue;
+		if (!thumbDirty && !stillDue) return;
+		if (capturingThumb || millis() < thumbDue) return;
 		if (cameraNotReady(pipe)) {
 			thumbDue = millis() + 200;
 			return;
 		}
 		capturingThumb = true;
 		hitchThisFrame = true;
-		const url = SynthEngine.capture(undefined, flipCam);
+		const previewUrl = SynthEngine.capturePreview
+			? SynthEngine.capturePreview(0.7, flipCam)
+			: SynthEngine.capture(undefined, flipCam);
 		capturingThumb = false;
-		if (!persistThumb(pipe, url)) {
+		if (!previewUrl) {
 			thumbDue = millis() + 160;
+			return;
 		}
+		if (!(SynthSync.previewBusy && SynthSync.previewBusy())) {
+			SynthSync.sendPreview(previewUrl, pipe.id);
+		}
+		if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(previewUrl, pipe.id);
+		if (thumbDirty || millis() >= persistThumbDue) {
+			const thumb = SynthEngine.capture(undefined, flipCam);
+			if (!persistThumb(pipe, thumb)) {
+				thumbDue = millis() + 160;
+				return;
+			}
+			persistThumbDue = millis() + PERSIST_MS;
+		} else {
+			thumbDirty = false;
+		}
+		idleThumbDue = millis() + STILL_MS;
 	}
 
 	function isUiChrome(target) {
@@ -329,6 +356,7 @@
 				livePreview = !!on;
 				thumbDue = 0;
 				liveThumbAge = 2000;
+				idleThumbDue = 0;
 				SynthSync.sendLive(on);
 			}
 		});
@@ -384,6 +412,7 @@
 				livePreview = !!enabled;
 				thumbDue = 0;
 				liveThumbAge = 2000;
+				idleThumbDue = 0;
 				if (uiApi && uiApi.setLiveMode) uiApi.setLiveMode(!!enabled);
 			},
 			onFft: function (msg) {

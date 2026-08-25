@@ -19,7 +19,7 @@
 	--pad: 16px;
 	--hit: 48px;
 	--font: ui-monospace, "Cascadia Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
-	--preview-h: min(28vh, 180px);
+	--preview-h: min(24dvh, 168px);
 }
 
 * {
@@ -53,7 +53,9 @@ html.synth-html--control body.synth-control {
 	height: auto;
 	min-height: 100%;
 	min-height: 100dvh;
-	overflow: visible;
+	overflow-x: hidden;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
 }
 
 body.synth-display {
@@ -211,6 +213,11 @@ body.synth-display .synth-ui .synth-panel.is-page {
 	overscroll-behavior: auto;
 }
 
+body.synth-control .synth-panel.is-page {
+	overflow: visible;
+	padding: 0 0 32px;
+}
+
 .synth-preview {
 	display: none;
 }
@@ -224,6 +231,26 @@ body.synth-display .synth-ui .synth-panel.is-page {
 	border-bottom: 1px solid var(--line);
 }
 
+body.synth-control .synth-preview,
+body.synth-control .synth-panel.is-page .synth-preview {
+	position: sticky;
+	top: var(--chrome-h);
+	flex: none;
+	box-shadow: 0 8px 18px rgb(16 16 16 / 0.85);
+}
+
+.synth-panel.is-page .synth-panel__body {
+	display: block;
+	position: relative;
+	z-index: 1;
+	padding: 12px 0 0;
+}
+
+body.synth-control .synth-panel.is-page .synth-panel__body {
+	overflow: visible;
+	padding: 12px 0 0;
+}
+
 .synth-preview__frame {
 	position: relative;
 	height: var(--preview-h);
@@ -231,11 +258,36 @@ body.synth-display .synth-ui .synth-panel.is-page {
 	overflow: hidden;
 }
 
+.synth-preview__frame canvas {
+	position: absolute;
+	inset: 0;
+	width: 100% !important;
+	height: 100% !important;
+	display: block;
+	pointer-events: none;
+	background: #000;
+}
+
+.synth-preview.is-gpu .synth-preview__frame img,
+.synth-preview.is-gpu .synth-preview__empty {
+	display: none !important;
+}
+
+body.synth-control .synth-preview__frame,
+body.synth-control .synth-preview.is-live .synth-preview__frame {
+	height: var(--preview-h);
+}
+
 .synth-preview__frame img {
 	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	background: #000;
+}
+
+body.synth-control .synth-preview__frame img {
+	object-fit: contain;
 }
 
 .synth-preview__frame img[hidden] {
@@ -280,8 +332,8 @@ body.synth-display .synth-ui .synth-panel.is-page {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	height: 56px;
-	background: linear-gradient(transparent, rgb(16 16 16 / 0.7));
+	height: 44px;
+	background: linear-gradient(transparent, rgb(16 16 16 / 0.5));
 	pointer-events: none;
 }
 
@@ -290,6 +342,10 @@ body.synth-display .synth-ui .synth-panel.is-page {
 	top: 8px;
 	right: 8px;
 	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
 	min-width: 44px;
 	min-height: 28px;
 	padding: 0 10px;
@@ -306,10 +362,35 @@ body.synth-display .synth-ui .synth-panel.is-page {
 	appearance: none;
 }
 
+.synth-preview__live::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+	opacity: 0.4;
+}
+
 .synth-preview__live.is-on {
 	background: var(--fg);
 	border-color: var(--fg);
 	color: var(--bg);
+}
+
+.synth-preview__live.is-on::before {
+	opacity: 1;
+	background: var(--bad);
+	box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 55%, transparent);
+	animation: synth-live-pulse 1.4s ease-out infinite;
+}
+
+@keyframes synth-live-pulse {
+	0% {
+		box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 50%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 8px transparent;
+	}
 }
 
 .synth-preview__live:active {
@@ -351,7 +432,7 @@ body.synth-display .synth-ui .synth-panel.is-page {
 .synth-pipes,
 .synth-pipe-active {
 	position: relative;
-	z-index: 2;
+	z-index: 1;
 }
 
 .synth-pipes {
@@ -2699,7 +2780,8 @@ body.is-sys-bad .synth-chrome__sys {
 }
 
 body.synth-control .synth-toasts {
-	top: calc(var(--chrome-h) + 8px);
+	top: auto;
+	bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 	width: min(420px, calc(100vw - 24px));
 }
 
@@ -3161,6 +3243,10 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 	.synth-insert__btn,
 	.synth-op {
 		transition: none;
+	}
+
+	.synth-preview__live.is-on::before {
+		animation: none;
 	}
 
 	.synth-btn:active,

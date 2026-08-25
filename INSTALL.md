@@ -1,6 +1,6 @@
 # Install ELO on a Raspberry Pi
 
-The Pi is the renderer, web server, and WebSocket server. Chromium runs `index.html` in kiosk mode on the HDMI display. A phone on the same network opens `control.html` and drives ELOS over WebSocket. There is no video stream to the phone.
+The Pi is the renderer, web server, and WebSocket server. Chromium runs `index.html` in kiosk mode on the HDMI display. A phone on the same network opens `/control` and drives ELOS over WebSocket. Live preview on the phone is a JPEG stream of the current output.
 
 These steps assume Raspberry Pi OS **Debian 13 (Trixie) Lite** (no desktop), user **pi**, and a Raspberry Pi 4 or 5.
 
@@ -51,7 +51,7 @@ npm start
 
 The server listens on **8080** by default (no root needed). It prints the local and LAN URLs on start. Override with `PORT=...` if you need another port.
 
-Open the renderer at `http://127.0.0.1:8080/` and the phone UI at `http://127.0.0.1:8080/control.html`.
+Open the renderer at `http://127.0.0.1:8080/` and the phone UI at `http://127.0.0.1:8080/control`.
 
 GSAP and the QR library load from a CDN, so the Pi needs internet the first time Chromium loads the page (after that the browser cache is enough). To run fully offline, download those scripts next to `index.html` and point the `<script src>` tags at the local files.
 
@@ -270,7 +270,7 @@ Keep the same `PAMName` / `XDG_*` / PipeWire environment as the Sway unit. There
 ## 7. Phone control
 
 1. Join the same Wi-Fi as the Pi
-2. Scan the boot QR, or open `http://<pi-ip>:8080/control.html`
+2. Scan the boot QR, or open `http://<pi-ip>:8080/control`
 3. Change ELOS and operators: activate, add, bypass, reorder, tweak parameters. The Pi display updates immediately
 4. On the Pi, press **U** or tap the right edge for the same panel
 
@@ -318,7 +318,7 @@ Do **not** add `--use-fake-device-for-media-stream` except as a drawing test; th
 
 ### Phone camera
 
-Modern browsers block `getUserMedia` on plain HTTP. The server also listens on HTTPS (port 8443) with a self-signed certificate. Open the printed `https   .../control.html` URL, accept the certificate warning, then set Source to **Phone**. HTTP control still works for everything except the phone camera.
+Modern browsers block `getUserMedia` on plain HTTP. The server also listens on HTTPS (port 8443) with a self-signed certificate. Open the printed `https   .../control` URL, accept the certificate warning, then set Source to **Phone**. HTTP control still works for everything except the phone camera.
 
 Phone frames are encoded as **9:16** (270×480) before they leave the phone: the landscape sensor buffer is rotated when the phone is upright, then cover-cropped. Cover / Contain on Camera Input then see a portrait texture against the landscape HDMI frame.
 

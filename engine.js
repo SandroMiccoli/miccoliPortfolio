@@ -1,6 +1,8 @@
 (function (root) {
 	const THUMB_W = 160;
 	const THUMB_H = 90;
+	const PREVIEW_MAX_W = 640;
+	const PREVIEW_MAX_H = 360;
 
 	function isWebGL2() {
 		return typeof WebGL2RenderingContext !== 'undefined' &&
@@ -72,6 +74,9 @@
 	let liveExecutor = null;
 	let thumbExecutor = null;
 	let thumbComp = null;
+	let previewComp = null;
+	let previewW = 0;
+	let previewH = 0;
 	let composition = null;
 	let maskPing = null;
 	let maskPong = null;
@@ -79,6 +84,7 @@
 	let outW = 0;
 	let outH = 0;
 	let thumbGfx = null;
+	let previewGfx = null;
 	let readCanvas = null;
 	let readImage = null;
 	let pixelBuf = null;
@@ -239,7 +245,59 @@
 		return thumbComp;
 	}
 
-	function readFrom(target, flipY) {
+	function fitPreviewSize(srcW, srcH) {
+		srcW = Math.max(2, srcW | 0);
+		srcH = Math.max(2, srcH | 0);
+		const scale = Math.min(PREVIEW_MAX_W / srcW, PREVIEW_MAX_H / srcH, 1);
+		return {
+			w: Math.max(2, Math.round(srcW * scale)),
+			h: Math.max(2, Math.round(srcH * scale))
+		};
+	}
+
+	function ensurePreviewComp(w, h) {
+		w = Math.max(2, Math.floor(w));
+		h = Math.max(2, Math.floor(h));
+		if (previewComp && previewW === w && previewH === h) return previewComp;
+		previewW = w;
+		previewH = h;
+		disposeFbo(previewComp);
+		previewComp = makeFbo(w, h);
+		return previewComp;
+	}
+
+	function blitComposition(dest) {
+		if (!composition || !dest || !shaders.copy) return false;
+		drawTo(dest, shaders.copy, {
+			u_input: composition,
+			u_gain: 1
+		});
+		return true;
+	}
+
+	function ensureCanvas(which, w, h) {
+		let canvas = which === 'preview' ? previewGfx : thumbGfx;
+		if (!canvas) {
+			canvas = document.createElement('canvas');
+			if (which === 'preview') previewGfx = canvas;
+			else thumbGfx = canvas;
+		}
+		if (canvas.width !== w || canvas.height !== h) {
+			canvas.width = w;
+			canvas.height = h;
+		}
+		return canvas;
+	}
+
+	function encodeJpeg(gfx, quality) {
+		try {
+			return gfx.toDataURL('image/jpeg', quality);
+		} catch (err) {
+			return '';
+		}
+	}
+
+	function readFrom(target, flipY, destW, destH) {
 		const gl = drawingContext;
 		if (!gl || typeof gl.readPixels !== 'function') return '';
 		const size = targetPixelSize(target);
@@ -288,22 +346,22 @@
 		}
 		rctx.putImageData(readImage, 0, 0);
 
-		if (!thumbGfx) {
-			thumbGfx = document.createElement('canvas');
-			thumbGfx.width = THUMB_W;
-			thumbGfx.height = THUMB_H;
-		}
-		const ctx = thumbGfx.getContext('2d');
+		const outW = destW || THUMB_W;
+		const outH = destH || THUMB_H;
+		if (outW === w && outH === h && !flipY) return readCanvas;
+
+		const gfx = ensureCanvas(outW === THUMB_W && outH === THUMB_H ? 'thumb' : 'preview', outW, outH);
+		const ctx = gfx.getContext('2d');
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
 		ctx.fillStyle = '#000';
-		ctx.fillRect(0, 0, THUMB_W, THUMB_H);
+		ctx.fillRect(0, 0, outW, outH);
 		if (flipY) {
-			ctx.translate(0, THUMB_H);
+			ctx.translate(0, outH);
 			ctx.scale(1, -1);
 		}
-		ctx.drawImage(readCanvas, 0, 0, THUMB_W, THUMB_H);
+		ctx.drawImage(readCanvas, 0, 0, outW, outH);
 		ctx.setTransform(1, 0, 0, 1, 0, 0);
-		return thumbGfx;
+		return gfx;
 	}
 
 	function operatorsOf(stateOrOps) {
@@ -323,11 +381,13 @@
 		drawTo: drawTo,
 		THUMB_W: THUMB_W,
 		THUMB_H: THUMB_H,
+		PREVIEW_MAX_W: PREVIEW_MAX_W,
+		PREVIEW_MAX_H: PREVIEW_MAX_H,
 
 		init: function () {
 			const src = root.SYNTH_SHADERS;
 			const vert = src.vert;
-			['lines', 'noise', 'camera', 'warp', 'lookup', 'ramp', 'hsv', 'levels', 'contrast', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy', 'maskShape', 'cornerPin', 'testCard', 'shape', 'gradient', 'displace', 'blur', 'feedback', 'transform', 'glitch', 'tape', 'pixelate', 'posterize', 'mirror', 'tile', 'invert'].forEach(function (name) {
+			['lines', 'noise', 'camera', 'warp', 'lookup', 'ramp', 'hsv', 'levels', 'contrast', 'kaleidoscope', 'bloomBright', 'bloomDown', 'bloomUp', 'bloomComp', 'edge', 'copy', 'maskShape', 'cornerPin', 'testCard', 'shape', 'gradient', 'displace', 'blur', 'feedback', 'transform', 'glitch', 'tape', 'pixelate', 'posterize', 'mirror', 'tile', 'invert', 'warpedConstellations'].forEach(function (name) {
 				shaders[name] = compile(vert, src[name]);
 			});
 			liveExecutor = root.SynthExecutor.create(root.SynthEngine);
@@ -337,10 +397,15 @@
 		resize: function () {
 			outW = 0;
 			outH = 0;
+			previewW = 0;
+			previewH = 0;
+			disposeFbo(previewComp);
+			previewComp = null;
 			if (liveExecutor) liveExecutor.resize();
 		},
 
-		draw: function (stateOrOps, time) {
+		draw: function (stateOrOps, time, opts) {
+			opts = opts || {};
 			restoreMain();
 			ortho();
 			background(0);
@@ -354,21 +419,39 @@
 				clock: root.SynthClock && state ? root.SynthClock.fromState(state) : null,
 				fft: root.SynthFft ? root.SynthFft.levels() : null
 			});
+			if (opts.preview) {
+				drawTo(null, shaders.copy, {
+					u_input: composition,
+					u_gain: 1
+				});
+				return;
+			}
 			applyOutput(state);
 		},
 
 		capture: function (quality, flipY) {
 			lastThumbLuma = 0;
-			const gfx = readFrom(composition, !!flipY);
+			const dest = ensureThumbComp();
+			if (!blitComposition(dest)) return '';
+			const gfx = readFrom(dest, !!flipY, THUMB_W, THUMB_H);
 			restoreMain();
 			if (!gfx) return '';
 			lastThumbLuma = thumbLuma(gfx);
-			try {
-				const q = quality == null ? 0.72 : quality;
-				return gfx.toDataURL('image/jpeg', q);
-			} catch (err) {
-				return '';
-			}
+			return encodeJpeg(gfx, quality == null ? 0.72 : quality);
+		},
+
+		capturePreview: function (quality, flipY) {
+			if (!composition) return '';
+			const src = targetPixelSize(composition);
+			const fit = fitPreviewSize(src.w, src.h);
+			const dest = ensurePreviewComp(fit.w, fit.h);
+			if (!blitComposition(dest)) return '';
+			const gfx = readFrom(dest, !!flipY, fit.w, fit.h);
+			restoreMain();
+			if (!gfx) return '';
+			let url = encodeJpeg(gfx, quality == null ? 0.7 : quality);
+			if (url && url.length > 700000) url = encodeJpeg(gfx, 0.52);
+			return url;
 		},
 
 		captureOperators: function (operators, time, quality) {
@@ -390,12 +473,7 @@
 			restoreMain();
 			if (!gfx) return '';
 			lastThumbLuma = thumbLuma(gfx);
-			try {
-				const q = quality == null ? 0.62 : quality;
-				return gfx.toDataURL('image/jpeg', q);
-			} catch (err) {
-				return '';
-			}
+			return encodeJpeg(gfx, quality == null ? 0.62 : quality);
 		},
 
 		thumbLuma: function () {
