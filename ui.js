@@ -914,6 +914,124 @@
 			if (root.SynthNotify) root.SynthNotify.show('success', 'Template saved to disk');
 		}
 
+		function currentShareSource() {
+			if (galleryMode === 'templates') return selectedTemplate();
+			return activePipe();
+		}
+
+		function applySharePayload(payload) {
+			if (!payload || !root.SynthShare) {
+				if (root.SynthNotify) root.SynthNotify.show('warning', 'Could not read that share');
+				return false;
+			}
+			const result = root.SynthShare.apply(payload, getState());
+			if (!result || !result.patch) {
+				if (root.SynthNotify) root.SynthNotify.show('warning', 'Could not load that share');
+				return false;
+			}
+			lastGridSig = null;
+			if (result.patch.pipes) {
+				galleryMode = 'set';
+				expandedId = null;
+			} else if (result.patch.previewTemplateId) {
+				galleryMode = 'templates';
+				selectedTemplateId = result.patch.previewTemplateId;
+			}
+			patch(result.patch);
+			if (result.patch.previewTemplateId) requestTemplateThumbs();
+			if (result.message && root.SynthNotify) root.SynthNotify.show('success', result.message);
+			return true;
+		}
+
+		function openShareSheet() {
+			const item = currentShareSource();
+			openSheet('Share');
+			sheetBody.innerHTML = '';
+			if (!item || !root.SynthShare) {
+				sheetBody.appendChild(el('p', 'synth-help__text', 'Nothing to share yet.'));
+				return;
+			}
+
+			sheetBody.appendChild(el(
+				'p',
+				'synth-help__lead',
+				'This visual as a link. Open it on any ELO instance — this Pi, a laptop, or a phone — to load every operator and parameter.'
+			));
+			sheetBody.appendChild(el(
+				'p',
+				'synth-help__text',
+				'JSON files in library/templates are the default templates in the repo. Saving to disk writes a file on this instance, so anyone else connected here sees it immediately.'
+			));
+
+			const actions = el('div', 'synth-share__actions');
+			const copyBtn = el('button', 'synth-btn synth-btn--fill', 'Copy link');
+			copyBtn.type = 'button';
+			copyBtn.addEventListener('click', function () {
+				const payload = root.SynthShare.fromTemplate(item);
+				root.SynthShare.encode(payload).then(function (token) {
+					const url = root.SynthShare.shareUrl(token);
+					return root.SynthShare.copyText(url).then(function () {
+						if (root.SynthNotify) root.SynthNotify.show('success', 'Link copied');
+					});
+				}).catch(function () {
+					if (root.SynthNotify) root.SynthNotify.show('warning', 'Could not copy the link');
+				});
+			});
+			actions.appendChild(copyBtn);
+
+			const downloadBtn = el('button', 'synth-btn', 'Download JSON');
+			downloadBtn.type = 'button';
+			downloadBtn.addEventListener('click', function () {
+				const doc = root.SynthShare.toDocument(item);
+				root.SynthShare.downloadJson(
+					root.SynthShare.fileName(item.name, 'elos'),
+					doc
+				);
+			});
+			actions.appendChild(downloadBtn);
+			sheetBody.appendChild(actions);
+
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Import a copied link, or a JSON file from another machine.'));
+			const paste = el('textarea', 'synth-share__paste');
+			paste.rows = 3;
+			paste.setAttribute('aria-label', 'Paste a share link or JSON');
+			paste.placeholder = 'Paste a link or JSON';
+			sheetBody.appendChild(paste);
+			const importRow = el('div', 'synth-share__actions');
+			const loadBtn = el('button', 'synth-btn synth-btn--fill', 'Load');
+			loadBtn.type = 'button';
+			loadBtn.addEventListener('click', function () {
+				root.SynthShare.parseText(paste.value).then(function (payload) {
+					if (applySharePayload(payload)) closeSheet();
+				});
+			});
+			importRow.appendChild(loadBtn);
+			const fileBtn = el('button', 'synth-btn', 'Import file');
+			fileBtn.type = 'button';
+			const fileInput = el('input');
+			fileInput.type = 'file';
+			fileInput.accept = 'application/json,.json';
+			fileInput.hidden = true;
+			fileBtn.addEventListener('click', function () {
+				fileInput.click();
+			});
+			fileInput.addEventListener('change', function () {
+				const file = fileInput.files && fileInput.files[0];
+				fileInput.value = '';
+				if (!file) return;
+				const reader = new FileReader();
+				reader.onload = function () {
+					root.SynthShare.parseText(String(reader.result || '')).then(function (payload) {
+						if (applySharePayload(payload)) closeSheet();
+					});
+				};
+				reader.readAsText(file);
+			});
+			importRow.appendChild(fileBtn);
+			importRow.appendChild(fileInput);
+			sheetBody.appendChild(importRow);
+		}
+
 		function startRename(item, kind) {
 			if (!item) return;
 			if (renaming) cancelRename();
@@ -1042,6 +1160,12 @@
 			'Store this ELOS on disk and add it to TEMPLATES.',
 			saveActiveToTemplates
 		);
+		const shareBtn = iconBtn(
+			'share',
+			'Share',
+			'Copy a link or JSON that reloads this visual with every parameter.',
+			openShareSheet
+		);
 		const addToSetBtn = iconBtn(
 			'plus',
 			'Add to SET',
@@ -1084,6 +1208,7 @@
 		activeTools.appendChild(renameBtn);
 		activeTools.appendChild(dupBtn);
 		activeTools.appendChild(saveTplBtn);
+		activeTools.appendChild(shareBtn);
 		activeTools.appendChild(addToSetBtn);
 		activeTools.appendChild(deletePipeBtn);
 		addToSetBtn.hidden = true;
@@ -1302,7 +1427,7 @@
 			sheetBody.innerHTML = '';
 			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. An Elo connects one thing to another. A sequence of connected Elos is an ELOS. Order is the patch.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick an ELOS in the grid, then edit its Elos. Each Elo reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES are stored examples you send into the SET. Save an ELOS from the SET to keep it on disk as a template.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES are stored examples you send into the SET. Save an ELOS from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. ELOS is the Elo chain. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the ELOS so you can align corners.'));
 			const cats = root.SynthCategories;
 			['generator', 'effect', 'filter', 'color', 'compositing', 'output'].forEach(function (id) {
@@ -2330,9 +2455,9 @@
 					const selected = !!(active && active.id === preset.id);
 					btn.setAttribute('aria-selected', selected ? 'true' : 'false');
 					btn.classList.toggle('is-active', selected);
-					if (preset.persisted && !preset.builtin) btn.classList.add('is-disk');
+					if (preset.origin === 'disk') btn.classList.add('is-disk');
 					btn.appendChild(el('span', 'synth-preset__name', preset.name));
-					if (preset.persisted && !preset.builtin) {
+					if (preset.origin === 'disk') {
 						const mark = el('span', 'synth-preset__disk');
 						mark.appendChild(root.SynthIcons.svg('disk'));
 						btn.appendChild(mark);

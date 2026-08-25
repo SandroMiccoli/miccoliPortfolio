@@ -741,6 +741,33 @@ body.synth-display .synth-float-tip {
 	padding: 16px var(--pad) 32px;
 }
 
+.synth-share__actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	margin: 12px 0 20px;
+}
+
+.synth-share__paste {
+	display: block;
+	width: 100%;
+	min-height: 72px;
+	margin: 0 0 10px;
+	padding: 10px;
+	border: 1px solid var(--line);
+	background: var(--bg);
+	color: var(--fg);
+	font: inherit;
+	font-size: 14px;
+	letter-spacing: 0.02em;
+	resize: vertical;
+}
+
+.synth-share__paste:focus {
+	outline: 1px solid var(--fg);
+	outline-offset: -1px;
+}
+
 .synth-lib__cat {
 	margin-bottom: 16px;
 }

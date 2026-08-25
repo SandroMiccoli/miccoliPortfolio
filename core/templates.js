@@ -1,5 +1,7 @@
 (function (root) {
 	const STORAGE_KEY = 'visual-synth.pipe-templates.v1';
+	const LIBRARY_INDEX = 'library/templates/index.json';
+	const LIBRARY_DIR = 'library/templates/';
 
 	function clone(value) {
 		return JSON.parse(JSON.stringify(value));
@@ -34,146 +36,44 @@
 		return next;
 	}
 
-	function makeOp(pipeId, type, overrides) {
-		const def = root.SynthRegistry ? root.SynthRegistry.get(type) : null;
-		const parameters = Object.assign({}, (def && def.defaults) || {}, overrides || {});
-		return {
-			id: 'op_' + pipeId + '_' + type,
-			type: type,
-			name: (def && def.name) || type,
-			bypassed: false,
-			parameters: parameters,
-			modulations: {}
-		};
-	}
-
-	function makeTemplate(id, name, operators) {
-		return {
-			id: id,
-			name: name,
-			thumbnail: '',
-			operators: operators,
-			persisted: true
-		};
-	}
-
-	function factory() {
-		const stripe = makeTemplate('tpl_stripe', 'STRIPE', [
-			makeOp('stripe', 'lines', { fuzzyness: 0.12, amount: 22, width: 0.16, rotation: 8 }),
-			makeOp('stripe', 'warp', { amount: 0.12, frequency: 2.2, speed: 0.15, detail: 0.3 }),
-			makeOp('stripe', 'lookup', {
-				paletteId: 'fire',
-				colors: ['#5C0812', '#D62408', '#FF9412', '#FFECC6'],
-				bg: '#080206'
-			}),
-			makeOp('stripe', 'bloom', { threshold: 0.4, intensity: 1.1, radius: 0.6 }),
-			makeOp('stripe', 'screen', { gain: 1 })
-		]);
-
-		const prism = makeTemplate('tpl_prism', 'PRISM', [
-			makeOp('prism', 'noise', { scale: 12, speedX: 0.22, octaves: 5, contrast: 1.1 }),
-			makeOp('prism', 'kaleidoscope', { segments: 14, angle: 18, zoom: 1.6 }),
-			makeOp('prism', 'warp', { amount: 0.45, frequency: 1.8, speed: 0.8, detail: 0.4 }),
-			makeOp('prism', 'lookup', {
-				paletteId: 'ice',
-				colors: ['#082A6E', '#14A8C4', '#A0E6FF', '#F0FAFF'],
-				bg: '#02040E',
-				hue: -12,
-				saturation: 0.9
-			}),
-			makeOp('prism', 'bloom', { threshold: 0.32, intensity: 0.9, radius: 1.35 }),
-			makeOp('prism', 'screen', { gain: 1 })
-		]);
-
-		const ink = makeTemplate('tpl_ink', 'INK', [
-			makeOp('ink', 'lines', {
-				fuzzyness: 0.35,
-				amount: 10,
-				width: 0.28,
-				rotation: 45,
-				blendMode: 'difference'
-			}),
-			makeOp('ink', 'edge', { threshold: 0.08, intensity: 2.8, radius: 0.8, mix: 1, invert: 1 }),
-			makeOp('ink', 'contrast', { contrast: 2.2, brightness: -0.04, pivot: 0.42 }),
-			makeOp('ink', 'lookup', {
-				paletteId: 'mono',
-				colors: ['#2A2A2A', '#6E6E6E', '#B4B4B4', '#F5F5F5'],
-				bg: '#000000',
-				saturation: 0.4,
-				exposure: 0.85
-			}),
-			makeOp('ink', 'screen', { gain: 1 })
-		]);
-
-		const tunnel = makeTemplate('tpl_tunnel', 'TUNNEL', [
-			makeOp('tunnel', 'noise', { scale: 1.8, speedX: 0.08, octaves: 3, contrast: 0.85 }),
-			makeOp('tunnel', 'kaleidoscope', { segments: 6, zoom: 1 }),
-			makeOp('tunnel', 'feedback', { amount: 0.72, decay: 0.92, scale: 0.97, rotate: 0 }),
-			makeOp('tunnel', 'ramp', {
-				stops: [
-					{ id: 'n0', pos: 0, color: '#080000' },
-					{ id: 'n1', pos: 0.22, color: '#C41414' },
-					{ id: 'n2', pos: 0.55, color: '#FF7A00' },
-					{ id: 'n3', pos: 0.82, color: '#FFE14A' },
-					{ id: 'n4', pos: 1, color: '#FFF6C8' }
-				],
-				phase: 0,
-				period: 1,
-				interpolate: 'linear'
-			}),
-			makeOp('tunnel', 'bloom', { threshold: 0.18, intensity: 1.8, radius: 2.2 }),
-			makeOp('tunnel', 'screen', { gain: 1 })
-		]);
-
-		const melt = makeTemplate('tpl_melt', 'MELT', [
-			makeOp('melt', 'gradient', {
-				kind: 'sweep',
-				angle: 0,
-				position: 0.5,
-				spread: 1,
-				colorA: '#1A0A00',
-				colorB: '#FFE6B8'
-			}),
-			makeOp('melt', 'displace', { amount: 0.32, angle: 90, center: 0.42, mode: 'luma', tile: 'hold' }),
-			makeOp('melt', 'warp', { amount: 0.85, frequency: 6.5, speed: 0.55, detail: 0.85 }),
-			makeOp('melt', 'hsv', { hue: 18, saturation: 1.25, value: 1.05 }),
-			makeOp('melt', 'bloom', { threshold: 0.32, intensity: 0.9, radius: 1.35 }),
-			makeOp('melt', 'screen', { gain: 1.05 })
-		]);
-
-		const tape = makeTemplate('tpl_tape', 'VHS TAPE', [
-			makeOp('tape', 'tape', { speed: 2, lines: 240, threshold: 0.7, grain: 1, amount: 1 }),
-			makeOp('tape', 'lookup', {
-				paletteId: 'mono',
-				colors: ['#0A0808', '#3A2A22', '#C8B8A0', '#F2EDE4'],
-				bg: '#050404',
-				saturation: 0.55,
-				exposure: 1.05
-			}),
-			makeOp('tape', 'bloom', { threshold: 0.38, intensity: 0.7, radius: 0.85 }),
-			makeOp('tape', 'screen', { gain: 1 })
-		]);
-
-		return [stripe, prism, ink, tunnel, melt, tape];
-	}
-
-	function reIdOperators(operators) {
+	function hydrateOperators(operators) {
 		return clone(operators || []).map(function (op) {
-			op.id = 'op_' + Math.random().toString(36).slice(2, 10);
-			return op;
-		});
+			if (!op || !op.type) return null;
+			const def = root.SynthRegistry ? root.SynthRegistry.get(op.type) : null;
+			const parameters = Object.assign({}, (def && def.defaults) || {}, op.parameters || {});
+			if (Object.prototype.hasOwnProperty.call(parameters, 'savedPalettes') && !Array.isArray(parameters.savedPalettes)) {
+				parameters.savedPalettes = [];
+			}
+			return {
+				id: op.id || ('op_' + Math.random().toString(36).slice(2, 10)),
+				type: String(op.type),
+				name: op.name || (def && def.name) || op.type,
+				bypassed: !!op.bypassed,
+				parameters: parameters,
+				modulations: op.modulations && typeof op.modulations === 'object' ? clone(op.modulations) : {}
+			};
+		}).filter(Boolean);
+	}
+
+	function originOf(raw) {
+		if (!raw) return 'disk';
+		if (raw.origin === 'library' || raw.builtin) return 'library';
+		if (raw.origin === 'session' || raw.persisted === false) return 'session';
+		return 'disk';
 	}
 
 	function normalize(raw) {
 		if (!raw || typeof raw !== 'object') return null;
 		const name = String(raw.name || '').trim();
 		if (!name || !Array.isArray(raw.operators)) return null;
+		const origin = originOf(raw);
 		return {
 			id: String(raw.id || uid()),
 			name: name.slice(0, 32),
 			thumbnail: typeof raw.thumbnail === 'string' ? raw.thumbnail : '',
-			operators: clone(raw.operators),
-			persisted: raw.persisted !== false
+			operators: hydrateOperators(raw.operators),
+			persisted: origin !== 'session',
+			origin: origin
 		};
 	}
 
@@ -189,18 +89,61 @@
 		return null;
 	}
 
+	function userOnly(templates) {
+		return list(templates).filter(function (item) {
+			return item.origin !== 'library';
+		});
+	}
+
+	function merge(library, user) {
+		const byId = {};
+		list(library).forEach(function (item) {
+			const next = clone(item);
+			next.origin = 'library';
+			next.persisted = true;
+			byId[item.id] = next;
+		});
+		list(user).forEach(function (item) {
+			if (item.origin === 'library') return;
+			byId[item.id] = item;
+		});
+		const libIds = {};
+		list(library).forEach(function (item) {
+			libIds[item.id] = true;
+		});
+		const out = [];
+		list(library).forEach(function (item) {
+			out.push(byId[item.id]);
+		});
+		list(user).forEach(function (item) {
+			if (libIds[item.id] || item.origin === 'library') return;
+			out.push(item);
+		});
+		return out;
+	}
+
 	function upsert(templates, template) {
 		const next = list(templates);
 		const item = normalize(template);
 		if (!item) return next;
+		if (item.origin === 'library') item.origin = 'disk';
+		item.persisted = item.origin !== 'session';
 		let found = false;
 		const out = next.map(function (entry) {
 			if (entry.id !== item.id) return entry;
 			found = true;
+			if (entry.origin === 'library') item.origin = 'disk';
+			item.thumbnail = item.thumbnail || entry.thumbnail;
 			return item;
 		});
 		if (!found) out.push(item);
-		return out.slice(-48);
+		const lib = out.filter(function (entry) {
+			return entry.origin === 'library';
+		});
+		const rest = out.filter(function (entry) {
+			return entry.origin !== 'library';
+		}).slice(-48);
+		return lib.concat(rest);
 	}
 
 	function remove(templates, id) {
@@ -215,8 +158,20 @@
 			id: uid(),
 			name: uniqueName(src.name || 'TEMPLATE', templates),
 			thumbnail: src.thumbnail || '',
-			operators: clone(src.operators || []),
-			persisted: true
+			operators: hydrateOperators(src.operators || []),
+			persisted: true,
+			origin: 'disk'
+		};
+	}
+
+	function fromShare(payload, templates) {
+		return {
+			id: uid(),
+			name: uniqueName((payload && payload.name) || 'TEMPLATE', templates),
+			thumbnail: '',
+			operators: hydrateOperators((payload && payload.operators) || []),
+			persisted: true,
+			origin: 'disk'
 		};
 	}
 
@@ -228,39 +183,67 @@
 			name: uniqueName(src.name, templates),
 			thumbnail: src.thumbnail || '',
 			operators: clone(src.operators),
-			persisted: true
+			persisted: true,
+			origin: 'disk'
 		};
 	}
 
 	function instantiate(template, pipes) {
 		const src = normalize(template);
 		if (!src) return null;
+		const operators = hydrateOperators(src.operators).map(function (op) {
+			op.id = 'op_' + Math.random().toString(36).slice(2, 10);
+			return op;
+		});
 		const pipe = root.SynthPipes
-			? root.SynthPipes.create(reIdOperators(src.operators), uniqueName(src.name, pipes))
+			? root.SynthPipes.create(operators, uniqueName(src.name, pipes))
 			: {
 				id: 'pipe_' + Math.random().toString(36).slice(2, 10),
 				name: uniqueName(src.name, pipes),
 				thumbnail: '',
-				operators: reIdOperators(src.operators)
+				operators: operators
 			};
 		pipe.thumbnail = src.thumbnail || '';
 		return pipe;
 	}
 
+	function toDocument(template) {
+		if (root.SynthShare && root.SynthShare.toDocument) {
+			return root.SynthShare.toDocument(template);
+		}
+		const src = normalize(template);
+		if (!src) return null;
+		return {
+			id: src.id,
+			name: src.name,
+			operators: src.operators.map(function (op) {
+				const item = { type: op.type, parameters: clone(op.parameters || {}) };
+				if (op.bypassed) item.bypassed = true;
+				if (op.modulations && Object.keys(op.modulations).length) {
+					item.modulations = clone(op.modulations);
+				}
+				if (item.parameters.savedPalettes) delete item.parameters.savedPalettes;
+				return item;
+			})
+		};
+	}
+
+	let cachedLibrary = [];
+
 	function loadLocal() {
 		try {
 			const raw = window.localStorage.getItem(STORAGE_KEY);
-			if (raw == null) return null;
+			if (raw == null) return [];
 			const parsed = JSON.parse(raw);
-			return list(Array.isArray(parsed) ? parsed : parsed && parsed.items);
+			return userOnly(Array.isArray(parsed) ? parsed : parsed && parsed.items);
 		} catch (err) {
-			return null;
+			return [];
 		}
 	}
 
 	function saveLocal(templates) {
 		try {
-			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list(templates)));
+			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(userOnly(templates)));
 		} catch (err) { /* private mode / quota */ }
 	}
 
@@ -269,10 +252,38 @@
 		saveLocal(templates);
 	}
 
+	function fetchJson(url) {
+		return fetch(url, { cache: 'no-store' }).then(function (res) {
+			if (!res.ok) throw new Error(String(res.status));
+			return res.json();
+		});
+	}
+
+	function loadLibrary() {
+		return fetchJson(LIBRARY_INDEX).then(function (index) {
+			const files = Array.isArray(index) ? index : [];
+			return Promise.all(files.map(function (name) {
+				return fetchJson(LIBRARY_DIR + name).then(function (raw) {
+					const item = normalize(Object.assign({}, raw, { origin: 'library' }));
+					return item;
+				}).catch(function () {
+					return null;
+				});
+			}));
+		}).then(function (items) {
+			cachedLibrary = items.filter(Boolean);
+			return cachedLibrary;
+		}).catch(function () {
+			return cachedLibrary;
+		});
+	}
+
+	function factory() {
+		return list(cachedLibrary);
+	}
+
 	function initial() {
-		const local = loadLocal();
-		if (local) return local;
-		return factory();
+		return merge(cachedLibrary, loadLocal());
 	}
 
 	root.SynthTemplates = {
@@ -281,12 +292,18 @@
 		list: list,
 		find: find,
 		normalize: normalize,
+		hydrateOperators: hydrateOperators,
+		userOnly: userOnly,
+		merge: merge,
 		upsert: upsert,
 		remove: remove,
 		uniqueName: uniqueName,
 		fromPipe: fromPipe,
+		fromShare: fromShare,
 		duplicate: duplicate,
 		instantiate: instantiate,
+		toDocument: toDocument,
+		loadLibrary: loadLibrary,
 		loadLocal: loadLocal,
 		saveLocal: saveLocal,
 		syncDisk: syncDisk,

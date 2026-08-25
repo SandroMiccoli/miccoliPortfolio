@@ -1,0 +1,50 @@
+{
+  "id": "tpl_ink",
+  "name": "INK",
+  "operators": [
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 0.35,
+        "amount": 10,
+        "width": 0.28,
+        "rotation": 45,
+        "blendMode": "difference"
+      }
+    },
+    {
+      "type": "edge",
+      "parameters": {
+        "threshold": 0.08,
+        "intensity": 2.8,
+        "radius": 0.8,
+        "mix": 1,
+        "invert": 1
+      }
+    },
+    {
+      "type": "contrast",
+      "parameters": {
+        "contrast": 2.2,
+        "brightness": -0.04,
+        "pivot": 0.42
+      }
+    },
+    {
+      "type": "lookup",
+      "parameters": {
+        "paletteId": "mono",
+        "colors": ["#2A2A2A", "#6E6E6E", "#B4B4B4", "#F5F5F5"],
+        "bg": "#000000",
+        "saturation": 0.4,
+        "exposure": 0.85
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

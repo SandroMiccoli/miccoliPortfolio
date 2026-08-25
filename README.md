@@ -29,6 +29,7 @@ The live instrument already has:
 * Linear ELOS you can create, duplicate, rename, and switch
 * Parameter modulation from **Speed**, **BPM**, and **FFT**
 * Operator **presets**
+* Shareable ELOS: copy a link, download JSON, or keep templates as files
 * Output **Corner Pin** and stackable **Rectangle / Circle** masks
 * **DEBUG / SYSTEM** overlay with FPS, CPU, and runtime
 * Phone control and Camera Input from a USB webcam or phone
@@ -74,5 +75,11 @@ cd server && npm install && npm start
 ```
 
 Then open `http://127.0.0.1:8080/` and `http://127.0.0.1:8080/control.html`.
+
+## Share visuals
+
+Default templates are JSON files in `library/templates/`. Edit those files in the repo to change the shipped set. Anything you **Save template** on an instance is written to `server/data/templates/` and shows up immediately for every client connected to that instance (desktop and phone).
+
+The Share button copies a link with the full ELOS inside it. Open that link on this machine, the Pi, or another ELO instance to load the same operators and parameters. You can also download the JSON and drop it into `library/templates/` or import it from the Share panel.
 
 To run automatically on a Raspberry Pi, follow [INSTALL.md](INSTALL.md).

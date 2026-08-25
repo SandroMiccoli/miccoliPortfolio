@@ -393,37 +393,105 @@ function listen(server, port) {
 }
 
 const DATA_DIR = path.join(__dirname, 'data');
+const LIBRARY_DIR = path.join(ROOT, 'library');
+const LIB_TEMPLATES_DIR = path.join(LIBRARY_DIR, 'templates');
+const LIB_PRESETS_DIR = path.join(LIBRARY_DIR, 'presets');
+const DATA_TEMPLATES_DIR = path.join(DATA_DIR, 'templates');
+const DATA_PRESETS_DIR = path.join(DATA_DIR, 'presets');
 const PRESETS_PATH = path.join(DATA_DIR, 'presets.json');
 const TEMPLATES_PATH = path.join(DATA_DIR, 'templates.json');
+const HIDDEN_PATH = path.join(DATA_DIR, 'hidden.json');
+const SKIP_PARAMS = { savedPalettes: true, deviceId: true, dirty: true };
 
-function persistedPresets(list) {
-	return (Array.isArray(list) ? list : []).filter((item) => {
-		return item && item.id && item.type && item.parameters && item.persisted && !item.builtin;
-	}).map((item) => ({
-		id: String(item.id),
-		type: String(item.type),
-		name: String(item.name || item.type).slice(0, 32),
-		parameters: clone(item.parameters),
-		persisted: true
-	}));
+let suppressWatchUntil = 0;
+
+function markWrite() {
+	suppressWatchUntil = Date.now() + 900;
 }
 
-function loadDiskPresets() {
+function safeFileName(id) {
+	const base = String(id || '').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 64);
+	return (base || 'item') + '.json';
+}
+
+function compactParams(parameters) {
+	const src = parameters || {};
+	const out = {};
+	Object.keys(src).forEach((key) => {
+		if (SKIP_PARAMS[key]) return;
+		out[key] = clone(src[key]);
+	});
+	return out;
+}
+
+function compactOperators(operators) {
+	return (operators || []).map((op) => {
+		if (!op || !op.type) return null;
+		const item = {
+			type: String(op.type),
+			parameters: compactParams(op.parameters)
+		};
+		if (op.bypassed) item.bypassed = true;
+		if (op.modulations && Object.keys(op.modulations).length) {
+			item.modulations = clone(op.modulations);
+		}
+		return item;
+	}).filter(Boolean);
+}
+
+function readJsonFile(file) {
 	try {
-		const raw = JSON.parse(fs.readFileSync(PRESETS_PATH, 'utf8'));
-		return persistedPresets(Array.isArray(raw) ? raw : raw && raw.presets);
+		return JSON.parse(fs.readFileSync(file, 'utf8'));
+	} catch (err) {
+		return null;
+	}
+}
+
+function writeJsonFile(file, value) {
+	fs.mkdirSync(path.dirname(file), { recursive: true });
+	fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
+}
+
+function indexOrder(dir) {
+	const ranked = {};
+	const index = readJsonFile(path.join(dir, 'index.json'));
+	if (Array.isArray(index)) {
+		index.forEach((name, i) => {
+			ranked[String(name)] = i;
+		});
+	}
+	return ranked;
+}
+
+function listJsonFiles(dir) {
+	if (!fs.existsSync(dir)) return [];
+	let names;
+	try {
+		names = fs.readdirSync(dir).filter((name) => name.endsWith('.json') && name !== 'index.json');
 	} catch (err) {
 		return [];
 	}
+	const rank = indexOrder(dir);
+	names.sort((a, b) => {
+		const ia = rank[a];
+		const ib = rank[b];
+		if (ia == null && ib == null) return a.localeCompare(b);
+		if (ia == null) return 1;
+		if (ib == null) return -1;
+		return ia - ib;
+	});
+	return names.map((name) => path.join(dir, name));
 }
 
-function writeDiskPresets(list) {
-	try {
-		fs.mkdirSync(DATA_DIR, { recursive: true });
-		fs.writeFileSync(PRESETS_PATH, JSON.stringify(persistedPresets(list), null, 2));
-	} catch (err) {
-		console.warn('Preset disk write failed: ' + err.message);
-	}
+function persistPreset(item) {
+	if (!item || item.builtin || !item.id || !item.type || !item.parameters) return null;
+	if (item.persisted === false) return null;
+	return {
+		id: String(item.id),
+		type: String(item.type),
+		name: String(item.name || item.type).slice(0, 32),
+		parameters: compactParams(item.parameters)
+	};
 }
 
 function persistTemplate(item) {
@@ -433,46 +501,285 @@ function persistTemplate(item) {
 	return {
 		id: String(item.id),
 		name: name,
-		thumbnail: typeof item.thumbnail === 'string' ? item.thumbnail : '',
-		operators: clone(item.operators),
-		persisted: true
+		operators: compactOperators(item.operators)
 	};
 }
 
-function persistedTemplates(list) {
-	return (Array.isArray(list) ? list : []).map(persistTemplate).filter(Boolean);
+function sameDoc(a, b) {
+	return JSON.stringify(a || null) === JSON.stringify(b || null);
 }
 
-function loadDiskTemplates() {
-	if (!fs.existsSync(TEMPLATES_PATH)) {
-		return { items: [], seeded: false };
-	}
+function loadPresetFile(file, origin) {
+	const raw = readJsonFile(file);
+	const item = persistPreset(Object.assign({}, raw, {
+		id: (raw && raw.id) || path.basename(file, '.json'),
+		persisted: true
+	}));
+	if (!item) return null;
+	return Object.assign({}, item, {
+		persisted: true,
+		origin: origin || 'disk'
+	});
+}
+
+function loadTemplateFile(file, origin) {
+	const raw = readJsonFile(file);
+	const item = persistTemplate(Object.assign({}, raw, {
+		id: (raw && raw.id) || path.basename(file, '.json')
+	}));
+	if (!item) return null;
+	return Object.assign({}, item, {
+		thumbnail: '',
+		persisted: true,
+		origin: origin || 'disk'
+	});
+}
+
+function loadDirItems(dir, origin, loader) {
+	return listJsonFiles(dir).map((file) => loader(file, origin)).filter(Boolean);
+}
+
+function loadHidden() {
+	const raw = readJsonFile(HIDDEN_PATH);
+	const templates = raw && Array.isArray(raw.templates) ? raw.templates.map(String) : [];
+	const presets = raw && Array.isArray(raw.presets) ? raw.presets.map(String) : [];
+	return { templates: templates, presets: presets };
+}
+
+function writeHidden(hidden) {
+	markWrite();
+	writeJsonFile(HIDDEN_PATH, {
+		templates: (hidden && hidden.templates) || [],
+		presets: (hidden && hidden.presets) || []
+	});
+}
+
+function keepThumbs(prev, next) {
+	const thumbs = {};
+	(prev || []).forEach((item) => {
+		if (item && item.id && item.thumbnail) thumbs[item.id] = item.thumbnail;
+	});
+	return (next || []).map((item) => {
+		if (!item || item.thumbnail) return item;
+		const thumb = thumbs[item.id];
+		return thumb ? Object.assign({}, item, { thumbnail: thumb }) : item;
+	});
+}
+
+function mergeById(library, user, hiddenIds) {
+	const hidden = {};
+	(hiddenIds || []).forEach((id) => {
+		hidden[id] = true;
+	});
+	const byId = {};
+	(library || []).forEach((item) => {
+		if (!item || hidden[item.id]) return;
+		byId[item.id] = item;
+	});
+	(user || []).forEach((item) => {
+		if (!item) return;
+		byId[item.id] = item;
+	});
+	const out = [];
+	const seen = {};
+	(library || []).forEach((item) => {
+		if (!item || hidden[item.id] || seen[item.id]) return;
+		seen[item.id] = true;
+		out.push(byId[item.id]);
+	});
+	(user || []).forEach((item) => {
+		if (!item || seen[item.id]) return;
+		seen[item.id] = true;
+		out.push(item);
+	});
+	return out;
+}
+
+function loadLibraryTemplates() {
+	return loadDirItems(LIB_TEMPLATES_DIR, 'library', loadTemplateFile);
+}
+
+function loadUserTemplates() {
+	return loadDirItems(DATA_TEMPLATES_DIR, 'disk', loadTemplateFile);
+}
+
+function loadLibraryPresets() {
+	return loadDirItems(LIB_PRESETS_DIR, 'library', loadPresetFile);
+}
+
+function loadUserPresets() {
+	return loadDirItems(DATA_PRESETS_DIR, 'disk', loadPresetFile);
+}
+
+function combinedTemplates() {
+	return mergeById(loadLibraryTemplates(), loadUserTemplates(), loadHidden().templates);
+}
+
+function combinedPresets(sessionPresets) {
+	const session = (sessionPresets || []).filter((item) => {
+		return item && item.persisted === false && !item.builtin;
+	}).map((item) => Object.assign({}, persistPreset(Object.assign({}, item, { persisted: true })), {
+		persisted: false,
+		origin: 'session'
+	})).filter(Boolean);
+	return session.concat(mergeById(loadLibraryPresets(), loadUserPresets(), loadHidden().presets));
+}
+
+function migrateLegacyList(file, dir, pick, persist) {
+	if (!fs.existsSync(file)) return;
 	try {
-		const raw = JSON.parse(fs.readFileSync(TEMPLATES_PATH, 'utf8'));
-		const items = persistedTemplates(Array.isArray(raw) ? raw : raw && raw.items);
-		return { items: items, seeded: true };
+		if (fs.existsSync(dir) && listJsonFiles(dir).length) return;
+		const raw = readJsonFile(file);
+		const items = pick(raw);
+		if (!items.length) return;
+		fs.mkdirSync(dir, { recursive: true });
+		items.forEach((item) => {
+			const doc = persist(item);
+			if (!doc) return;
+			fs.writeFileSync(path.join(dir, safeFileName(doc.id)), JSON.stringify(doc, null, 2) + '\n');
+		});
 	} catch (err) {
-		return { items: [], seeded: true };
+		console.warn('Legacy migrate failed for ' + file + ': ' + err.message);
 	}
 }
 
-function writeDiskTemplates(list) {
-	try {
-		fs.mkdirSync(DATA_DIR, { recursive: true });
-		fs.writeFileSync(TEMPLATES_PATH, JSON.stringify(persistedTemplates(list), null, 2));
-	} catch (err) {
-		console.warn('Template disk write failed: ' + err.message);
+function migrateLegacy() {
+	const libraryIds = {};
+	loadLibraryTemplates().forEach((item) => {
+		libraryIds[item.id] = true;
+	});
+	migrateLegacyList(TEMPLATES_PATH, DATA_TEMPLATES_DIR, (raw) => {
+		return (Array.isArray(raw) ? raw : ((raw && raw.items) || [])).filter((item) => {
+			return item && item.id && !libraryIds[item.id];
+		});
+	}, persistTemplate);
+	migrateLegacyList(PRESETS_PATH, DATA_PRESETS_DIR, (raw) => {
+		return Array.isArray(raw) ? raw : ((raw && raw.presets) || []);
+	}, persistPreset);
+}
+
+function clearDirFiles(dir, keepIds) {
+	if (!fs.existsSync(dir)) return;
+	listJsonFiles(dir).forEach((file) => {
+		const raw = readJsonFile(file);
+		const id = raw && raw.id ? String(raw.id) : path.basename(file, '.json');
+		if (keepIds[id]) return;
+		try {
+			fs.unlinkSync(file);
+		} catch (err) { /* ignore */ }
+	});
+}
+
+function persistTemplatesFromState(list) {
+	const library = loadLibraryTemplates();
+	const libById = {};
+	library.forEach((item) => {
+		libById[item.id] = persistTemplate(item);
+	});
+	const hidden = [];
+	const keep = {};
+	markWrite();
+	fs.mkdirSync(DATA_TEMPLATES_DIR, { recursive: true });
+	library.forEach((item) => {
+		const live = (list || []).find((entry) => entry && entry.id === item.id);
+		if (!live) hidden.push(item.id);
+	});
+	(list || []).forEach((item) => {
+		if (!item || item.origin === 'library') return;
+		const doc = persistTemplate(item);
+		if (!doc) return;
+		const lib = libById[doc.id];
+		if (lib && sameDoc(lib, doc)) {
+			const overlay = path.join(DATA_TEMPLATES_DIR, safeFileName(doc.id));
+			if (fs.existsSync(overlay)) {
+				try { fs.unlinkSync(overlay); } catch (err) { /* ignore */ }
+			}
+			return;
+		}
+		keep[doc.id] = true;
+		writeJsonFile(path.join(DATA_TEMPLATES_DIR, safeFileName(doc.id)), doc);
+	});
+	clearDirFiles(DATA_TEMPLATES_DIR, keep);
+	const prev = loadHidden();
+	writeHidden({ templates: hidden, presets: prev.presets });
+}
+
+function persistPresetsFromState(list) {
+	const library = loadLibraryPresets();
+	const libById = {};
+	library.forEach((item) => {
+		libById[item.id] = persistPreset(item);
+	});
+	const hidden = [];
+	const keep = {};
+	markWrite();
+	fs.mkdirSync(DATA_PRESETS_DIR, { recursive: true });
+	library.forEach((item) => {
+		const live = (list || []).find((entry) => entry && entry.id === item.id);
+		if (!live) hidden.push(item.id);
+	});
+	(list || []).forEach((item) => {
+		if (!item || item.builtin || item.persisted === false || item.origin === 'library') return;
+		const doc = persistPreset(item);
+		if (!doc) return;
+		if (libById[doc.id] && sameDoc(libById[doc.id], doc)) {
+			const overlay = path.join(DATA_PRESETS_DIR, safeFileName(doc.id));
+			if (fs.existsSync(overlay)) {
+				try { fs.unlinkSync(overlay); } catch (err) { /* ignore */ }
+			}
+			return;
+		}
+		keep[doc.id] = true;
+		writeJsonFile(path.join(DATA_PRESETS_DIR, safeFileName(doc.id)), doc);
+	});
+	clearDirFiles(DATA_PRESETS_DIR, keep);
+	const prev = loadHidden();
+	writeHidden({ templates: prev.templates, presets: hidden });
+}
+
+function persistOneTemplate(item) {
+	const doc = persistTemplate(item);
+	if (!doc) return;
+	const lib = persistTemplate(loadLibraryTemplates().find((entry) => entry.id === doc.id) || null);
+	markWrite();
+	if (lib && sameDoc(lib, doc)) {
+		const overlay = path.join(DATA_TEMPLATES_DIR, safeFileName(doc.id));
+		if (fs.existsSync(overlay)) {
+			try { fs.unlinkSync(overlay); } catch (err) { /* ignore */ }
+		}
+		return;
 	}
+	writeJsonFile(path.join(DATA_TEMPLATES_DIR, safeFileName(doc.id)), doc);
+}
+
+function watchDirs(dirs, onChange) {
+	let timer = 0;
+	const kick = () => {
+		if (Date.now() < suppressWatchUntil) return;
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			if (Date.now() < suppressWatchUntil) return;
+			onChange();
+		}, 280);
+	};
+	dirs.forEach((dir) => {
+		try {
+			fs.mkdirSync(dir, { recursive: true });
+			fs.watch(dir, kick);
+		} catch (err) {
+			console.warn('Watch failed for ' + dir + ': ' + err.message);
+		}
+	});
 }
 
 async function start() {
 	const app = express();
 	let port = Number(process.env.PORT) || 8080;
+	migrateLegacy();
 	let state = clone(DEFAULT_STATE);
-	state.presets = loadDiskPresets();
-	const diskTemplates = loadDiskTemplates();
-	state.templates = diskTemplates.items;
-	state.templatesSeeded = diskTemplates.seeded;
+	state.presets = combinedPresets([]);
+	state.templates = combinedTemplates();
+	state.templatesSeeded = true;
 
 	app.get('/api/info', (_req, res) => {
 		res.json(makeInfo(port));
@@ -581,15 +888,18 @@ async function start() {
 			if (msg.type === 'patch' && msg.patch) {
 				state = applyPatch(state, msg.patch);
 				if (Object.prototype.hasOwnProperty.call(msg.patch, 'presets')) {
-					writeDiskPresets(state.presets);
+					persistPresetsFromState(state.presets);
 				}
-				if (
-					Object.prototype.hasOwnProperty.call(msg.patch, 'templates') ||
-					msg.patch.templateThumb ||
-					msg.patch.templateOps
-				) {
-					writeDiskTemplates(state.templates);
+				if (Object.prototype.hasOwnProperty.call(msg.patch, 'templates')) {
+					persistTemplatesFromState(state.templates);
 					state.templatesSeeded = true;
+				} else if (msg.patch.templateOps && msg.patch.templateOps.id) {
+					state.templates = (state.templates || []).map((item) => {
+						if (item.id !== msg.patch.templateOps.id) return item;
+						return Object.assign({}, item, { origin: 'disk', persisted: true });
+					});
+					const live = (state.templates || []).find((item) => item.id === msg.patch.templateOps.id);
+					if (live) persistOneTemplate(live);
 				}
 				broadcastState();
 				return;
@@ -662,6 +972,29 @@ async function start() {
 	});
 
 	setInterval(broadcastStats, 2000);
+
+	watchDirs(
+		[LIB_TEMPLATES_DIR, DATA_TEMPLATES_DIR, LIB_PRESETS_DIR, DATA_PRESETS_DIR],
+		() => {
+			const nextTemplates = keepThumbs(state.templates, combinedTemplates());
+			const nextPresets = combinedPresets(state.presets);
+			const tplChanged = JSON.stringify((state.templates || []).map((item) => {
+				return [item.id, item.name, item.origin, compactOperators(item.operators)];
+			})) !== JSON.stringify((nextTemplates || []).map((item) => {
+				return [item.id, item.name, item.origin, compactOperators(item.operators)];
+			}));
+			const preChanged = JSON.stringify((state.presets || []).map((item) => {
+				return [item.id, item.name, item.origin, item.persisted, item.parameters];
+			})) !== JSON.stringify((nextPresets || []).map((item) => {
+				return [item.id, item.name, item.origin, item.persisted, item.parameters];
+			}));
+			if (!tplChanged && !preChanged) return;
+			state.templates = nextTemplates;
+			state.presets = nextPresets;
+			state.templatesSeeded = true;
+			broadcastState();
+		}
+	);
 
 	const preferred = port;
 	try {

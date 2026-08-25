@@ -1,0 +1,46 @@
+{
+  "id": "tpl_stripe",
+  "name": "STRIPE",
+  "operators": [
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 0.12,
+        "amount": 22,
+        "width": 0.16,
+        "rotation": 8
+      }
+    },
+    {
+      "type": "warp",
+      "parameters": {
+        "amount": 0.12,
+        "frequency": 2.2,
+        "speed": 0.15,
+        "detail": 0.3
+      }
+    },
+    {
+      "type": "lookup",
+      "parameters": {
+        "paletteId": "fire",
+        "colors": ["#5C0812", "#D62408", "#FF9412", "#FFECC6"],
+        "bg": "#080206"
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.4,
+        "intensity": 1.1,
+        "radius": 0.6
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

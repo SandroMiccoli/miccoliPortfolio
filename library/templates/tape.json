@@ -1,0 +1,40 @@
+{
+  "id": "tpl_tape",
+  "name": "VHS TAPE",
+  "operators": [
+    {
+      "type": "tape",
+      "parameters": {
+        "speed": 2,
+        "lines": 240,
+        "threshold": 0.7,
+        "grain": 1,
+        "amount": 1
+      }
+    },
+    {
+      "type": "lookup",
+      "parameters": {
+        "paletteId": "mono",
+        "colors": ["#0A0808", "#3A2A22", "#C8B8A0", "#F2EDE4"],
+        "bg": "#050404",
+        "saturation": 0.55,
+        "exposure": 1.05
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.38,
+        "intensity": 0.7,
+        "radius": 0.85
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

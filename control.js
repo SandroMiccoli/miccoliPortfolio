@@ -4,6 +4,9 @@
 
 	let warnedOffline = false;
 	let seenLive = false;
+	let sawRemoteState = false;
+
+	if (window.SynthShare && SynthShare.captureLocation) SynthShare.captureLocation();
 
 	function setStatus(on) {
 		const el = document.getElementById('sync-status');
@@ -40,6 +43,21 @@
 		if ((patch.templates || patch.templateThumb || patch.templateOps) && window.SynthTemplates) {
 			SynthTemplates.syncDisk(SynthState.get().templates);
 		}
+	}
+
+	function consumeShare() {
+		if (window.SynthShare) SynthShare.consume(userPatch);
+	}
+
+	function mergeOfflineLibrary() {
+		if (window.SynthSync && SynthSync.connected()) return;
+		if (!window.SynthTemplates) return;
+		const state = SynthState.get();
+		const merged = SynthTemplates.merge(
+			SynthTemplates.factory(),
+			SynthTemplates.userOnly(state.templates)
+		);
+		userPatch({ templates: merged, templatesSeeded: true });
 	}
 
 	document.addEventListener('DOMContentLoaded', function () {
@@ -83,10 +101,12 @@
 				applyingRemote = true;
 				SynthState.replace(state);
 				applyingRemote = false;
+				sawRemoteState = true;
 				const next = SynthState.get();
 				if (incomingEmpty && next.templates && next.templates.length) {
 					userPatch({ templates: next.templates, templatesSeeded: true });
 				}
+				consumeShare();
 			},
 			onStatus: setStatus,
 			onNotify: function (level, message) {
@@ -114,5 +134,23 @@
 				if (window.SynthCamera) SynthCamera.reconnect(true);
 			}
 		});
+
+		const libraryJobs = [];
+		if (window.SynthTemplates && SynthTemplates.loadLibrary) {
+			libraryJobs.push(SynthTemplates.loadLibrary());
+		}
+		if (window.SynthPresets && SynthPresets.loadLibrary) {
+			libraryJobs.push(SynthPresets.loadLibrary());
+		}
+		Promise.all(libraryJobs).then(function () {
+			if (!sawRemoteState) mergeOfflineLibrary();
+			if (!sawRemoteState && !(window.SynthSync && SynthSync.connected())) consumeShare();
+		});
+		window.setTimeout(function () {
+			if (sawRemoteState) return;
+			if (window.SynthSync && SynthSync.connected()) return;
+			mergeOfflineLibrary();
+			consumeShare();
+		}, 900);
 	});
 })();

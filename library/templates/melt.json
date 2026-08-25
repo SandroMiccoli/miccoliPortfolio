@@ -1,0 +1,58 @@
+{
+  "id": "tpl_melt",
+  "name": "MELT",
+  "operators": [
+    {
+      "type": "gradient",
+      "parameters": {
+        "kind": "sweep",
+        "angle": 0,
+        "position": 0.5,
+        "spread": 1,
+        "colorA": "#1A0A00",
+        "colorB": "#FFE6B8"
+      }
+    },
+    {
+      "type": "displace",
+      "parameters": {
+        "amount": 0.32,
+        "angle": 90,
+        "center": 0.42,
+        "mode": "luma",
+        "tile": "hold"
+      }
+    },
+    {
+      "type": "warp",
+      "parameters": {
+        "amount": 0.85,
+        "frequency": 6.5,
+        "speed": 0.55,
+        "detail": 0.85
+      }
+    },
+    {
+      "type": "hsv",
+      "parameters": {
+        "hue": 18,
+        "saturation": 1.25,
+        "value": 1.05
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.32,
+        "intensity": 0.9,
+        "radius": 1.35
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1.05
+      }
+    }
+  ]
+}

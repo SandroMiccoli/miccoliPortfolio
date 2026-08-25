@@ -93,7 +93,8 @@
 				name: item.name || id,
 				parameters: snapshot(type, item.parameters || def.defaults || {}),
 				builtin: true,
-				persisted: true
+				persisted: true,
+				origin: 'library'
 			};
 		});
 	}
@@ -103,13 +104,15 @@
 		const type = String(raw.type || '');
 		const name = String(raw.name || '').trim();
 		if (!type || !name || !raw.parameters) return null;
+		const origin = raw.origin === 'library' ? 'library' : (raw.persisted ? 'disk' : 'session');
 		return {
 			id: String(raw.id || uid()),
 			type: type,
 			name: name.slice(0, 32),
 			parameters: snapshot(type, raw.parameters),
 			builtin: false,
-			persisted: !!raw.persisted
+			persisted: origin !== 'session',
+			origin: origin
 		};
 	}
 
@@ -119,8 +122,24 @@
 		});
 	}
 
+	let cachedLibrary = [];
+
+	function libraryOf(type) {
+		return cachedLibrary.filter(function (item) {
+			return item && (!type || item.type === type);
+		});
+	}
+
 	function catalog(type, userPresets) {
-		return factory(type).concat(listUser(userPresets, type));
+		const user = listUser(userPresets, type);
+		const seen = {};
+		user.forEach(function (item) {
+			seen[item.id] = true;
+		});
+		const extra = libraryOf(type).filter(function (item) {
+			return !seen[item.id];
+		});
+		return factory(type).concat(extra).concat(user);
 	}
 
 	function sameSnapshot(a, b) {
@@ -191,7 +210,8 @@
 			name: clean.slice(0, 32),
 			parameters: snapshot(type, parameters),
 			builtin: false,
-			persisted: !!persisted
+			persisted: !!persisted,
+			origin: persisted ? 'disk' : 'session'
 		};
 	}
 
@@ -199,6 +219,10 @@
 		const next = listUser(userPresets);
 		const item = normalize(preset);
 		if (!item) return next;
+		if (item.origin === 'library') {
+			item.origin = 'disk';
+			item.persisted = true;
+		}
 		let found = false;
 		const out = next.map(function (entry) {
 			if (entry.id !== item.id) return entry;
@@ -220,6 +244,7 @@
 			if (item.id !== id) return item;
 			const next = clone(item);
 			next.persisted = true;
+			next.origin = 'disk';
 			return next;
 		});
 	}
@@ -233,7 +258,8 @@
 				type: item.type,
 				name: item.name,
 				parameters: item.parameters,
-				persisted: true
+				persisted: true,
+				origin: 'disk'
 			};
 		});
 	}
@@ -258,6 +284,43 @@
 		saveLocal(userPresets);
 	}
 
+	function toDocument(preset) {
+		const item = normalize(preset);
+		if (!item) return null;
+		return {
+			id: item.id,
+			type: item.type,
+			name: item.name,
+			parameters: item.parameters
+		};
+	}
+
+	function loadLibrary() {
+		return fetch('library/presets/index.json', { cache: 'no-store' }).then(function (res) {
+			if (!res.ok) throw new Error(String(res.status));
+			return res.json();
+		}).then(function (index) {
+			const files = Array.isArray(index) ? index : [];
+			return Promise.all(files.map(function (name) {
+				return fetch('library/presets/' + name, { cache: 'no-store' }).then(function (res) {
+					if (!res.ok) throw new Error(String(res.status));
+					return res.json();
+				}).then(function (raw) {
+					const item = normalize(Object.assign({}, raw, { persisted: true, origin: 'library' }));
+					if (item) item.origin = 'library';
+					return item;
+				}).catch(function () {
+					return null;
+				});
+			}));
+		}).then(function (items) {
+			cachedLibrary = items.filter(Boolean);
+			return cachedLibrary;
+		}).catch(function () {
+			return cachedLibrary;
+		});
+	}
+
 	root.SynthPresets = {
 		snapshot: snapshot,
 		factory: factory,
@@ -273,6 +336,8 @@
 		remove: remove,
 		persist: persist,
 		persistedOnly: persistedOnly,
+		toDocument: toDocument,
+		loadLibrary: loadLibrary,
 		loadLocal: loadLocal,
 		saveLocal: saveLocal,
 		syncDisk: syncDisk,
