@@ -49,6 +49,9 @@
 			return {
 				process: function (ctx) {
 					const p = ctx.parameters || {};
+					const translateZ = num(p.translateZ, defaults.translateZ);
+					const speedZ = num(p.speedZ, defaults.speedZ);
+					const contrast = num(p.contrast, defaults.contrast);
 					engine.drawTo(ctx.output, engine.shaders.noise, {
 						u_input: ctx.input,
 						u_hasInput: ctx.hasInput ? 1 : 0,
@@ -57,17 +60,18 @@
 						u_translate: [
 							num(p.translateX, defaults.translateX),
 							num(p.translateY, defaults.translateY),
-							num(p.translateZ, defaults.translateZ)
+							translateZ
 						],
 						u_speed: [
 							num(p.speedX != null ? p.speedX : p.speed, defaults.speedX),
 							num(p.speedY, defaults.speedY),
-							num(p.speedZ, defaults.speedZ)
+							speedZ
 						],
 						u_amplitude: num(p.amplitude, defaults.amplitude),
 						u_offset: num(p.offset, defaults.offset),
-						u_octaves: Math.max(1, num(p.octaves, defaults.octaves)),
-						u_contrast: num(p.contrast, defaults.contrast),
+						u_octaves: Math.max(1, Math.min(6, num(p.octaves, defaults.octaves))),
+						u_contrastPow: 1 / Math.max(contrast, 0.08),
+						u_use3d: (Math.abs(translateZ) > 1e-4 || Math.abs(speedZ) > 1e-4) ? 1 : 0,
 						u_time: ctx.time
 					});
 				}

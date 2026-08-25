@@ -123,18 +123,7 @@
 
 	function encode(payload) {
 		if (!payload) return Promise.resolve('');
-		const json = JSON.stringify(payload);
-		if (!gzipAvailable()) return Promise.resolve(encodeJson(payload));
-		return new Response(json).blob()
-			.then(function (blob) {
-				return new Response(blob.stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
-			})
-			.then(function (buf) {
-				return 'z' + bytesToB64Url(new Uint8Array(buf));
-			})
-			.catch(function () {
-				return encodeJson(payload);
-			});
+		return Promise.resolve(encodeJson(payload));
 	}
 
 	function parseObject(raw) {
@@ -188,28 +177,31 @@
 			}
 		}
 		if (!gzipAvailable()) return Promise.resolve(null);
-		return new Response(bytes).blob()
-			.then(function (blob) {
-				return new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
-			})
+		const blob = new Blob([bytes]);
+		return new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text()
 			.then(function (json) {
 				return parseObject(JSON.parse(json));
 			})
 			.catch(function () {
-				return null;
+				try {
+					return parseObject(JSON.parse(bytesToText(bytes)));
+				} catch (err) {
+					return null;
+				}
 			});
 	}
 
 	function tokenFromHash(hash) {
-		const raw = String(hash || '').replace(/^#/, '');
+		const raw = String(hash || '')
+			.replace(/%23/gi, '#')
+			.replace(/^#/, '')
+			.trim();
 		if (!raw) return '';
-		const parts = raw.split('&');
-		for (let i = 0; i < parts.length; i += 1) {
-			const piece = parts[i];
-			if (piece.indexOf('e=') === 0) return piece.slice(2);
-			if (piece.indexOf('elo=') === 0) return piece.slice(4);
-		}
-		if (/^[jz]/.test(raw) && raw.length > 8) return raw;
+		const amp = raw.indexOf('&');
+		const head = amp >= 0 ? raw.slice(0, amp) : raw;
+		if (head.indexOf('e=') === 0) return head.slice(2);
+		if (head.indexOf('elo=') === 0) return head.slice(4);
+		if (/^[jz]/.test(raw) && raw.length > 8) return raw.split('&')[0];
 		return '';
 	}
 
@@ -340,6 +332,7 @@
 			? root.SynthTemplates.hydrateOperators(payload.operators)
 			: payload.operators;
 		const pipe = root.SynthPipes.create(operators, name);
+		pipe.shareKey = fingerprint(payload);
 		return {
 			patch: {
 				pipes: pipes.concat([pipe]),
@@ -350,37 +343,92 @@
 		};
 	}
 
-	let pending = null;
-	let consumed = false;
+	function fingerprint(payload) {
+		if (!payload) return '';
+		if (payload.kind === 'preset') {
+			return 'preset:' + String(payload.type || '') + ':' + JSON.stringify(payload.parameters || {});
+		}
+		return 'elos:' + JSON.stringify(compactOperators(payload.operators || []));
+	}
+
+	function alreadyLoaded(state, payload) {
+		if (!payload || !state) return false;
+		const key = fingerprint(payload);
+		if (!key) return false;
+		if (payload.kind === 'preset') {
+			return (state.presets || []).some(function (item) {
+				return item && fingerprint({
+					kind: 'preset',
+					type: item.type,
+					parameters: item.parameters
+				}) === key;
+			});
+		}
+		return (state.pipes || []).some(function (pipe) {
+			return pipe && (pipe.shareKey === key || fingerprint({
+				kind: 'elos',
+				operators: pipe.operators
+			}) === key);
+		});
+	}
+
+	const bootHash = typeof location !== 'undefined' ? String(location.hash || '') : '';
+	let shareToken = '';
+	let decoded = null;
+	let decodedReady = false;
+	let notified = false;
 	let inflight = null;
+	let captured = false;
+
+	function ensureDecoded() {
+		if (!shareToken) return Promise.resolve(null);
+		if (decodedReady) return Promise.resolve(decoded);
+		return decodeToken(shareToken).then(function (payload) {
+			decoded = payload;
+			decodedReady = true;
+			return payload;
+		});
+	}
 
 	function captureLocation() {
-		pending = parseHash(location.hash);
-		if (tokenFromHash(location.hash)) clearHash();
-		return pending;
+		if (captured) return ensureDecoded();
+		captured = true;
+		shareToken = tokenFromHash(bootHash) || tokenFromHash(location.hash);
+		if (shareToken) clearHash();
+		decodedReady = !shareToken;
+		decoded = null;
+		if (!shareToken) return Promise.resolve(null);
+		return ensureDecoded();
 	}
 
 	function consume(applyPatch) {
-		if (consumed) return Promise.resolve(false);
+		captureLocation();
+		if (!shareToken) return Promise.resolve(false);
 		if (inflight) return inflight;
-		const hold = pending || parseHash(location.hash);
-		pending = hold;
-		inflight = Promise.resolve(hold).then(function (payload) {
-			consumed = true;
-			pending = null;
+		inflight = ensureDecoded().then(function (payload) {
 			inflight = null;
 			if (!payload) return false;
 			const state = root.SynthState ? root.SynthState.get() : null;
+			if (alreadyLoaded(state, payload)) {
+				notified = true;
+				return true;
+			}
 			const result = apply(payload, state);
 			if (!result || !result.patch) return false;
 			applyPatch(result.patch);
-			if (result.message && root.SynthNotify) {
+			if (!notified && result.message && root.SynthNotify) {
+				notified = true;
 				root.SynthNotify.show('success', result.message);
 			}
 			return true;
+		}).catch(function () {
+			inflight = null;
+			return false;
 		});
 		return inflight;
 	}
+
+	captureLocation();
 
 	root.SynthShare = {
 		fromOperators: fromOperators,
