@@ -160,6 +160,51 @@
 					const tempDiv = document.createElement('div');
 					tempDiv.innerHTML = bodyContent;
 					tempDiv.querySelectorAll('script').forEach(script => script.remove());
+
+					// Resolve relative asset URLs against /experiments/<slug>/ —
+					// the page URL is /:slug/, so bare paths like "hero.jpg" would 404.
+					function resolveExpUrl(url) {
+						if (!url) return url;
+						const trimmed = url.trim();
+						if (
+							trimmed.startsWith('/') ||
+							trimmed.startsWith('http://') ||
+							trimmed.startsWith('https://') ||
+							trimmed.startsWith('data:') ||
+							trimmed.startsWith('blob:') ||
+							trimmed.startsWith('#') ||
+							trimmed.startsWith('mailto:') ||
+							trimmed.startsWith('javascript:')
+						) {
+							return url;
+						}
+						return '/experiments/' + slug + '/' + trimmed;
+					}
+
+					tempDiv.querySelectorAll('[src]').forEach((el) => {
+						el.setAttribute('src', resolveExpUrl(el.getAttribute('src')));
+					});
+					tempDiv.querySelectorAll('[poster]').forEach((el) => {
+						el.setAttribute('poster', resolveExpUrl(el.getAttribute('poster')));
+					});
+					tempDiv.querySelectorAll('[srcset]').forEach((el) => {
+						const srcset = el.getAttribute('srcset');
+						if (!srcset) return;
+						el.setAttribute(
+							'srcset',
+							srcset
+								.split(',')
+								.map((part) => {
+									const bit = part.trim();
+									if (!bit) return bit;
+									const space = bit.search(/\s/);
+									if (space === -1) return resolveExpUrl(bit);
+									return resolveExpUrl(bit.slice(0, space)) + bit.slice(space);
+								})
+								.join(', ')
+						);
+					});
+
 					container.innerHTML = tempDiv.innerHTML;
 					
 					// Extract and load all scripts from body in order

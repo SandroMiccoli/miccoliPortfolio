@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>GSAP Metaball Logo</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<main class="stage">
+		<div class="version-switch" role="group" aria-label="Logo version">
+			<button type="button" class="version-btn is-active" id="ver-v1" data-version="v1" aria-pressed="true">v1</button>
+			<button type="button" class="version-btn" id="ver-v2" data-version="v2" aria-pressed="false">v2</button>
+			<button type="button" class="version-btn" id="ver-v3" data-version="v3" aria-pressed="false">v3</button>
+			<button type="button" class="version-btn" id="ver-v4" data-version="v4" aria-pressed="false">v4</button>
+		</div>
+		<button class="logo-hit" id="logo-hit" type="button" aria-label="Pulse the metaball logo">
+			<svg class="logo-svg" id="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="-210 -210 420 420" fill="none" aria-hidden="true">
+				<defs>
+					<!-- Thresholded blur = continuous metaball merge. Applied per cluster so the four marks stay separate. -->
+					<filter id="goo" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+						<feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur"/>
+						<feColorMatrix in="blur" mode="matrix" values="
+							1 0 0 0 0
+							0 1 0 0 0
+							0 0 1 0 0
+							0 0 0 20 -9" result="goo"/>
+						<feComponentTransfer in="goo" result="hard">
+							<feFuncA type="discrete" tableValues="0 1"/>
+						</feComponentTransfer>
+						<feFlood flood-color="#F46B1A" result="fill"/>
+						<feComposite in="fill" in2="hard" operator="in"/>
+					</filter>
+				</defs>
+				<g id="mesh">
+					<g id="cluster-tl" class="cluster" filter="url(#goo)"></g>
+					<g id="cluster-tr" class="cluster" filter="url(#goo)"></g>
+					<g id="cluster-bl" class="cluster" filter="url(#goo)"></g>
+					<g id="cluster-br" class="cluster" filter="url(#goo)"></g>
+				</g>
+			</svg>
+		</button>
+		<p class="hint" id="hint">Click the logo</p>
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+	<script src="main.js"></script>
+</body>
+</html>
