@@ -18,7 +18,13 @@
 </head>
 <body>
 	<main class="lab">
-		<section class="scene" id="scene-fellows" data-scene="fellows">
+		<div class="scene-switch" role="tablist" aria-label="Effect">
+			<button type="button" class="scene-switch__btn" role="tab" id="tab-image-over" aria-controls="scene-image-over" aria-selected="true" tabindex="0" data-scene="image-over">Image Over</button>
+			<button type="button" class="scene-switch__btn" role="tab" id="tab-card-bg" aria-controls="scene-card-bg" aria-selected="false" tabindex="-1" data-scene="card-bg">Card BG</button>
+			<button type="button" class="scene-switch__btn" role="tab" id="tab-card-grid" aria-controls="scene-card-grid" aria-selected="false" tabindex="-1" data-scene="card-grid">Card Grid</button>
+		</div>
+
+		<section class="scene scene--fellows" id="scene-image-over" data-scene="image-over" role="tabpanel" aria-labelledby="tab-image-over">
 			<div class="scene__card">
 				<header class="scene-header">
 				<div class="scene-header__copy">
@@ -38,7 +44,7 @@
 			<div class="gallery">
 				<div class="gallery__viewport">
 					<ul class="gallery__track" id="fellows-track" tabindex="0" aria-label="Fellows">
-						<li class="person-card" data-seed="5" data-face-x="0.52" data-face-y="0.70" data-face-w="0.42" data-face-h="0.50">
+						<li class="person-card" data-seed="5.124" data-face-x="0.52" data-face-y="0.70" data-face-w="0.42" data-face-h="0.50">
 							<article class="person-card__inner">
 								<div class="person-card__media">
 									<img
@@ -63,7 +69,7 @@
 								</div>
 							</article>
 						</li>
-						<li class="person-card" data-seed="4.71" data-face-x="0.50" data-face-y="0.66" data-face-w="0.48" data-face-h="0.54">
+						<li class="person-card" data-seed="2.3" data-face-x="0.50" data-face-y="0.66" data-face-w="0.48" data-face-h="0.54">
 							<article class="person-card__inner">
 								<div class="person-card__media">
 									<img
@@ -199,6 +205,42 @@
 				</div>
 				</div>
 			</div>
+		</section>
+
+		<section class="scene scene--talent" id="scene-card-bg" data-scene="card-bg" role="tabpanel" aria-labelledby="tab-card-bg" hidden>
+			<article class="talent-card">
+				<canvas class="talent-card__gl" aria-hidden="true"></canvas>
+				<div class="talent-card__copy">
+					<p class="talent-card__badge">For talent</p>
+					<h1 class="talent-card__title">Take your independence further. <span>Join a network that opens doors</span></h1>
+					<button type="button" class="talent-card__cta">Join our network</button>
+				</div>
+			</article>
+		</section>
+
+		<section class="scene scene--clients" id="scene-card-grid" data-scene="card-grid" role="tabpanel" aria-labelledby="tab-card-grid" hidden>
+			<article class="client-card">
+				<div class="client-card__visual">
+					<canvas class="client-card__gl" aria-hidden="true"></canvas>
+					<p class="client-card__badge">For clients</p>
+				</div>
+				<ul class="client-card__logos" aria-label="Clients include">
+					<li>
+						<span class="client-logo client-logo--blackrock" aria-label="BlackRock">BlackRock</span>
+					</li>
+					<li>
+						<span class="client-logo client-logo--ms" aria-label="Morgan Stanley">Morgan Stanley</span>
+					</li>
+					<li>
+						<span class="client-logo client-logo--bcg" aria-label="Boston Consulting Group">BCG</span>
+					</li>
+					<li>
+						<span class="client-logo client-logo--bain" aria-label="Bain Capital">BainCapital</span>
+					</li>
+				</ul>
+					<h1 class="client-card__title">Find the talent your next <span>project deserves</span></h1>
+				<button type="button" class="client-card__cta">Discover top talent</button>
+			</article>
 		</section>
 	</main>
 

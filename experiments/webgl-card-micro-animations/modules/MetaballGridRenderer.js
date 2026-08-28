@@ -237,9 +237,13 @@ export class MetaballGridRenderer {
 		this.raf = requestAnimationFrame(tick);
 	}
 
-	stop() {
+	pause() {
 		cancelAnimationFrame(this.raf);
 		this.raf = 0;
+	}
+
+	stop() {
+		this.pause();
 		this.io?.disconnect();
 		for (const card of this.cards) card.ro?.disconnect();
 	}

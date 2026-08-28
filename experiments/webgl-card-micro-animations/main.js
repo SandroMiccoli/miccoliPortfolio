@@ -1,6 +1,6 @@
 /**
  * WebGL Card Micro-Animations
- * Scene 1: Fellows gallery with a shared metaball-grid overlay.
+ * Scene switcher: Image Over, Card BG, and Card Grid.
  */
 
 import { gsap } from 'https://cdn.jsdelivr.net/npm/gsap@3.13.0/+esm';
@@ -10,6 +10,12 @@ import { Observer } from 'https://cdn.jsdelivr.net/npm/gsap@3.13.0/Observer.js/+
 
 gsap.registerPlugin(Draggable, InertiaPlugin, Observer);
 gsap.defaults({ ease: 'power3.out' });
+
+const runtimes = {
+	imageOver: null,
+	cardBg: null,
+	cardGrid: null,
+};
 
 function afterFirstPaint(fn) {
 	requestAnimationFrame(() => {
@@ -34,11 +40,134 @@ function initSurfaces(viewport) {
 				}
 				document.querySelectorAll('.person-card').forEach((card) => renderer.attach(card));
 				renderer.observe(viewport);
-				renderer.start();
+				runtimes.imageOver = renderer;
+				const active = document.querySelector('.scene:not([hidden])')?.dataset.scene;
+				if (active === 'image-over') renderer.start();
 			})
 			.catch((error) => {
 				console.error(error);
 			});
+	});
+}
+
+function initCardBg() {
+	if (runtimes.cardBg) {
+		runtimes.cardBg.start();
+		return Promise.resolve(runtimes.cardBg);
+	}
+	if (runtimes.cardBgPending) return runtimes.cardBgPending;
+
+	const canvas = document.querySelector('.talent-card__gl');
+	if (!canvas) return Promise.resolve(null);
+
+	runtimes.cardBgPending = import('./modules/MetaballPairRenderer.js')
+		.then(({ MetaballPairRenderer }) => {
+			const renderer = new MetaballPairRenderer(canvas);
+			runtimes.cardBgPending = null;
+			if (!renderer.ok) {
+				console.warn('WebGL2 is required for the card background.');
+				return null;
+			}
+			runtimes.cardBg = renderer;
+			renderer.start();
+			return renderer;
+		})
+		.catch((error) => {
+			runtimes.cardBgPending = null;
+			console.error(error);
+			return null;
+		});
+
+	return runtimes.cardBgPending;
+}
+
+function initCardGrid() {
+	if (runtimes.cardGrid) {
+		runtimes.cardGrid.start();
+		return Promise.resolve(runtimes.cardGrid);
+	}
+	if (runtimes.cardGridPending) return runtimes.cardGridPending;
+
+	const canvas = document.querySelector('.client-card__gl');
+	if (!canvas) return Promise.resolve(null);
+
+	runtimes.cardGridPending = import('./modules/MetaballOrderedGridRenderer.js')
+		.then(({ MetaballOrderedGridRenderer }) => {
+			const renderer = new MetaballOrderedGridRenderer(canvas);
+			runtimes.cardGridPending = null;
+			if (!renderer.ok) {
+				console.warn('WebGL2 is required for the card grid.');
+				return null;
+			}
+			runtimes.cardGrid = renderer;
+			renderer.start();
+			return renderer;
+		})
+		.catch((error) => {
+			runtimes.cardGridPending = null;
+			console.error(error);
+			return null;
+		});
+
+	return runtimes.cardGridPending;
+}
+
+function setScene(id) {
+	const panels = document.querySelectorAll('.scene[data-scene]');
+	const tabs = document.querySelectorAll('.scene-switch__btn');
+
+	for (const panel of panels) {
+		const on = panel.dataset.scene === id;
+		panel.hidden = !on;
+		panel.setAttribute('aria-hidden', on ? 'false' : 'true');
+	}
+
+	for (const tab of tabs) {
+		const on = tab.dataset.scene === id;
+		tab.setAttribute('aria-selected', on ? 'true' : 'false');
+		tab.tabIndex = on ? 0 : -1;
+	}
+
+	if (id === 'card-bg') {
+		runtimes.imageOver?.pause?.();
+		runtimes.cardGrid?.pause?.();
+		initCardBg();
+		return;
+	}
+
+	if (id === 'card-grid') {
+		runtimes.imageOver?.pause?.();
+		runtimes.cardBg?.pause?.();
+		initCardGrid();
+		return;
+	}
+
+	runtimes.cardBg?.pause?.();
+	runtimes.cardGrid?.pause?.();
+	runtimes.imageOver?.start();
+}
+
+function initSceneSwitch() {
+	const tabs = [...document.querySelectorAll('.scene-switch__btn')];
+	if (!tabs.length) return;
+
+	for (const tab of tabs) {
+		tab.addEventListener('click', () => setScene(tab.dataset.scene));
+	}
+
+	const list = document.querySelector('.scene-switch');
+	list?.addEventListener('keydown', (event) => {
+		const current = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
+		if (current < 0) return;
+
+		let next = current;
+		if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (current + 1) % tabs.length;
+		if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (current - 1 + tabs.length) % tabs.length;
+		if (next === current) return;
+
+		event.preventDefault();
+		tabs[next].focus();
+		setScene(tabs[next].dataset.scene);
 	});
 }
 
@@ -196,5 +325,9 @@ function initGallery(track) {
 	);
 }
 
+initSceneSwitch();
 initGallery(document.getElementById('fellows-track'));
 initSurfaces(document.querySelector('.gallery__viewport'));
+
+const initial = location.hash.replace('#', '');
+if (initial === 'card-bg' || initial === 'card-grid') setScene(initial);

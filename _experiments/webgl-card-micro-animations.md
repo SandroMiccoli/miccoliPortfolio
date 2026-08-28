@@ -11,7 +11,7 @@ featured: false
 show_on_home: true
 tile_size: "1x1"
 thumbnail: "thumb.png"
-description: "A series of UI card layouts, each with a WebGL shader running over the photography. First scene: a horizontal fellows gallery."
+description: "A series of UI card layouts, each with a WebGL shader. Image Over puts a metaball grid on portraits. Card BG runs paired metaballs behind a talent card. Card Grid fills a client card with an ordered magnet-snap grid."
 stack:
   - WebGL
   - GLSL
