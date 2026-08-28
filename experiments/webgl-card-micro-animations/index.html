@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>WebGL Card Micro-Animations</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+	<link rel="preconnect" href="https://images.unsplash.com">
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<main class="lab">
+		<section class="scene" id="scene-fellows" data-scene="fellows">
+			<div class="scene__card">
+				<header class="scene-header">
+				<div class="scene-header__copy">
+					<p class="scene-header__brand">
+						<span class="brand-mark" aria-hidden="true">
+							<span class="brand-mark__ring"></span>
+							<span class="brand-mark__ring"></span>
+						</span>
+						The Fellows
+					</p>
+					<h1 class="scene-header__title">The people who still ship the work</h1>
+					<p class="scene-header__lede">Independent operators we call when the brief is messy and the calendar is not.</p>
+				</div>
+				<button type="button" class="scene-header__cta">Refer someone</button>
+			</header>
+
+			<div class="gallery">
+				<div class="gallery__viewport">
+					<ul class="gallery__track" id="fellows-track" tabindex="0" aria-label="Fellows">
+						<li class="person-card" data-seed="5" data-face-x="0.52" data-face-y="0.70" data-face-w="0.42" data-face-h="0.50">
+							<article class="person-card__inner">
+								<div class="person-card__media">
+									<img
+										class="person-card__photo"
+										src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=900&h=1200&q=80&crop=faces"
+										alt="Portrait of Mirela Voss"
+										width="900"
+										height="1200"
+										draggable="false"
+										fetchpriority="high"
+									>
+									<canvas class="person-card__gl" aria-hidden="true"></canvas>
+								</div>
+								<div class="person-card__info">
+									<h2 class="person-card__name">Mirela</h2>
+									<p class="person-card__role">Product</p>
+									<p class="person-card__bio">Ships catalog and checkout for teams that sell real goods, not slide decks.</p>
+									<p class="person-card__from">
+										<span>Previously</span>
+										<img src="https://cdn.simpleicons.org/airbnb/1A1A1A" alt="Airbnb" width="54" height="16">
+									</p>
+								</div>
+							</article>
+						</li>
+						<li class="person-card" data-seed="4.71" data-face-x="0.50" data-face-y="0.66" data-face-w="0.48" data-face-h="0.54">
+							<article class="person-card__inner">
+								<div class="person-card__media">
+									<img
+										class="person-card__photo"
+										src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&h=1200&q=80&crop=faces"
+										alt="Portrait of Kenji Okada"
+										width="900"
+										height="1200"
+										draggable="false"
+									>
+									<canvas class="person-card__gl" aria-hidden="true"></canvas>
+								</div>
+								<div class="person-card__info">
+									<h2 class="person-card__name">Kenji</h2>
+									<p class="person-card__role">Motion</p>
+									<p class="person-card__bio">Leads film and interface motion. Came from a Tokyo studio making broadcast identity.</p>
+									<p class="person-card__from">
+										<span>Previously</span>
+										<img src="https://cdn.simpleicons.org/nike/1A1A1A" alt="Nike" width="40" height="16">
+									</p>
+								</div>
+							</article>
+						</li>
+						<li class="person-card" data-seed="8.04" data-face-x="0.48" data-face-y="0.69" data-face-w="0.40" data-face-h="0.48">
+							<article class="person-card__inner">
+								<div class="person-card__media">
+									<img
+										class="person-card__photo"
+										src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&h=1200&q=80&crop=faces"
+										alt="Portrait of Imani Brooks"
+										width="900"
+										height="1200"
+										draggable="false"
+									>
+									<canvas class="person-card__gl" aria-hidden="true"></canvas>
+								</div>
+								<div class="person-card__info">
+									<h2 class="person-card__name">Imani</h2>
+									<p class="person-card__role">Research</p>
+									<p class="person-card__bio">Runs discovery with operators in the room. Maps the work before anyone draws a screen.</p>
+									<p class="person-card__from">
+										<span>Previously</span>
+										<img src="https://cdn.simpleicons.org/ibm/1A1A1A" alt="IBM" width="48" height="16">
+									</p>
+								</div>
+							</article>
+						</li>
+						<li class="person-card" data-seed="2.56" data-face-x="0.51" data-face-y="0.63" data-face-w="0.44" data-face-h="0.50">
+							<article class="person-card__inner">
+								<div class="person-card__media">
+									<img
+										class="person-card__photo"
+										src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=900&h=1200&q=80&crop=faces"
+										alt="Portrait of Tomasz Weller"
+										width="900"
+										height="1200"
+										draggable="false"
+										loading="lazy"
+									>
+									<canvas class="person-card__gl" aria-hidden="true"></canvas>
+								</div>
+								<div class="person-card__info">
+									<h2 class="person-card__name">Tomasz</h2>
+									<p class="person-card__role">Engineer</p>
+									<p class="person-card__bio">Builds the front-end that has to last. TypeScript, shaders, and the parts that keep shipping.</p>
+									<p class="person-card__from">
+										<span>Previously</span>
+										<img src="https://cdn.simpleicons.org/stripe/1A1A1A" alt="Stripe" width="48" height="16">
+									</p>
+								</div>
+							</article>
+						</li>
+						<li class="person-card" data-seed="6.89" data-face-x="0.47" data-face-y="0.71" data-face-w="0.40" data-face-h="0.46">
+							<article class="person-card__inner">
+								<div class="person-card__media">
+									<img
+										class="person-card__photo"
+										src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&h=1200&q=80&crop=faces"
+										alt="Portrait of Sofia Rey"
+										width="900"
+										height="1200"
+										draggable="false"
+										loading="lazy"
+									>
+									<canvas class="person-card__gl" aria-hidden="true"></canvas>
+								</div>
+								<div class="person-card__info">
+									<h2 class="person-card__name">Sofia</h2>
+									<p class="person-card__role">Writing</p>
+									<p class="person-card__bio">Turns product decisions into language people can actually use. Brand, UI, and the docs in between.</p>
+									<p class="person-card__from">
+										<span>Previously</span>
+										<img src="https://cdn.simpleicons.org/notion/1A1A1A" alt="Notion" width="16" height="16">
+									</p>
+								</div>
+							</article>
+						</li>
+						<li class="person-card" data-seed="3.17" data-face-x="0.50" data-face-y="0.68" data-face-w="0.38" data-face-h="0.48">
+							<article class="person-card__inner">
+								<div class="person-card__media">
+									<img
+										class="person-card__photo"
+										src="https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&w=900&h=1200&q=80&crop=faces"
+										alt="Portrait of Naledi Moyo"
+										width="900"
+										height="1200"
+										draggable="false"
+										loading="lazy"
+									>
+									<canvas class="person-card__gl" aria-hidden="true"></canvas>
+								</div>
+								<div class="person-card__info">
+									<h2 class="person-card__name">Naledi</h2>
+									<p class="person-card__role">Strategy</p>
+									<p class="person-card__bio">Finds the constraint that matters, then cuts the rest. Ran a studio in Johannesburg for nine years.</p>
+									<p class="person-card__from">
+										<span>Previously</span>
+										<img src="https://cdn.simpleicons.org/figma/1A1A1A" alt="Figma" width="16" height="16">
+									</p>
+								</div>
+							</article>
+						</li>
+					</ul>
+				</div>
+
+				<div class="gallery__nav">
+					<button type="button" class="gallery__arrow gallery__arrow--prev" data-dir="-1" aria-label="Previous fellow">
+						<span aria-hidden="true"></span>
+					</button>
+					<button type="button" class="gallery__arrow gallery__arrow--next" data-dir="1" aria-label="Next fellow">
+						<span aria-hidden="true"></span>
+					</button>
+				</div>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<script type="module" src="main.js"></script>
+</body>
+</html>

@@ -2,9 +2,9 @@ const NS = 'http://www.w3.org/2000/svg';
 const DARK = '#211E26';
 const ORANGE = '#F46B1A';
 const CORE_SIZE = 167.314;
-const HOST_NEAR = 56;
+const HOST_NEAR = 14;
 const MERGE_BLEND = 40;
-const HOST_OVERLAP = 18;
+const HOST_OVERLAP = 5;
 const CORE_RX = 50;
 const CORE_Y = 288;
 const CORE_CENTER_X = 267 + CORE_SIZE / 2;
@@ -404,8 +404,7 @@ function hostClose(fromT, toT, host) {
 	if (!c) return `L ${toT.x} ${toT.y}`;
 	const a = toward(fromT, c, HOST_OVERLAP);
 	const b = toward(toT, c, HOST_OVERLAP);
-	const mid = toward({ x: (fromT.x + toT.x) / 2, y: (fromT.y + toT.y) / 2 }, c, HOST_OVERLAP * 1.35);
-	return `L ${a.x} ${a.y} L ${mid.x} ${mid.y} L ${b.x} ${b.y} L ${toT.x} ${toT.y}`;
+	return `L ${a.x} ${a.y} L ${b.x} ${b.y} L ${toT.x} ${toT.y}`;
 }
 
 function buildConnectorPath(ax, ay, bx, by, width, hostA, hostB) {
@@ -483,17 +482,18 @@ function updateConnectorGradient(grad, from, to, fromColor, toColor) {
 	const dx = to.x - from.x;
 	const dy = to.y - from.y;
 	const len = Math.hypot(dx, dy) || 1;
-	grad.setAttribute('x1', String(from.x));
-	grad.setAttribute('y1', String(from.y));
-	grad.setAttribute('x2', String(to.x));
-	grad.setAttribute('y2', String(to.y));
-
+	const ux = dx / len;
+	const uy = dy / len;
 	const fromDark = isDarkColor(fromColor);
 	const toDark = isDarkColor(toColor);
 	const stops = grad.children;
-	const merge = Math.min(MERGE_BLEND, len * 0.28);
+	const merge = Math.min(MERGE_BLEND, len);
 
 	if (fromDark && toDark) {
+		grad.setAttribute('x1', String(from.x));
+		grad.setAttribute('y1', String(from.y));
+		grad.setAttribute('x2', String(to.x));
+		grad.setAttribute('y2', String(to.y));
 		const tip = Math.min(10, len * 0.1);
 		const tA = tip / len;
 		const tB = 1 - tip / len;
@@ -506,25 +506,36 @@ function updateConnectorGradient(grad, from, to, fromColor, toColor) {
 	}
 
 	if (fromDark) {
-		const t1 = merge / len;
+		const back = Math.min(14, merge * 0.35);
+		grad.setAttribute('x1', String(from.x - ux * back));
+		grad.setAttribute('y1', String(from.y - uy * back));
+		grad.setAttribute('x2', String(from.x + ux * merge));
+		grad.setAttribute('y2', String(from.y + uy * merge));
 		setStop(stops[0], 0, fromColor);
-		setStop(stops[1], t1 * 0.12, fromColor);
-		setStop(stops[2], t1 * 0.52, mixHex(fromColor, ORANGE, 0.45));
-		setStop(stops[3], t1, ORANGE);
+		setStop(stops[1], 0.18, fromColor);
+		setStop(stops[2], 0.48, mixHex(fromColor, ORANGE, 0.45));
+		setStop(stops[3], 1, ORANGE);
 		setStop(stops[4], 1, toColor);
 		return;
 	}
 
 	if (toDark) {
-		const t1 = 1 - merge / len;
+		grad.setAttribute('x1', String(to.x - ux * merge));
+		grad.setAttribute('y1', String(to.y - uy * merge));
+		grad.setAttribute('x2', String(to.x));
+		grad.setAttribute('y2', String(to.y));
 		setStop(stops[0], 0, fromColor);
-		setStop(stops[1], t1, ORANGE);
-		setStop(stops[2], t1 + (1 - t1) * 0.48, mixHex(toColor, ORANGE, 0.55));
-		setStop(stops[3], 1 - (1 - t1) * 0.12, toColor);
+		setStop(stops[1], 0, ORANGE);
+		setStop(stops[2], 0.48, mixHex(toColor, ORANGE, 0.55));
+		setStop(stops[3], 0.88, toColor);
 		setStop(stops[4], 1, toColor);
 		return;
 	}
 
+	grad.setAttribute('x1', String(from.x));
+	grad.setAttribute('y1', String(from.y));
+	grad.setAttribute('x2', String(to.x));
+	grad.setAttribute('y2', String(to.y));
 	setStop(stops[0], 0, fromColor);
 	setStop(stops[1], 0.25, fromColor);
 	setStop(stops[2], 0.5, ORANGE);
@@ -568,8 +579,7 @@ function renderConnector(el) {
 	const fromColor = hostA ? readFillColor(c.fromHostEl) : ORANGE;
 	const toColor = hostB ? readFillColor(c.toHostEl) : ORANGE;
 	const gradFrom = hostA ? hostFrame(hostA, from).origin : from;
-	const gradTo = hostB ? hostFrame(hostB, to).origin : to;
-	updateConnectorGradient(c.grad, gradFrom, gradTo, fromColor, toColor);
+	updateConnectorGradient(c.grad, gradFrom, to, fromColor, toColor);
 }
 
 function connectorProxy(el) {
@@ -622,31 +632,35 @@ const CORE = {
 };
 
 /**
- * Exit on the rounded square (rx=50), not the AABB.
+ * Exit on a rounded square along a ray from its center, not the AABB.
  * Near corners the AABB overshoots outside the visible squircle.
  */
-function squareExit(ux, uy) {
-	const half = CORE_SIZE / 2;
-	const r = CORE_RX;
-	const flat = half - r;
+function rayExitRoundedRect(rect, ux, uy) {
+	const cx = rect.x + rect.w / 2;
+	const cy = rect.y + rect.h / 2;
+	const halfX = rect.w / 2;
+	const halfY = rect.h / 2;
+	const r = Math.min(rect.rx || 0, halfX, halfY);
+	const flatX = halfX - r;
+	const flatY = halfY - r;
 
 	let tBox = Infinity;
-	if (ux > 0) tBox = Math.min(tBox, half / ux);
-	else if (ux < 0) tBox = Math.min(tBox, -half / ux);
-	if (uy > 0) tBox = Math.min(tBox, half / uy);
-	else if (uy < 0) tBox = Math.min(tBox, -half / uy);
+	if (ux > 0) tBox = Math.min(tBox, halfX / ux);
+	else if (ux < 0) tBox = Math.min(tBox, -halfX / ux);
+	if (uy > 0) tBox = Math.min(tBox, halfY / uy);
+	else if (uy < 0) tBox = Math.min(tBox, -halfY / uy);
 
 	const lx = ux * tBox;
 	const ly = uy * tBox;
-	const onVertical = Math.abs(Math.abs(lx) - half) < 0.01;
-	const onHorizontal = Math.abs(Math.abs(ly) - half) < 0.01;
+	const onVertical = Math.abs(Math.abs(lx) - halfX) < 0.01;
+	const onHorizontal = Math.abs(Math.abs(ly) - halfY) < 0.01;
 	const inCorner =
-		(onVertical && Math.abs(ly) > flat) || (onHorizontal && Math.abs(lx) > flat);
+		(onVertical && Math.abs(ly) > flatY) || (onHorizontal && Math.abs(lx) > flatX);
 
 	let t = tBox;
 	if (inCorner) {
-		const cornerOx = Math.sign(lx || ux) * flat;
-		const cornerOy = Math.sign(ly || uy) * flat;
+		const cornerOx = Math.sign(lx || ux) * flatX;
+		const cornerOy = Math.sign(ly || uy) * flatY;
 		const b = -2 * (ux * cornerOx + uy * cornerOy);
 		const c = cornerOx * cornerOx + cornerOy * cornerOy - r * r;
 		const disc = Math.max(0, b * b - 4 * c);
@@ -657,7 +671,58 @@ function squareExit(ux, uy) {
 		t = candidates.length ? Math.min(...candidates) : tBox;
 	}
 
-	return pt(CORE_CENTER_X + ux * t, CORE_CENTER_Y + uy * t);
+	return pt(cx + ux * t, cy + uy * t);
+}
+
+function squareExit(ux, uy) {
+	return rayExitRoundedRect(coreBox(267), ux, uy);
+}
+
+function nestedExitY(index) {
+	if (index === 0) return CORE_CENTER_Y - EXIT_GAP;
+	if (index === 2) return CORE_CENTER_Y + EXIT_GAP;
+	return CORE_CENTER_Y;
+}
+
+function stackedLinkEnds(coreEl, blobEl, i) {
+	const core = readRectHost(coreEl);
+	const blob = readCircleHost(blobEl);
+	return {
+		from: closestOnRoundedRect(core, pt(core.x + core.w, nestedExitY(i))),
+		to: pt(blob.cx - blob.r, blob.cy)
+	};
+}
+
+function snapSignalStemsToNested() {
+	s2CoreTendrilEls.forEach((el, i) => {
+		const ends = stackedLinkEnds(s2Core, s2BlobEls[i], i);
+		setTendril(el, ends.from, ends.to, S3.stroke.full);
+	});
+}
+
+function stickSignalTendril(el, blobEl, width) {
+	if (!el || !blobEl || !s2Core) return;
+	const core = readRectHost(s2Core);
+	const blob = readCircleHost(blobEl);
+	const dx = blob.cx - (core.x + core.w / 2);
+	const dy = blob.cy - (core.y + core.h / 2);
+	const len = Math.hypot(dx, dy) || 1;
+	const ux = dx / len;
+	const uy = dy / len;
+	setTendril(
+		el,
+		rayExitRoundedRect(core, ux, uy),
+		pt(blob.cx - ux * blob.r, blob.cy - uy * blob.r),
+		width
+	);
+}
+
+function stickSignalTendrils(width = S2.stroke.order) {
+	s2CoreTendrilEls.forEach((el, i) => {
+		const c = connectorProxy(el);
+		if (!c || c.w < 0.4) return;
+		stickSignalTendril(el, s2BlobEls[i], width);
+	});
 }
 
 function buildColinearTendril(blob, orderExitY) {
@@ -785,6 +850,7 @@ bindConnector(s4Link, s4Core, 'rect', s4Ball, 'circle');
 let activeIndex = -1;
 let visualIndex = -1;
 let morphTl = null;
+let pinSignalStems = false;
 let s2FloatTl = null;
 let transitionTl = null;
 let transitionGen = 0;
@@ -931,10 +997,7 @@ function snapBoard(index, pose) {
 		}
 		setCoreEl(s2Core, S2.core.left);
 		s2BlobEls.forEach((el, i) => setCircle(el, S2.blobs[i].order, ORANGE));
-		s2CoreTendrilEls.forEach((el, i) => {
-			const t = S2.tendrils[i];
-			setTendril(el, t.orderFrom, t.orderTo, S2.stroke.order);
-		});
+		snapSignalStemsToNested();
 		s2BallTendrilEls.forEach((el, i) => {
 			const t = S2.tendrils[i];
 			setTendril(el, t.ballFrom, t.ballFrom, 0);
@@ -1058,17 +1121,26 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 						height: S2.core.left.h,
 						rx: S2.core.left.rx
 					},
-					duration
+					duration,
+					onUpdate: () => stickSignalTendrils(S2.stroke.order),
+					onComplete: snapSignalStemsToNested
 				},
 				0
 			);
 			s2BlobEls.forEach((el, i) => {
 				const b = S2.blobs[i].order;
-				tl.to(el, { attr: { cx: b.cx, cy: b.cy, r: b.r }, duration }, 0);
+				tl.to(
+					el,
+					{
+						attr: { cx: b.cx, cy: b.cy, r: b.r },
+						duration,
+						onUpdate: () => stickSignalTendrils(S2.stroke.order)
+					},
+					0
+				);
 			});
 			s2CoreTendrilEls.forEach((el, i) => {
-				const t = S2.tendrils[i];
-				tl.to(connectorProxy(el), connectorVars(el, t.orderFrom, t.orderTo, S2.stroke.order, { duration }), 0);
+				stickSignalTendril(el, s2BlobEls[i], S2.stroke.order);
 			});
 			s2BallTendrilEls.forEach((el, i) => {
 				const t = S2.tendrils[i];
@@ -1440,6 +1512,7 @@ function pauseSignalFloat() {
 }
 
 function resetSignalScene() {
+	pinSignalStems = false;
 	setCoreEl(s2Core, S2.core.center);
 	s2BlobEls.forEach((el, i) => setCircle(el, S2.blobs[i].home, ORANGE));
 	s2CoreTendrilEls.forEach((el, i) => {
@@ -1464,10 +1537,7 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 	if (reducedMotion) {
 		setCoreEl(s2Core, S2.core.left);
 		s2BlobEls.forEach((el, i) => setCircle(el, S2.blobs[i].order, ORANGE));
-		s2CoreTendrilEls.forEach((el, i) => {
-			const t = S2.tendrils[i];
-			setTendril(el, t.orderFrom, t.orderTo, S2.stroke.order);
-		});
+		snapSignalStemsToNested();
 		s2BallTendrilEls.forEach((el, i) => {
 			const t = S2.tendrils[i];
 			setTendril(el, t.ballFrom, t.ballFrom, 0);
@@ -1480,6 +1550,7 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 
 	morphTl = loopTl({
 		onRepeat: () => {
+			pinSignalStems = false;
 			startSignalFloat();
 		}
 	});
@@ -1529,7 +1600,9 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 				w: S2.stroke.connect,
 				duration: 0.28,
 				ease: 'power2.out',
-				onUpdate: () => renderConnector(s2CoreTendrilEls[i])
+				onUpdate: () => {
+					if (!pinSignalStems) renderConnector(s2CoreTendrilEls[i]);
+				}
 			},
 			unifyAt
 		);
@@ -1554,6 +1627,18 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 	const order = 'order';
 	morphTl.addLabel(order, `${reach}+=${PAIR_STAGGER * 2 + UNIFY_AT}`);
 
+	morphTl.call(() => {
+		pinSignalStems = true;
+		s2BallTendrilEls.forEach((el) => {
+			const c = connectorProxy(el);
+			if (c) {
+				c.w = 0;
+				renderConnector(el);
+			}
+		});
+		s2CoreTendrilEls.forEach((el, i) => stickSignalTendril(el, s2BlobEls[i], S2.stroke.order));
+	}, null, order);
+
 	morphTl.to(
 		s2Core,
 		{
@@ -1565,28 +1650,33 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 				rx: S2.core.left.rx
 			},
 			duration: 1.05,
-			ease: 'power3.inOut'
+			ease: 'power3.inOut',
+			onUpdate: () => stickSignalTendrils(S2.stroke.order)
 		},
 		order
 	);
 
 	PAIR_ORDER.forEach((i, slot) => {
 		const b = S2.blobs[i].order;
-		const t = S2.tendrils[i];
 		const at = `${order}+=${slot * 0.1}`;
-		morphTl.to(s2BlobEls[i], { attr: { cx: b.cx, cy: b.cy, r: b.r }, duration: 1.05, ease: 'power3.inOut' }, at);
 		morphTl.to(
-			connectorProxy(s2CoreTendrilEls[i]),
-			connectorVars(s2CoreTendrilEls[i], t.orderFrom, t.orderTo, S2.stroke.order, {
+			s2BlobEls[i],
+			{
+				attr: { cx: b.cx, cy: b.cy, r: b.r },
 				duration: 1.05,
-				ease: 'power3.inOut'
-			}),
+				ease: 'power3.inOut',
+				onUpdate: () => stickSignalTendrils(S2.stroke.order)
+			},
 			at
 		);
 	});
 
+	morphTl.call(snapSignalStemsToNested);
 	morphTl.to({}, { duration: FINAL_HOLD });
 	const reset = 'reset';
+	morphTl.call(() => {
+		pinSignalStems = false;
+	}, null, reset);
 	s2CoreTendrilEls.forEach((el, i) => {
 		const t = S2.tendrils[i];
 		morphTl.to(
@@ -1637,6 +1727,12 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 	);
 }
 
+function setConvergeLink(i, width) {
+	const el = s3LinkEls[i];
+	const ends = stackedLinkEnds(s3Core, s3BallEls[i], i);
+	setTendril(el, ends.from, ends.to, width);
+}
+
 function resetConvergeScene() {
 	setCoreEl(s3Core, S3.core);
 	s3BallEls.forEach((el, i) => {
@@ -1644,8 +1740,7 @@ function resetConvergeScene() {
 		gsap.set(el, { opacity: 1 });
 	});
 	s3LinkEls.forEach((el, i) => {
-		const L = S3.links[i];
-		setTendril(el, L.from, L.to, S3.stroke.full);
+		setConvergeLink(i, S3.stroke.full);
 		gsap.set(el, { opacity: 1 });
 	});
 	setMark(0, 0);
