@@ -162,9 +162,10 @@ function pointInRoundedRect(rect, p, pad = 0) {
 function hostNearPoint(host, p) {
 	if (!host) return false;
 	if (host.type === 'circle') {
-		return distToCircle(p, host) < HOST_NEAR || Math.hypot(p.x - host.cx, p.y - host.cy) < host.r + HOST_NEAR;
+		const pad = HOST_NEAR + 8;
+		return distToCircle(p, host) <= pad || Math.hypot(p.x - host.cx, p.y - host.cy) <= host.r + pad;
 	}
-	return distToRect(p, host) < HOST_NEAR || pointInRoundedRect(host, p, HOST_NEAR);
+	return distToRect(p, host) <= HOST_NEAR || pointInRoundedRect(host, p, HOST_NEAR);
 }
 
 function liveHost(el, kind, p) {
@@ -678,43 +679,62 @@ function squareExit(ux, uy) {
 	return rayExitRoundedRect(coreBox(267), ux, uy);
 }
 
-function nestedExitY(index) {
-	if (index === 0) return CORE_CENTER_Y - EXIT_GAP;
-	if (index === 2) return CORE_CENTER_Y + EXIT_GAP;
-	return CORE_CENTER_Y;
-}
-
-function stackedLinkEnds(coreEl, blobEl, i) {
-	const core = readRectHost(coreEl);
-	const blob = readCircleHost(blobEl);
-	return {
-		from: closestOnRoundedRect(core, pt(core.x + core.w, nestedExitY(i))),
-		to: pt(blob.cx - blob.r, blob.cy)
-	};
-}
-
-function snapSignalStemsToNested() {
-	s2CoreTendrilEls.forEach((el, i) => {
-		const ends = stackedLinkEnds(s2Core, s2BlobEls[i], i);
-		setTendril(el, ends.from, ends.to, S3.stroke.full);
-	});
-}
-
-function stickSignalTendril(el, blobEl, width) {
-	if (!el || !blobEl || !s2Core) return;
-	const core = readRectHost(s2Core);
-	const blob = readCircleHost(blobEl);
+function radialLinkEnds(core, blob) {
 	const dx = blob.cx - (core.x + core.w / 2);
 	const dy = blob.cy - (core.y + core.h / 2);
 	const len = Math.hypot(dx, dy) || 1;
 	const ux = dx / len;
 	const uy = dy / len;
-	setTendril(
-		el,
-		rayExitRoundedRect(core, ux, uy),
-		pt(blob.cx - ux * blob.r, blob.cy - uy * blob.r),
-		width
-	);
+	return {
+		from: rayExitRoundedRect(core, ux, uy),
+		to: pt(blob.cx - ux * blob.r, blob.cy - uy * blob.r)
+	};
+}
+
+function nestedRestEnds(i) {
+	return radialLinkEnds(S3.core, S3.balls[i].full);
+}
+
+function applyStackedHosts(coreEl, ballEls) {
+	setCoreEl(coreEl, S3.core);
+	ballEls.forEach((el, i) => {
+		setCircle(el, S3.balls[i].full, ORANGE);
+		gsap.set(el, { opacity: 1, x: 0, y: 0 });
+	});
+}
+
+function applyStackedLinks(linkEls, width = S3.stroke.full) {
+	linkEls.forEach((el, i) => {
+		const ends = nestedRestEnds(i);
+		setTendril(el, ends.from, ends.to, width);
+		gsap.set(el, { opacity: 1 });
+	});
+}
+
+function poseSignalStacked() {
+	gsap.set(s2FloatEls, { x: 0, y: 0 });
+	applyStackedHosts(s2Core, s2BlobEls);
+	s2BallTendrilEls.forEach((el) => {
+		const c = connectorProxy(el);
+		if (c) {
+			c.w = 0;
+			renderConnector(el);
+		}
+	});
+	applyStackedLinks(s2CoreTendrilEls, S3.stroke.full);
+	gsap.set(s2Soft, { opacity: 0 });
+}
+
+function poseConvergeStacked() {
+	applyStackedHosts(s3Core, s3BallEls);
+	applyStackedLinks(s3LinkEls, S3.stroke.full);
+	setMark(0, 0);
+}
+
+function stickSignalTendril(el, blobEl, width) {
+	if (!el || !blobEl || !s2Core) return;
+	const ends = radialLinkEnds(readRectHost(s2Core), readCircleHost(blobEl));
+	setTendril(el, ends.from, ends.to, width);
 }
 
 function stickSignalTendrils(width = S2.stroke.order) {
@@ -774,6 +794,16 @@ const S3 = {
 	mark: { midX: MARK_MID_X, midY: CORE_CENTER_Y, tickH: 104, width: 10 },
 	stroke: { full: 8, thin: 6, stub: 7 }
 };
+
+S2.core.left = S3.core;
+S2.blobs.forEach((blob, i) => {
+	blob.order = S3.balls[i].full;
+});
+S3.links.forEach((link, i) => {
+	const ends = nestedRestEnds(i);
+	link.from = ends.from;
+	link.to = ends.to;
+});
 
 const S4 = {
 	core: coreBox(CORE_LEFT_X),
@@ -997,7 +1027,7 @@ function snapBoard(index, pose) {
 		}
 		setCoreEl(s2Core, S2.core.left);
 		s2BlobEls.forEach((el, i) => setCircle(el, S2.blobs[i].order, ORANGE));
-		snapSignalStemsToNested();
+		poseSignalStacked();
 		s2BallTendrilEls.forEach((el, i) => {
 			const t = S2.tendrils[i];
 			setTendril(el, t.ballFrom, t.ballFrom, 0);
@@ -1024,12 +1054,12 @@ function snapBoard(index, pose) {
 			}
 		});
 		s3LinkEls.forEach((el, i) => {
-			const L = S3.links[i];
+			const ends = nestedRestEnds(i);
 			if (i === 1) {
-				setTendril(el, L.from, L.to, S3.stroke.thin);
+				setTendril(el, ends.from, ends.to, S3.stroke.thin);
 				gsap.set(el, { opacity: 1 });
 			} else {
-				setTendril(el, L.from, L.from, 0);
+				setTendril(el, ends.from, ends.from, 0);
 				gsap.set(el, { opacity: 0 });
 			}
 		});
@@ -1111,6 +1141,11 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 		killSignalFloat();
 		s2FloatEls.forEach((el) => gsap.set(el, { y: 0 }));
 		if (pose === 'end') {
+			const coreNow = readRectHost(s2Core);
+			if (Math.abs(coreNow.x - S3.core.x) < 0.75) {
+				poseSignalStacked();
+				return tl;
+			}
 			tl.to(
 				s2Core,
 				{
@@ -1122,8 +1157,8 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 						rx: S2.core.left.rx
 					},
 					duration,
-					onUpdate: () => stickSignalTendrils(S2.stroke.order),
-					onComplete: snapSignalStemsToNested
+					ease: 'power3.inOut',
+					onUpdate: () => stickSignalTendrils(S2.stroke.order)
 				},
 				0
 			);
@@ -1134,6 +1169,7 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 					{
 						attr: { cx: b.cx, cy: b.cy, r: b.r },
 						duration,
+						ease: 'power3.inOut',
 						onUpdate: () => stickSignalTendrils(S2.stroke.order)
 					},
 					0
@@ -1194,18 +1230,19 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 				0
 			);
 		}
+		if (pose === 'end') tl.eventCallback('onComplete', poseSignalStacked);
 		return tl;
 	}
 
 	if (index === 2) {
 		if (pose === 'end') {
 			[0, 2].forEach((i) => {
-				const L = S3.links[i];
+				const from = nestedRestEnds(i).from;
 				tl.to(
 					connectorProxy(s3LinkEls[i]),
 					{
-						x2: L.from.x,
-						y2: L.from.y,
+						x2: from.x,
+						y2: from.y,
 						w: 0,
 						duration,
 						onUpdate: () => renderConnector(s3LinkEls[i])
@@ -1250,11 +1287,11 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 				0
 			);
 			[0, 1, 2].forEach((i) => {
-				const L = S3.links[i];
+				const ends = nestedRestEnds(i);
 				const B = S3.balls[i].full;
 				tl.to(
 					connectorProxy(s3LinkEls[i]),
-					connectorVars(s3LinkEls[i], L.from, L.to, S3.stroke.full, { duration }),
+					connectorVars(s3LinkEls[i], ends.from, ends.to, S3.stroke.full, { duration }),
 					0
 				);
 				tl.to(s3LinkEls[i], { opacity: 1, duration }, 0);
@@ -1537,7 +1574,7 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 	if (reducedMotion) {
 		setCoreEl(s2Core, S2.core.left);
 		s2BlobEls.forEach((el, i) => setCircle(el, S2.blobs[i].order, ORANGE));
-		snapSignalStemsToNested();
+		poseSignalStacked();
 		s2BallTendrilEls.forEach((el, i) => {
 			const t = S2.tendrils[i];
 			setTendril(el, t.ballFrom, t.ballFrom, 0);
@@ -1639,6 +1676,10 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 		s2CoreTendrilEls.forEach((el, i) => stickSignalTendril(el, s2BlobEls[i], S2.stroke.order));
 	}, null, order);
 
+	const ORDER_DUR = 1.05;
+	const ORDER_EASE = 'power3.inOut';
+	const ORDER_STAGGER = 0.1;
+
 	morphTl.to(
 		s2Core,
 		{
@@ -1649,8 +1690,8 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 				height: S2.core.left.h,
 				rx: S2.core.left.rx
 			},
-			duration: 1.05,
-			ease: 'power3.inOut',
+			duration: ORDER_DUR,
+			ease: ORDER_EASE,
 			onUpdate: () => stickSignalTendrils(S2.stroke.order)
 		},
 		order
@@ -1658,20 +1699,24 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 
 	PAIR_ORDER.forEach((i, slot) => {
 		const b = S2.blobs[i].order;
-		const at = `${order}+=${slot * 0.1}`;
+		const at = `${order}+=${slot * ORDER_STAGGER}`;
 		morphTl.to(
 			s2BlobEls[i],
 			{
 				attr: { cx: b.cx, cy: b.cy, r: b.r },
-				duration: 1.05,
-				ease: 'power3.inOut',
+				duration: ORDER_DUR,
+				ease: ORDER_EASE,
 				onUpdate: () => stickSignalTendrils(S2.stroke.order)
 			},
 			at
 		);
 	});
 
-	morphTl.call(snapSignalStemsToNested);
+	morphTl.call(() => {
+		killSignalFloat();
+		gsap.set(s2FloatEls, { x: 0, y: 0, clearProps: 'transform' });
+		poseSignalStacked();
+	});
 	morphTl.to({}, { duration: FINAL_HOLD });
 	const reset = 'reset';
 	morphTl.call(() => {
@@ -1727,23 +1772,8 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 	);
 }
 
-function setConvergeLink(i, width) {
-	const el = s3LinkEls[i];
-	const ends = stackedLinkEnds(s3Core, s3BallEls[i], i);
-	setTendril(el, ends.from, ends.to, width);
-}
-
 function resetConvergeScene() {
-	setCoreEl(s3Core, S3.core);
-	s3BallEls.forEach((el, i) => {
-		setCircle(el, S3.balls[i].full, ORANGE);
-		gsap.set(el, { opacity: 1 });
-	});
-	s3LinkEls.forEach((el, i) => {
-		setConvergeLink(i, S3.stroke.full);
-		gsap.set(el, { opacity: 1 });
-	});
-	setMark(0, 0);
+	poseConvergeStacked();
 }
 
 /**
@@ -1762,8 +1792,9 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 			}
 		});
 		s3LinkEls.forEach((el, i) => {
-			if (i === 1) setTendril(el, S3.links[1].from, S3.links[1].to, S3.stroke.thin);
-			else setTendril(el, S3.links[i].from, S3.links[i].from, 0);
+			const ends = nestedRestEnds(i);
+			if (i === 1) setTendril(el, ends.from, ends.to, S3.stroke.thin);
+			else setTendril(el, ends.from, ends.from, 0);
 		});
 		setMark(S3.mark.tickH, 1);
 		return;
@@ -1781,6 +1812,7 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 	const retract = 'retract';
 	OUTER.forEach((i, slot) => {
 		const L = S3.links[i];
+		const from = nestedRestEnds(i).from;
 		const pale = S3.balls[i].pale;
 		const at = `${retract}+=${slot * STAGGER}`;
 		const fadeAt = `${retract}+=${slot * STAGGER + FADE_AT}`;
@@ -1788,6 +1820,8 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 		morphTl.to(
 			connectorProxy(s3LinkEls[i]),
 			{
+				x1: from.x,
+				y1: from.y,
 				x2: L.stub.x,
 				y2: L.stub.y,
 				w: S3.stroke.stub,
@@ -1811,8 +1845,8 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 		morphTl.to(
 			connectorProxy(s3LinkEls[i]),
 			{
-				x2: L.from.x,
-				y2: L.from.y,
+				x2: from.x,
+				y2: from.y,
 				w: 0,
 				duration: 0.38,
 				ease: 'power2.in',
@@ -1878,12 +1912,12 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 	);
 
 	[0, 2, 1].forEach((i, slot) => {
-		const L = S3.links[i];
+		const ends = nestedRestEnds(i);
 		const B = S3.balls[i].full;
 		const at = `${reset}+=${slot * 0.08}`;
 		morphTl.to(
 			connectorProxy(s3LinkEls[i]),
-			connectorVars(s3LinkEls[i], L.from, L.to, S3.stroke.full, {
+			connectorVars(s3LinkEls[i], ends.from, ends.to, S3.stroke.full, {
 				duration: 0.7,
 				ease: 'power3.out'
 			}),
