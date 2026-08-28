@@ -84,15 +84,7 @@
 								</g>
 							</g>
 
-							<!-- Tendrils grow from core AND from each solid toward each other -->
-							<g id="s2-tendrils" stroke="#F46B1A" stroke-linecap="round" fill="none">
-								<line id="s2-t0" x1="381.32" y1="288" x2="381.32" y2="288" stroke-width="0"/>
-								<line id="s2-t1" x1="319.02" y1="455.31" x2="319.02" y2="455.31" stroke-width="0"/>
-								<line id="s2-t2" x1="421.53" y1="438.71" x2="421.53" y2="438.71" stroke-width="0"/>
-								<line id="s2-b0" x1="422.72" y1="175.06" x2="422.72" y2="175.06" stroke-width="0"/>
-								<line id="s2-b1" x1="268.25" y1="589.55" x2="268.25" y2="589.55" stroke-width="0"/>
-								<line id="s2-b2" x1="467.96" y1="482.65" x2="467.96" y2="482.65" stroke-width="0"/>
-							</g>
+							<rect id="s2-core" x="267" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
 
 							<!-- 3 saturated solids -->
 							<g id="s2-solids">
@@ -107,35 +99,43 @@
 								</g>
 							</g>
 
-							<rect id="s2-core" x="267" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
+							<!-- Tendrils on top: overlap paints over the host edge (no AA seam). -->
+							<g id="s2-tendrils">
+								<path id="s2-t0" d="" fill="#F46B1A"/>
+								<path id="s2-t1" d="" fill="#F46B1A"/>
+								<path id="s2-t2" d="" fill="#F46B1A"/>
+								<path id="s2-b0" d="" fill="#F46B1A"/>
+								<path id="s2-b1" d="" fill="#F46B1A"/>
+								<path id="s2-b2" d="" fill="#F46B1A"/>
+							</g>
 						</g>
 
 						<!-- Storyboard 2: Nested focus — branch → retract → merge → mark -->
 						<g id="story-converge" class="story-layer" visibility="hidden">
-							<g id="s3-links" stroke="#F46B1A" stroke-linecap="round" fill="none">
-								<line id="s3-l0" x1="317.31" y1="310" x2="436" y2="268" stroke-width="8"/>
-								<line id="s3-l1" x1="317.31" y1="371.66" x2="436" y2="371.66" stroke-width="8"/>
-								<line id="s3-l2" x1="317.31" y1="433.31" x2="436" y2="475.31" stroke-width="8"/>
-							</g>
-							<!-- Midpoint bud → vertical tick (plus mark) -->
-							<rect id="s3-mark" x="371.66" y="371.66" width="10" height="0" rx="5" fill="#F46B1A" opacity="0"/>
+							<rect id="s3-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
 							<g id="s3-balls">
 								<circle id="s3-ball-0" cx="478" cy="268" r="42" fill="#F46B1A"/>
 								<circle id="s3-ball-1" cx="478" cy="371.66" r="42" fill="#F46B1A"/>
 								<circle id="s3-ball-2" cx="478" cy="475.31" r="42" fill="#F46B1A"/>
 							</g>
-							<rect id="s3-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
+							<g id="s3-links">
+								<path id="s3-l0" d="" fill="#F46B1A"/>
+								<path id="s3-l1" d="" fill="#F46B1A"/>
+								<path id="s3-l2" d="" fill="#F46B1A"/>
+							</g>
+							<!-- Midpoint bud → vertical tick (plus mark) -->
+							<rect id="s3-mark" x="371.66" y="371.66" width="10" height="0" rx="5" fill="#F46B1A" opacity="0"/>
 						</g>
 
 						<!-- Storyboard 3: Linked path — settle → reveal orbit → bud → travel -->
 						<g id="story-orbit" class="story-layer" visibility="hidden">
 							<ellipse id="s4-orbit" cx="351" cy="371.66" rx="586" ry="367" fill="none" stroke="#211E26" stroke-width="3.1" opacity="0"/>
-							<line id="s4-link" x1="317.31" y1="371.66" x2="436" y2="371.66" stroke="#F46B1A" stroke-width="6" stroke-linecap="round"/>
-							<rect id="s4-mark" x="371.66" y="319.66" width="10" height="104" rx="5" fill="#F46B1A"/>
+							<rect id="s4-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
 							<circle id="s4-ball" cx="478" cy="371.66" r="42" fill="#211E26"/>
+							<path id="s4-link" d="" fill="#F46B1A"/>
+							<rect id="s4-mark" x="371.66" y="319.66" width="10" height="104" rx="5" fill="#F46B1A"/>
 							<!-- Seed: lozenge → circle, travels the ellipse -->
 							<ellipse id="s4-seed" cx="351" cy="182.5" rx="0" ry="0" fill="#F46B1A" opacity="0"/>
-							<rect id="s4-core" x="150" y="288" width="167.314" height="167.314" rx="50" fill="#211E26"/>
 						</g>
 					</svg>
 				</div>

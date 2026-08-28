@@ -1,6 +1,10 @@
+const NS = 'http://www.w3.org/2000/svg';
 const DARK = '#211E26';
 const ORANGE = '#F46B1A';
 const CORE_SIZE = 167.314;
+const HOST_NEAR = 56;
+const MERGE_BLEND = 40;
+const HOST_OVERLAP = 18;
 const CORE_RX = 50;
 const CORE_Y = 288;
 const CORE_CENTER_X = 267 + CORE_SIZE / 2;
@@ -38,10 +42,6 @@ function circleAttr({ cx, cy, r }) {
 	return { cx, cy, r };
 }
 
-function lineAttr(from, to, width) {
-	return { x1: from.x, y1: from.y, x2: to.x, y2: to.y, 'stroke-width': width };
-}
-
 function markAttr(mark, height) {
 	return {
 		x: mark.midX - mark.width / 2,
@@ -49,6 +49,542 @@ function markAttr(mark, height) {
 		width: mark.width,
 		height,
 		rx: mark.width / 2
+	};
+}
+
+function parseColor(value) {
+	if (!value) return [244, 107, 26];
+	const str = String(value).trim();
+	const hex = str.match(/^#?([0-9a-f]{6})$/i);
+	if (hex) {
+		const h = hex[1];
+		return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+	}
+	const rgb = str.match(/rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)/i);
+	if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+	return [244, 107, 26];
+}
+
+function toHex([r, g, b]) {
+	return (
+		'#' +
+		[r, g, b]
+			.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'))
+			.join('')
+	);
+}
+
+function mixHex(a, b, t) {
+	const ca = parseColor(a);
+	const cb = parseColor(b);
+	return toHex(ca.map((v, i) => v + (cb[i] - v) * t));
+}
+
+function isDarkColor(value) {
+	const [r, g, b] = parseColor(value);
+	return r + g + b < 160;
+}
+
+function readFillColor(el) {
+	if (!el) return ORANGE;
+	const v = gsap.getProperty(el, 'fill') || el.getAttribute('fill') || ORANGE;
+	return isDarkColor(v) ? DARK : ORANGE;
+}
+
+function readCircleHost(el) {
+	return {
+		type: 'circle',
+		cx: Number(el.getAttribute('cx')),
+		cy: Number(el.getAttribute('cy')),
+		r: Number(el.getAttribute('r'))
+	};
+}
+
+function readRectHost(el) {
+	return {
+		type: 'rect',
+		x: Number(el.getAttribute('x')),
+		y: Number(el.getAttribute('y')),
+		w: Number(el.getAttribute('width')),
+		h: Number(el.getAttribute('height')),
+		rx: Number(el.getAttribute('rx')) || 0
+	};
+}
+
+function distToCircle(p, host) {
+	return Math.abs(Math.hypot(p.x - host.cx, p.y - host.cy) - host.r);
+}
+
+function closestOnRoundedRect(rect, p) {
+	const rad = Math.min(rect.rx || 0, rect.w / 2, rect.h / 2);
+	const cx = rect.x + rect.w / 2;
+	const cy = rect.y + rect.h / 2;
+	const hx = rect.w / 2 - rad;
+	const hy = rect.h / 2 - rad;
+	const lx = p.x - cx;
+	const ly = p.y - cy;
+	if (Math.abs(lx) > hx && Math.abs(ly) > hy) {
+		const ccx = cx + Math.sign(lx) * hx;
+		const ccy = cy + Math.sign(ly) * hy;
+		const vx = p.x - ccx;
+		const vy = p.y - ccy;
+		const d = Math.hypot(vx, vy) || 1;
+		return { x: ccx + (vx / d) * rad, y: ccy + (vy / d) * rad };
+	}
+	if (Math.abs(lx) - hx > Math.abs(ly) - hy) {
+		return {
+			x: cx + Math.sign(lx || 1) * (rect.w / 2),
+			y: Math.max(rect.y + rad, Math.min(rect.y + rect.h - rad, p.y))
+		};
+	}
+	return {
+		x: Math.max(rect.x + rad, Math.min(rect.x + rect.w - rad, p.x)),
+		y: cy + Math.sign(ly || 1) * (rect.h / 2)
+	};
+}
+
+function distToRect(p, host) {
+	const c = closestOnRoundedRect(host, p);
+	return Math.hypot(p.x - c.x, p.y - c.y);
+}
+
+function pointInRoundedRect(rect, p, pad = 0) {
+	const rad = Math.min(rect.rx || 0, rect.w / 2, rect.h / 2);
+	const cx = rect.x + rect.w / 2;
+	const cy = rect.y + rect.h / 2;
+	const qx = Math.abs(p.x - cx) - (rect.w / 2 - rad);
+	const qy = Math.abs(p.y - cy) - (rect.h / 2 - rad);
+	const dx = Math.max(qx, 0);
+	const dy = Math.max(qy, 0);
+	return Math.hypot(dx, dy) + Math.min(Math.max(qx, qy), 0) - rad <= pad;
+}
+
+function hostNearPoint(host, p) {
+	if (!host) return false;
+	if (host.type === 'circle') {
+		return distToCircle(p, host) < HOST_NEAR || Math.hypot(p.x - host.cx, p.y - host.cy) < host.r + HOST_NEAR;
+	}
+	return distToRect(p, host) < HOST_NEAR || pointInRoundedRect(host, p, HOST_NEAR);
+}
+
+function liveHost(el, kind, p) {
+	if (!el || !kind) return null;
+	const host = kind === 'circle' ? readCircleHost(el) : readRectHost(el);
+	return hostNearPoint(host, p) ? host : null;
+}
+
+function roundedRectFeature(rect, p, catchPad = 0) {
+	const rad = Math.min(rect.rx || 0, rect.w / 2, rect.h / 2);
+	const cx = rect.x + rect.w / 2;
+	const cy = rect.y + rect.h / 2;
+	const hx = rect.w / 2 - rad;
+	const hy = rect.h / 2 - rad;
+	const lx = p.x - cx;
+	const ly = p.y - cy;
+	if (Math.abs(lx) > hx - catchPad && Math.abs(ly) > hy - catchPad) {
+		return {
+			type: 'circle',
+			cx: cx + Math.sign(lx || 1) * hx,
+			cy: cy + Math.sign(ly || 1) * hy,
+			r: rad
+		};
+	}
+	if (Math.abs(lx) - hx >= Math.abs(ly) - hy) {
+		return {
+			type: 'line',
+			origin: { x: cx + Math.sign(lx || 1) * (rect.w / 2), y: cy },
+			normal: { x: Math.sign(lx) || 1, y: 0 }
+		};
+	}
+	return {
+		type: 'line',
+		origin: { x: cx, y: cy + Math.sign(ly || 1) * (rect.h / 2) },
+		normal: { x: 0, y: Math.sign(ly) || 1 }
+	};
+}
+
+function hostFrame(host, p, catchPad = 0) {
+	if (host.type === 'circle') {
+		const dx = p.x - host.cx;
+		const dy = p.y - host.cy;
+		const d = Math.hypot(dx, dy) || 1;
+		const N = { x: dx / d, y: dy / d };
+		return {
+			origin: { x: host.cx + N.x * host.r, y: host.cy + N.y * host.r },
+			N,
+			circle: host
+		};
+	}
+	const origin = closestOnRoundedRect(host, p);
+	const feature = roundedRectFeature(host, origin, catchPad);
+	if (feature.type === 'circle') {
+		const dx = origin.x - feature.cx;
+		const dy = origin.y - feature.cy;
+		const d = Math.hypot(dx, dy) || 1;
+		return { origin, N: { x: dx / d, y: dy / d }, circle: feature };
+	}
+	return { origin, N: feature.normal, plane: { origin, normal: feature.normal } };
+}
+
+function pickRoot(t1, t2) {
+	const ts = [t1, t2].filter((t) => Number.isFinite(t));
+	const ahead = ts.filter((t) => t > -2);
+	if (ahead.length) return ahead.reduce((a, b) => (a < b ? a : b));
+	return ts.reduce((a, b) => (Math.abs(a) < Math.abs(b) ? a : b));
+}
+
+function filletVsCircle(host, origin, shaft, n, h, f, side, N) {
+	const offsetX = origin.x + side * (h + f) * n.x - host.cx;
+	const offsetY = origin.y + side * (h + f) * n.y - host.cy;
+	const b = 2 * (offsetX * shaft.x + offsetY * shaft.y);
+	const c = offsetX * offsetX + offsetY * offsetY - (host.r + f) * (host.r + f);
+	const disc = b * b - 4 * c;
+	if (disc < 0) return null;
+	let t = pickRoot((-b - Math.sqrt(disc)) / 2, (-b + Math.sqrt(disc)) / 2);
+	if (!Number.isFinite(t)) return null;
+	t = Math.max(0, t);
+	const F = {
+		x: origin.x + side * (h + f) * n.x + t * shaft.x,
+		y: origin.y + side * (h + f) * n.y + t * shaft.y
+	};
+	const fx = F.x - host.cx;
+	const fy = F.y - host.cy;
+	const fd = Math.hypot(fx, fy) || 1;
+	const hostTangent = {
+		x: host.cx + (fx / fd) * host.r,
+		y: host.cy + (fy / fd) * host.r
+	};
+	return {
+		F,
+		r: f,
+		N: { x: fx / fd, y: fy / fd },
+		hostTangent,
+		stripTangent: {
+			x: F.x - side * f * n.x,
+			y: F.y - side * f * n.y
+		}
+	};
+}
+
+function filletVsLine(plane, origin, shaft, n, h, f, side, N) {
+	const denom = shaft.x * N.x + shaft.y * N.y;
+	if (Math.abs(denom) < 1e-4) return null;
+	const ox = origin.x + side * (h + f) * n.x;
+	const oy = origin.y + side * (h + f) * n.y;
+	let t = (f - ((ox - plane.origin.x) * N.x + (oy - plane.origin.y) * N.y)) / denom;
+	if (!Number.isFinite(t) || t < -0.5) return null;
+	t = Math.max(0, t);
+	const F = { x: ox + t * shaft.x, y: oy + t * shaft.y };
+	return {
+		F,
+		r: f,
+		N,
+		hostTangent: { x: F.x - N.x * f, y: F.y - N.y * f },
+		stripTangent: { x: F.x - side * f * n.x, y: F.y - side * f * n.y }
+	};
+}
+
+function filletForHost(width, host) {
+	if (!host) return 0;
+	if (host.type === 'circle') return Math.min(width * 1.8, host.r * 0.42, 16);
+	return Math.min(width * 1.45, 12);
+}
+
+function rectCorners(rect) {
+	const rad = Math.min(rect.rx || 0, rect.w / 2, rect.h / 2);
+	const cx = rect.x + rect.w / 2;
+	const cy = rect.y + rect.h / 2;
+	const hx = rect.w / 2 - rad;
+	const hy = rect.h / 2 - rad;
+	return [
+		{ type: 'circle', cx: cx + hx, cy: cy - hy, r: rad },
+		{ type: 'circle', cx: cx + hx, cy: cy + hy, r: rad },
+		{ type: 'circle', cx: cx - hx, cy: cy + hy, r: rad },
+		{ type: 'circle', cx: cx - hx, cy: cy - hy, r: rad }
+	];
+}
+
+function tangentOnCornerArc(p, corner, rect) {
+	const dx = p.x - corner.cx;
+	const dy = p.y - corner.cy;
+	if (Math.abs(Math.hypot(dx, dy) - corner.r) > 2.5) return false;
+	const sx = Math.sign(corner.cx - (rect.x + rect.w / 2)) || 1;
+	const sy = Math.sign(corner.cy - (rect.y + rect.h / 2)) || 1;
+	return Math.sign(dx) === sx && Math.sign(dy) === sy;
+}
+
+function tangentOnFiniteFlat(p, rect, plane) {
+	if (!plane) return false;
+	const closest = closestOnRoundedRect(rect, p);
+	const feat = roundedRectFeature(rect, closest, 0.5);
+	return feat.type === 'line' && feat.normal.x === plane.normal.x && feat.normal.y === plane.normal.y;
+}
+
+function tryFillet(frame, origin, shaft, n, h, f, side) {
+	return frame.circle
+		? filletVsCircle(frame.circle, origin, shaft, n, h, f, side, frame.N)
+		: filletVsLine(frame.plane, origin, shaft, n, h, f, side, frame.N);
+}
+
+function endGeometry(origin, shaft, n, h, width, side, host) {
+	const strip = {
+		x: origin.x + side * h * n.x,
+		y: origin.y + side * h * n.y
+	};
+	if (!host) return { kind: 'cap', strip, N: null };
+	const f = Math.max(h * 1.2, filletForHost(width, host));
+	const frame = hostFrame(host, origin, 0);
+	let fil = tryFillet(frame, origin, shaft, n, h, f, side);
+	let usedCircle = frame.circle || null;
+
+	if (host.type === 'rect' && !usedCircle) {
+		const lineOnFlat =
+			fil &&
+			tangentOnFiniteFlat(fil.hostTangent, host, frame.plane);
+		let bestD = lineOnFlat
+			? (fil.F.x - origin.x) ** 2 + (fil.F.y - origin.y) ** 2
+			: Infinity;
+		if (!lineOnFlat) fil = null;
+		for (const corner of rectCorners(host)) {
+			const alt = filletVsCircle(corner, origin, shaft, n, h, f, side, frame.N);
+			if (!alt || !Number.isFinite(alt.F.x)) continue;
+			if (!tangentOnCornerArc(alt.hostTangent, corner, host)) continue;
+			const altD = (alt.F.x - origin.x) ** 2 + (alt.F.y - origin.y) ** 2;
+			if (altD < bestD) {
+				fil = alt;
+				usedCircle = corner;
+				bestD = altD;
+			}
+		}
+	}
+
+	if (!fil || !Number.isFinite(fil.F.x) || !Number.isFinite(fil.hostTangent.x) || !Number.isFinite(fil.stripTangent.x)) {
+		return { kind: 'cap', strip, N: frame.N };
+	}
+	if (fil.r < 0.5) return { kind: 'cap', strip, N: frame.N };
+	return { kind: 'fillet', ...fil, strip: fil.stripTangent, circle: usedCircle };
+}
+
+function svgArc(from, to, center, radius) {
+	const v1x = from.x - center.x;
+	const v1y = from.y - center.y;
+	const v2x = to.x - center.x;
+	const v2y = to.y - center.y;
+	const sweep = v1x * v2y - v1y * v2x > 0 ? 1 : 0;
+	const r = Math.max(radius, 0.001);
+	return `A ${r} ${r} 0 0 ${sweep} ${to.x} ${to.y}`;
+}
+
+function capArc(origin, uOut, fromPt, toPt, h) {
+	const mid = { x: origin.x + uOut.x * h, y: origin.y + uOut.y * h };
+	const sweep =
+		(fromPt.x - origin.x) * (mid.y - origin.y) - (fromPt.y - origin.y) * (mid.x - origin.x) > 0
+			? 1
+			: 0;
+	const r = Math.max(h, 0.001);
+	return `A ${r} ${r} 0 1 ${sweep} ${toPt.x} ${toPt.y}`;
+}
+
+function hostCenter(host) {
+	if (!host) return null;
+	if (host.type === 'circle') return { x: host.cx, y: host.cy };
+	return { x: host.x + host.w / 2, y: host.y + host.h / 2 };
+}
+
+function toward(p, c, amount) {
+	const dx = c.x - p.x;
+	const dy = c.y - p.y;
+	const d = Math.hypot(dx, dy) || 1;
+	const t = Math.min(amount / d, 0.45);
+	return { x: p.x + dx * t, y: p.y + dy * t };
+}
+
+function hostClose(fromT, toT, host) {
+	const c = hostCenter(host);
+	if (!c) return `L ${toT.x} ${toT.y}`;
+	const a = toward(fromT, c, HOST_OVERLAP);
+	const b = toward(toT, c, HOST_OVERLAP);
+	const mid = toward({ x: (fromT.x + toT.x) / 2, y: (fromT.y + toT.y) / 2 }, c, HOST_OVERLAP * 1.35);
+	return `L ${a.x} ${a.y} L ${mid.x} ${mid.y} L ${b.x} ${b.y} L ${toT.x} ${toT.y}`;
+}
+
+function buildConnectorPath(ax, ay, bx, by, width, hostA, hostB) {
+	let A = { x: ax, y: ay };
+	let B = { x: bx, y: by };
+	if (hostA) A = hostFrame(hostA, A).origin;
+	if (hostB) B = hostFrame(hostB, B).origin;
+
+	const len = Math.hypot(B.x - A.x, B.y - A.y);
+	if (width < 0.4 || len < 0.4) return '';
+
+	const h = width / 2;
+	const u = { x: (B.x - A.x) / len, y: (B.y - A.y) / len };
+	const n = { x: -u.y, y: u.x };
+	const uBack = { x: -u.x, y: -u.y };
+
+	const aMinus = endGeometry(A, u, n, h, width, -1, hostA);
+	const aPlus = endGeometry(A, u, n, h, width, 1, hostA);
+	const bMinus = endGeometry(B, uBack, n, h, width, -1, hostB);
+	const bPlus = endGeometry(B, uBack, n, h, width, 1, hostB);
+
+	let d = '';
+	const startInside =
+		hostA && aMinus.kind === 'fillet'
+			? toward(aMinus.hostTangent, hostCenter(hostA), HOST_OVERLAP)
+			: null;
+	if (aMinus.kind === 'fillet') {
+		d += startInside
+			? `M ${startInside.x} ${startInside.y} L ${aMinus.hostTangent.x} ${aMinus.hostTangent.y}`
+			: `M ${aMinus.hostTangent.x} ${aMinus.hostTangent.y}`;
+		d += svgArc(aMinus.hostTangent, aMinus.strip, aMinus.F, aMinus.r);
+	} else {
+		d += `M ${aMinus.strip.x} ${aMinus.strip.y}`;
+	}
+
+	d += `L ${bMinus.strip.x} ${bMinus.strip.y}`;
+	if (bMinus.kind === 'fillet' && bPlus.kind === 'fillet') {
+		d += svgArc(bMinus.strip, bMinus.hostTangent, bMinus.F, bMinus.r);
+		d += hostClose(bMinus.hostTangent, bPlus.hostTangent, hostB);
+		d += svgArc(bPlus.hostTangent, bPlus.strip, bPlus.F, bPlus.r);
+	} else {
+		d += capArc(B, u, bMinus.strip, bPlus.strip, h);
+	}
+
+	d += `L ${aPlus.strip.x} ${aPlus.strip.y}`;
+	if (aPlus.kind === 'fillet' && aMinus.kind === 'fillet') {
+		d += svgArc(aPlus.strip, aPlus.hostTangent, aPlus.F, aPlus.r);
+		d += hostClose(aPlus.hostTangent, aMinus.hostTangent, hostA);
+	} else {
+		d += capArc(A, uBack, aPlus.strip, aMinus.strip, h);
+	}
+	return d + 'Z';
+}
+
+function makeGradient(id) {
+	const defs = document.querySelector('#svg-stage defs');
+	let g = document.getElementById(id);
+	if (!g) {
+		g = document.createElementNS(NS, 'linearGradient');
+		g.id = id;
+		g.setAttribute('gradientUnits', 'userSpaceOnUse');
+		g.setAttribute('spreadMethod', 'pad');
+		for (let i = 0; i < 5; i++) g.appendChild(document.createElementNS(NS, 'stop'));
+		defs.appendChild(g);
+	}
+	return g;
+}
+
+function setStop(stop, offset, color) {
+	stop.setAttribute('offset', `${Math.max(0, Math.min(1, offset)) * 100}%`);
+	stop.setAttribute('stop-color', color);
+}
+
+function updateConnectorGradient(grad, from, to, fromColor, toColor) {
+	const dx = to.x - from.x;
+	const dy = to.y - from.y;
+	const len = Math.hypot(dx, dy) || 1;
+	grad.setAttribute('x1', String(from.x));
+	grad.setAttribute('y1', String(from.y));
+	grad.setAttribute('x2', String(to.x));
+	grad.setAttribute('y2', String(to.y));
+
+	const fromDark = isDarkColor(fromColor);
+	const toDark = isDarkColor(toColor);
+	const stops = grad.children;
+	const merge = Math.min(MERGE_BLEND, len * 0.28);
+
+	if (fromDark && toDark) {
+		const tip = Math.min(10, len * 0.1);
+		const tA = tip / len;
+		const tB = 1 - tip / len;
+		setStop(stops[0], 0, fromColor);
+		setStop(stops[1], tA * 0.4, mixHex(fromColor, ORANGE, 0.5));
+		setStop(stops[2], tA, ORANGE);
+		setStop(stops[3], tB, ORANGE);
+		setStop(stops[4], 1, toColor);
+		return;
+	}
+
+	if (fromDark) {
+		const t1 = merge / len;
+		setStop(stops[0], 0, fromColor);
+		setStop(stops[1], t1 * 0.12, fromColor);
+		setStop(stops[2], t1 * 0.52, mixHex(fromColor, ORANGE, 0.45));
+		setStop(stops[3], t1, ORANGE);
+		setStop(stops[4], 1, toColor);
+		return;
+	}
+
+	if (toDark) {
+		const t1 = 1 - merge / len;
+		setStop(stops[0], 0, fromColor);
+		setStop(stops[1], t1, ORANGE);
+		setStop(stops[2], t1 + (1 - t1) * 0.48, mixHex(toColor, ORANGE, 0.55));
+		setStop(stops[3], 1 - (1 - t1) * 0.12, toColor);
+		setStop(stops[4], 1, toColor);
+		return;
+	}
+
+	setStop(stops[0], 0, fromColor);
+	setStop(stops[1], 0.25, fromColor);
+	setStop(stops[2], 0.5, ORANGE);
+	setStop(stops[3], 0.75, toColor);
+	setStop(stops[4], 1, toColor);
+}
+
+const connectors = new Map();
+
+function bindConnector(el, fromHostEl, fromKind, toHostEl, toKind) {
+	if (!el) return;
+	const grad = makeGradient(`grad-${el.id}`);
+	el.setAttribute('fill', `url(#${grad.id})`);
+	connectors.set(el, {
+		el,
+		grad,
+		fromHostEl,
+		fromKind,
+		toHostEl,
+		toKind,
+		x1: 0,
+		y1: 0,
+		x2: 0,
+		y2: 0,
+		w: 0
+	});
+}
+
+function renderConnector(el) {
+	const c = connectors.get(el);
+	if (!c) return;
+	const from = { x: c.x1, y: c.y1 };
+	const to = { x: c.x2, y: c.y2 };
+	const hostA = liveHost(c.fromHostEl, c.fromKind, from);
+	const hostB = liveHost(c.toHostEl, c.toKind, to);
+	const d = buildConnectorPath(c.x1, c.y1, c.x2, c.y2, c.w, hostA, hostB);
+	el.setAttribute('d', d);
+	el.removeAttribute('stroke');
+	el.removeAttribute('stroke-width');
+	el.removeAttribute('stroke-linejoin');
+	const fromColor = hostA ? readFillColor(c.fromHostEl) : ORANGE;
+	const toColor = hostB ? readFillColor(c.toHostEl) : ORANGE;
+	const gradFrom = hostA ? hostFrame(hostA, from).origin : from;
+	const gradTo = hostB ? hostFrame(hostB, to).origin : to;
+	updateConnectorGradient(c.grad, gradFrom, gradTo, fromColor, toColor);
+}
+
+function connectorProxy(el) {
+	return connectors.get(el);
+}
+
+function connectorVars(el, from, to, width, extra = {}) {
+	return {
+		x1: from.x,
+		y1: from.y,
+		x2: to.x,
+		y2: to.y,
+		w: width,
+		onUpdate: () => renderConnector(el),
+		...extra
 	};
 }
 
@@ -241,6 +777,11 @@ const s4Mark = document.querySelector('#s4-mark');
 const s4Orbit = document.querySelector('#s4-orbit');
 const s4Seed = document.querySelector('#s4-seed');
 
+s2CoreTendrilEls.forEach((el, i) => bindConnector(el, s2Core, 'rect', s2BlobEls[i], 'circle'));
+s2BallTendrilEls.forEach((el, i) => bindConnector(el, s2BlobEls[i], 'circle', null, null));
+s3LinkEls.forEach((el, i) => bindConnector(el, s3Core, 'rect', s3BallEls[i], 'circle'));
+bindConnector(s4Link, s4Core, 'rect', s4Ball, 'circle');
+
 let activeIndex = -1;
 let visualIndex = -1;
 let morphTl = null;
@@ -351,7 +892,14 @@ function setCoreEl(el, state) {
 }
 
 function setTendril(el, from, to, width) {
-	gsap.set(el, { attr: lineAttr(from, to, width) });
+	const c = connectorProxy(el);
+	if (!c) return;
+	c.x1 = from.x;
+	c.y1 = from.y;
+	c.x2 = to.x;
+	c.y2 = to.y;
+	c.w = width;
+	renderConnector(el);
 }
 
 function setMarkEl(el, mark, height, opacity = 1) {
@@ -520,35 +1068,13 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 			});
 			s2CoreTendrilEls.forEach((el, i) => {
 				const t = S2.tendrils[i];
-				tl.to(
-					el,
-					{
-						attr: {
-							x1: t.orderFrom.x,
-							y1: t.orderFrom.y,
-							x2: t.orderTo.x,
-							y2: t.orderTo.y,
-							'stroke-width': S2.stroke.order
-						},
-						duration
-					},
-					0
-				);
+				tl.to(connectorProxy(el), connectorVars(el, t.orderFrom, t.orderTo, S2.stroke.order, { duration }), 0);
 			});
 			s2BallTendrilEls.forEach((el, i) => {
 				const t = S2.tendrils[i];
 				tl.to(
-					el,
-					{
-						attr: {
-							x1: t.ballFrom.x,
-							y1: t.ballFrom.y,
-							x2: t.ballFrom.x,
-							y2: t.ballFrom.y,
-							'stroke-width': 0
-						},
-						duration: duration * 0.5
-					},
+					connectorProxy(el),
+					connectorVars(el, t.ballFrom, t.ballFrom, 0, { duration: duration * 0.5 }),
 					0
 				);
 			});
@@ -576,34 +1102,16 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 			s2CoreTendrilEls.forEach((el, i) => {
 				const t = S2.tendrils[i];
 				tl.to(
-					el,
-					{
-						attr: {
-							x1: t.coreFrom.x,
-							y1: t.coreFrom.y,
-							x2: t.coreFrom.x,
-							y2: t.coreFrom.y,
-							'stroke-width': 0
-						},
-						duration: duration * 0.55
-					},
+					connectorProxy(el),
+					connectorVars(el, t.coreFrom, t.coreFrom, 0, { duration: duration * 0.55 }),
 					0
 				);
 			});
 			s2BallTendrilEls.forEach((el, i) => {
 				const t = S2.tendrils[i];
 				tl.to(
-					el,
-					{
-						attr: {
-							x1: t.ballFrom.x,
-							y1: t.ballFrom.y,
-							x2: t.ballFrom.x,
-							y2: t.ballFrom.y,
-							'stroke-width': 0
-						},
-						duration: duration * 0.45
-					},
+					connectorProxy(el),
+					connectorVars(el, t.ballFrom, t.ballFrom, 0, { duration: duration * 0.45 }),
 					0
 				);
 			});
@@ -622,14 +1130,30 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 			[0, 2].forEach((i) => {
 				const L = S3.links[i];
 				tl.to(
-					s3LinkEls[i],
-					{ attr: { x2: L.from.x, y2: L.from.y, 'stroke-width': 0 }, opacity: 0, duration },
+					connectorProxy(s3LinkEls[i]),
+					{
+						x2: L.from.x,
+						y2: L.from.y,
+						w: 0,
+						duration,
+						onUpdate: () => renderConnector(s3LinkEls[i])
+					},
 					0
 				);
+				tl.to(s3LinkEls[i], { opacity: 0, duration }, 0);
 				tl.to(s3BallEls[i], { opacity: 0, duration }, 0);
 			});
-			tl.to(s3BallEls[1], { fill: DARK, duration }, 0);
-			tl.to(s3LinkEls[1], { attr: { 'stroke-width': S3.stroke.thin }, opacity: 1, duration }, 0);
+			tl.to(
+				s3BallEls[1],
+				{ fill: DARK, duration, onUpdate: () => renderConnector(s3LinkEls[1]) },
+				0
+			);
+			tl.to(
+				connectorProxy(s3LinkEls[1]),
+				{ w: S3.stroke.thin, duration, onUpdate: () => renderConnector(s3LinkEls[1]) },
+				0
+			);
+			tl.to(s3LinkEls[1], { opacity: 1, duration }, 0);
 			tl.to(
 				s3Mark,
 				{
@@ -648,25 +1172,20 @@ function tweenBoard(index, pose, duration = HANDOFF_DUR) {
 			);
 		} else {
 			tl.to(s3Mark, { opacity: 0, attr: { height: 0, y: S3.mark.midY }, duration: duration * 0.45 }, 0);
-			tl.to(s3BallEls[1], { fill: ORANGE, duration }, 0);
+			tl.to(
+				s3BallEls[1],
+				{ fill: ORANGE, duration, onUpdate: () => renderConnector(s3LinkEls[1]) },
+				0
+			);
 			[0, 1, 2].forEach((i) => {
 				const L = S3.links[i];
 				const B = S3.balls[i].full;
 				tl.to(
-					s3LinkEls[i],
-					{
-						attr: {
-							x1: L.from.x,
-							y1: L.from.y,
-							x2: L.to.x,
-							y2: L.to.y,
-							'stroke-width': S3.stroke.full
-						},
-						opacity: 1,
-						duration
-					},
+					connectorProxy(s3LinkEls[i]),
+					connectorVars(s3LinkEls[i], L.from, L.to, S3.stroke.full, { duration }),
 					0
 				);
+				tl.to(s3LinkEls[i], { opacity: 1, duration }, 0);
 				tl.to(
 					s3BallEls[i],
 					{ attr: { cx: B.cx, cy: B.cy, r: B.r }, opacity: 1, fill: ORANGE, duration },
@@ -982,77 +1501,47 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 		const unifyAt = `${reach}+=${slot * PAIR_STAGGER + UNIFY_AT}`;
 
 		morphTl.fromTo(
-			s2CoreTendrilEls[i],
-			{
-				attr: {
-					x1: t.coreFrom.x,
-					y1: t.coreFrom.y,
-					x2: t.coreFrom.x,
-					y2: t.coreFrom.y,
-					'stroke-width': 0
-				}
-			},
-			{
-				attr: {
-					x1: t.coreFrom.x,
-					y1: t.coreFrom.y,
-					x2: t.meet.x,
-					y2: t.meet.y,
-					'stroke-width': S2.stroke.connect
-				},
+			connectorProxy(s2CoreTendrilEls[i]),
+			{ x1: t.coreFrom.x, y1: t.coreFrom.y, x2: t.coreFrom.x, y2: t.coreFrom.y, w: 0 },
+			connectorVars(s2CoreTendrilEls[i], t.coreFrom, t.meet, S2.stroke.connect, {
 				duration: REACH_DUR,
-				ease: 'power3.out'
-			},
+				ease: 'power3.out',
+				immediateRender: false
+			}),
 			at
 		);
 		morphTl.fromTo(
-			s2BallTendrilEls[i],
-			{
-				attr: {
-					x1: t.ballFrom.x,
-					y1: t.ballFrom.y,
-					x2: t.ballFrom.x,
-					y2: t.ballFrom.y,
-					'stroke-width': 0
-				}
-			},
-			{
-				attr: {
-					x1: t.ballFrom.x,
-					y1: t.ballFrom.y,
-					x2: t.meet.x,
-					y2: t.meet.y,
-					'stroke-width': S2.stroke.connect
-				},
+			connectorProxy(s2BallTendrilEls[i]),
+			{ x1: t.ballFrom.x, y1: t.ballFrom.y, x2: t.ballFrom.x, y2: t.ballFrom.y, w: 0 },
+			connectorVars(s2BallTendrilEls[i], t.ballFrom, t.meet, S2.stroke.connect, {
 				duration: REACH_DUR,
-				ease: 'power3.out'
-			},
+				ease: 'power3.out',
+				immediateRender: false
+			}),
 			at
 		);
 
 		morphTl.to(
-			s2CoreTendrilEls[i],
+			connectorProxy(s2CoreTendrilEls[i]),
 			{
-				attr: {
-					x2: t.ballFrom.x,
-					y2: t.ballFrom.y,
-					'stroke-width': S2.stroke.connect
-				},
+				x2: t.ballFrom.x,
+				y2: t.ballFrom.y,
+				w: S2.stroke.connect,
 				duration: 0.28,
-				ease: 'power2.out'
+				ease: 'power2.out',
+				onUpdate: () => renderConnector(s2CoreTendrilEls[i])
 			},
 			unifyAt
 		);
 		morphTl.to(
-			s2BallTendrilEls[i],
+			connectorProxy(s2BallTendrilEls[i]),
 			{
-				attr: {
-					x2: t.ballFrom.x,
-					y2: t.ballFrom.y,
-					'stroke-width': 0
-				},
+				x2: t.ballFrom.x,
+				y2: t.ballFrom.y,
+				w: 0,
 				duration: 0.24,
-				ease: 'power2.in'
+				ease: 'power2.in',
+				onUpdate: () => renderConnector(s2BallTendrilEls[i])
 			},
 			unifyAt
 		);
@@ -1087,18 +1576,11 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 		const at = `${order}+=${slot * 0.1}`;
 		morphTl.to(s2BlobEls[i], { attr: { cx: b.cx, cy: b.cy, r: b.r }, duration: 1.05, ease: 'power3.inOut' }, at);
 		morphTl.to(
-			s2CoreTendrilEls[i],
-			{
-				attr: {
-					x1: t.orderFrom.x,
-					y1: t.orderFrom.y,
-					x2: t.orderTo.x,
-					y2: t.orderTo.y,
-					'stroke-width': S2.stroke.order
-				},
+			connectorProxy(s2CoreTendrilEls[i]),
+			connectorVars(s2CoreTendrilEls[i], t.orderFrom, t.orderTo, S2.stroke.order, {
 				duration: 1.05,
 				ease: 'power3.inOut'
-			},
+			}),
 			at
 		);
 	});
@@ -1108,36 +1590,16 @@ function playSignalStoryboard({ skipSetup = false } = {}) {
 	s2CoreTendrilEls.forEach((el, i) => {
 		const t = S2.tendrils[i];
 		morphTl.to(
-			el,
-			{
-				attr: {
-					x1: t.coreFrom.x,
-					y1: t.coreFrom.y,
-					x2: t.coreFrom.x,
-					y2: t.coreFrom.y,
-					'stroke-width': 0
-				},
-				duration: 0.55,
-				ease: 'power2.in'
-			},
+			connectorProxy(el),
+			connectorVars(el, t.coreFrom, t.coreFrom, 0, { duration: 0.55, ease: 'power2.in' }),
 			reset
 		);
 	});
 	s2BallTendrilEls.forEach((el, i) => {
 		const t = S2.tendrils[i];
 		morphTl.to(
-			el,
-			{
-				attr: {
-					x1: t.ballFrom.x,
-					y1: t.ballFrom.y,
-					x2: t.ballFrom.x,
-					y2: t.ballFrom.y,
-					'stroke-width': 0
-				},
-				duration: 0.4,
-				ease: 'power2.in'
-			},
+			connectorProxy(el),
+			connectorVars(el, t.ballFrom, t.ballFrom, 0, { duration: 0.4, ease: 'power2.in' }),
 			reset
 		);
 	});
@@ -1229,15 +1691,14 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 		const fadeAt = `${retract}+=${slot * STAGGER + FADE_AT}`;
 
 		morphTl.to(
-			s3LinkEls[i],
+			connectorProxy(s3LinkEls[i]),
 			{
-				attr: {
-					x2: L.stub.x,
-					y2: L.stub.y,
-					'stroke-width': S3.stroke.stub
-				},
+				x2: L.stub.x,
+				y2: L.stub.y,
+				w: S3.stroke.stub,
 				duration: RETRACT_DUR,
-				ease: 'power3.inOut'
+				ease: 'power3.inOut',
+				onUpdate: () => renderConnector(s3LinkEls[i])
 			},
 			at
 		);
@@ -1253,22 +1714,39 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 			at
 		);
 		morphTl.to(
-			s3LinkEls[i],
+			connectorProxy(s3LinkEls[i]),
 			{
-				attr: { x2: L.from.x, y2: L.from.y, 'stroke-width': 0 },
-				opacity: 0,
+				x2: L.from.x,
+				y2: L.from.y,
+				w: 0,
 				duration: 0.38,
-				ease: 'power2.in'
+				ease: 'power2.in',
+				onUpdate: () => renderConnector(s3LinkEls[i])
 			},
 			fadeAt
 		);
+		morphTl.to(s3LinkEls[i], { opacity: 0, duration: 0.38, ease: 'power2.in' }, fadeAt);
 		morphTl.to(s3BallEls[i], { opacity: 0, duration: 0.38, ease: 'power2.in' }, fadeAt);
 	});
 
-	morphTl.to(s3BallEls[1], { fill: DARK, duration: 0.7, ease: 'power2.inOut' }, `${retract}+=0.12`);
 	morphTl.to(
-		s3LinkEls[1],
-		{ attr: { 'stroke-width': S3.stroke.thin }, duration: 0.55, ease: 'power2.out' },
+		s3BallEls[1],
+		{
+			fill: DARK,
+			duration: 0.7,
+			ease: 'power2.inOut',
+			onUpdate: () => renderConnector(s3LinkEls[1])
+		},
+		`${retract}+=0.12`
+	);
+	morphTl.to(
+		connectorProxy(s3LinkEls[1]),
+		{
+			w: S3.stroke.thin,
+			duration: 0.55,
+			ease: 'power2.out',
+			onUpdate: () => renderConnector(s3LinkEls[1])
+		},
 		`${retract}+=0.28`
 	);
 
@@ -1298,28 +1776,25 @@ function playConvergeStoryboard({ skipSetup = false } = {}) {
 		{ opacity: 0, attr: { height: 0, y: S3.mark.midY }, duration: 0.35, ease: 'power2.in' },
 		reset
 	);
-	morphTl.to(s3BallEls[1], { fill: ORANGE, duration: 0.55, ease: 'power2.out' }, reset);
+	morphTl.to(
+		s3BallEls[1],
+		{ fill: ORANGE, duration: 0.55, ease: 'power2.out', onUpdate: () => renderConnector(s3LinkEls[1]) },
+		reset
+	);
 
 	[0, 2, 1].forEach((i, slot) => {
 		const L = S3.links[i];
 		const B = S3.balls[i].full;
 		const at = `${reset}+=${slot * 0.08}`;
 		morphTl.to(
-			s3LinkEls[i],
-			{
-				attr: {
-					x1: L.from.x,
-					y1: L.from.y,
-					x2: L.to.x,
-					y2: L.to.y,
-					'stroke-width': S3.stroke.full
-				},
-				opacity: 1,
+			connectorProxy(s3LinkEls[i]),
+			connectorVars(s3LinkEls[i], L.from, L.to, S3.stroke.full, {
 				duration: 0.7,
 				ease: 'power3.out'
-			},
+			}),
 			at
 		);
+		morphTl.to(s3LinkEls[i], { opacity: 1, duration: 0.7, ease: 'power3.out' }, at);
 		morphTl.to(
 			s3BallEls[i],
 			{
