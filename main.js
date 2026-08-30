@@ -12,10 +12,9 @@
 	let watchVis = '';
 	let watchCam = '';
 	let capturingThumb = false;
-	let hitchThisFrame = false;
-	let lastDrawAt = 0;
+	let lastPresentAt = 0;
 	const fpsDts = [];
-	const FPS_SAMPLES = 45;
+	const FPS_WINDOW_MS = 1000;
 	let livePreview = false;
 	let liveThumbAge = 0;
 	let idleThumbDue = 0;
@@ -131,7 +130,6 @@
 		}
 		const item = pending[0];
 		capturingThumb = true;
-		hitchThisFrame = true;
 		const url = SynthEngine.captureOperators(item.operators, millis() / 1000);
 		capturingThumb = false;
 		tplThumbDue = millis() + (tplThumbForce ? 0 : 80);
@@ -188,7 +186,6 @@
 			return;
 		}
 		capturingThumb = true;
-		hitchThisFrame = true;
 		const previewUrl = SynthEngine.capturePreview
 			? SynthEngine.capturePreview(0.7, flipCam)
 			: SynthEngine.capture(undefined, flipCam);
@@ -450,40 +447,53 @@
 		}, 2500);
 	}
 
-	function noteFrame() {
-		const now = (window.performance && performance.now) ? performance.now() : Date.now();
-		if (lastDrawAt > 0) {
-			const dt = now - lastDrawAt;
-			if (!hitchThisFrame && dt >= 8 && dt <= 220) {
-				fpsDts.push(dt);
-				if (fpsDts.length > FPS_SAMPLES) fpsDts.shift();
+	function syncGpu() {
+		const gl = typeof drawingContext !== 'undefined' ? drawingContext : null;
+		if (!gl) return;
+		try {
+			if (typeof gl.fenceSync === 'function' && typeof gl.clientWaitSync === 'function') {
+				const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+				if (sync) {
+					gl.flush();
+					gl.clientWaitSync(sync, gl.SYNC_FLUSH_COMMANDS_BIT, 1e9);
+					gl.deleteSync(sync);
+					return;
+				}
 			}
-		}
-		lastDrawAt = now;
-		hitchThisFrame = false;
+			if (typeof gl.finish === 'function') gl.finish();
+		} catch (err) {}
 	}
 
-	function smoothFps() {
-		if (fpsDts.length < 10) return 0;
-		const sorted = fpsDts.slice().sort(function (a, b) {
-			return a - b;
-		});
-		const drop = Math.max(1, Math.floor(sorted.length * 0.12));
-		const slice = sorted.slice(0, sorted.length - drop);
-		let sum = 0;
-		for (let i = 0; i < slice.length; i += 1) sum += slice[i];
-		return 1000 / (sum / slice.length);
+	function notePresented() {
+		const now = (window.performance && performance.now) ? performance.now() : Date.now();
+		if (lastPresentAt > 0) {
+			const dt = now - lastPresentAt;
+			if (dt >= 1 && dt <= 2500) fpsDts.push({ t: now, dt: dt });
+		}
+		lastPresentAt = now;
+		const cutoff = now - FPS_WINDOW_MS;
+		while (fpsDts.length && fpsDts[0].t < cutoff) fpsDts.shift();
+	}
+
+	function measuredFps() {
+		if (fpsDts.length < 3) return 0;
+		const first = fpsDts[0];
+		const last = fpsDts[fpsDts.length - 1];
+		const span = last.t - (first.t - first.dt);
+		if (!(span > 0)) return 0;
+		return fpsDts.length / (span / 1000);
 	}
 
 	function draw() {
-		noteFrame();
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
+		syncGpu();
+		notePresented();
 		scheduleThumb(state);
 		scheduleTemplateThumbs(state);
 		if (uiApi && uiApi.tick) uiApi.tick();
 		if (millis() - lastFpsSent > 500) {
-			const fps = smoothFps();
+			const fps = measuredFps();
 			if (!(fps >= 1)) return;
 			lastFpsSent = millis();
 			const stats = {

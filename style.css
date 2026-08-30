@@ -1,7 +1,7 @@
 /* ELO UI
    tokens: off-black / off-white / hairline
    radius: 0 for chrome / grid / sheets; 12px for Elo blocks (ELOS building blocks)
-   z: preview 18, chrome 20, map overlay 115, panel 130, picker 148, sheet 145, toasts 180, tip 185
+   z: preview 18, chrome 20, sys warn 190, map overlay 115, panel 130, picker 148, sheet 145, toasts 180, tip 185
 */
 
 :root {
@@ -56,6 +56,7 @@ html.synth-html--control body.synth-control {
 	overflow-x: hidden;
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
+	scroll-padding-top: calc(var(--chrome-h) + var(--preview-h) + 12px);
 }
 
 body.synth-display {
@@ -86,16 +87,8 @@ body.synth-control {
 	--sys-h: 64px;
 }
 
-body.is-sys-warn {
-	--sys-h: 68px;
-}
-
-body.synth-control.is-sys-warn {
-	--sys-h: 90px;
-}
-
 @media (min-width: 440px) {
-	body.synth-control:not(.is-sys-warn) {
+	body.synth-control {
 		--sys-h: 42px;
 	}
 }
@@ -259,6 +252,7 @@ body.synth-control .synth-panel.is-page .synth-preview {
 	position: relative;
 	z-index: 1;
 	padding: 12px 0 0;
+	overflow-anchor: none;
 }
 
 body.synth-control .synth-panel.is-page .synth-panel__body {
@@ -445,6 +439,13 @@ body.synth-control .synth-preview__frame img {
 }
 
 .synth-pipes,
+.synth-pipe-active,
+.synth-pipe-grid,
+.synth-stack {
+	overflow-anchor: none;
+}
+
+.synth-pipes,
 .synth-pipe-active {
 	position: relative;
 	z-index: 1;
@@ -485,6 +486,7 @@ body.synth-control .synth-preview__frame img {
 	text-transform: uppercase;
 	cursor: pointer;
 	appearance: none;
+	touch-action: manipulation;
 }
 
 .synth-gallery-tab:last-child {
@@ -1521,15 +1523,25 @@ body.synth-control .synth-sys__row {
 }
 
 .synth-sys__warn {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 190;
 	margin: 0;
-	padding: 0 0 8px;
+	padding: calc(8px + env(safe-area-inset-top, 0px)) calc(var(--pad) + env(safe-area-inset-right, 0px)) 8px calc(var(--pad) + env(safe-area-inset-left, 0px));
 	font-size: 11px;
 	line-height: 1.35;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.06em;
+	text-align: center;
+	text-transform: uppercase;
 	color: var(--warn);
+	background: color-mix(in srgb, var(--warn) 18%, var(--bg));
+	border-bottom: 1px solid color-mix(in srgb, var(--warn) 42%, var(--line));
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	pointer-events: none;
 }
 
 .synth-sys__warn[hidden] {
@@ -1538,14 +1550,15 @@ body.synth-control .synth-sys__row {
 
 body.is-sys-bad .synth-sys__warn {
 	color: var(--bad);
+	background: color-mix(in srgb, var(--bad) 18%, var(--bg));
+	border-bottom-color: color-mix(in srgb, var(--bad) 42%, var(--line));
 }
 
-body.is-sys-warn .synth-chrome__sys {
-	background: color-mix(in srgb, var(--warn) 12%, var(--bg));
-}
-
-body.is-sys-bad .synth-chrome__sys {
-	background: color-mix(in srgb, var(--bad) 14%, var(--bg));
+body.synth-control .synth-sys__warn {
+	left: 50%;
+	right: auto;
+	width: min(520px, 100vw);
+	transform: translateX(-50%);
 }
 
 .synth-chrome__title {

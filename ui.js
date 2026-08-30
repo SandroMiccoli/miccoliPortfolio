@@ -204,6 +204,10 @@
 			btn.setAttribute('aria-selected', tab.id === 'set' ? 'true' : 'false');
 			if (tab.id === 'set') btn.classList.add('is-active');
 			btn.dataset.gallery = tab.id;
+			btn.addEventListener('pointerdown', function (event) {
+				if (event.pointerType === 'mouse') return;
+				event.preventDefault();
+			});
 			btn.addEventListener('click', function () {
 				setGalleryMode(tab.id);
 			});
@@ -271,8 +275,9 @@
 			sysWarn.hidden = true;
 			sysWarn.setAttribute('role', 'status');
 			sysWarn.setAttribute('aria-live', 'polite');
-			sys.appendChild(sysWarn);
 			sysSlot.appendChild(sys);
+			const warnHost = document.querySelector('.synth-ui') || document.body;
+			warnHost.appendChild(sysWarn);
 		}
 
 		const sheetHost = el('div', 'synth-sheet-host');
@@ -891,9 +896,20 @@
 			patch({ previewTemplateId: next });
 		}
 
+		function pinElementScroll(el) {
+			if (!el) return function () {};
+			const top = el.getBoundingClientRect().top;
+			return function restore() {
+				const dy = el.getBoundingClientRect().top - top;
+				if (Math.abs(dy) < 1) return;
+				window.scrollBy(0, dy);
+			};
+		}
+
 		function setGalleryMode(mode) {
 			const next = mode === 'templates' ? 'templates' : 'set';
 			if (galleryMode === next) return;
+			const restore = pinElementScroll(galleryTabs);
 			cancelRename();
 			galleryMode = next;
 			lastGridSig = null;
@@ -908,6 +924,11 @@
 				setPreview('');
 			}
 			refresh();
+			restore();
+			window.requestAnimationFrame(function () {
+				restore();
+				window.requestAnimationFrame(restore);
+			});
 		}
 
 		function sendTemplateToSet(template) {
@@ -1777,6 +1798,7 @@
 			let outMark = max;
 			let liveValue = min;
 			let modOn = false;
+			let modPrimed = false;
 			let editing = false;
 			let editInput = null;
 			let lastTapAt = 0;
@@ -2344,12 +2366,13 @@
 				render();
 				if (on !== wasOn && opId) {
 					relayoutOpBody(opId);
-					if (on && panel) {
+					if (on && panel && modPrimed) {
 						window.requestAnimationFrame(function () {
 							panel.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 						});
 					}
 				}
+				modPrimed = true;
 			}
 
 			current = clamp(current);
@@ -3799,11 +3822,22 @@
 			return card;
 		}
 
+		function stackIdsOverlap(prevOps, pipeline) {
+			const prev = {};
+			prevOps.forEach(function (node) {
+				if (node.dataset.id) prev[node.dataset.id] = true;
+			});
+			return (pipeline || []).some(function (op) {
+				return !!prev[op.id];
+			});
+		}
+
 		function rebuildStack(pipeline) {
 			const g = getGsap();
 			const Flip = window.Flip;
 			const prevOps = stack.querySelectorAll('.synth-op');
-			const state = (g && Flip && prevOps.length) ? Flip.getState(prevOps) : null;
+			const canFlip = !!(g && Flip && prevOps.length && stackIdsOverlap(prevOps, pipeline));
+			const state = canFlip ? Flip.getState(prevOps) : null;
 
 			Object.keys(sliders).forEach(function (key) {
 				delete sliders[key];
