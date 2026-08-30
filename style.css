@@ -19,7 +19,7 @@
 	--pad: 16px;
 	--hit: 48px;
 	--font: ui-monospace, "Cascadia Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
-	--preview-h: min(24dvh, 168px);
+	--preview-h: min(calc(100vw * 9 / 16), 36dvh);
 }
 
 * {
@@ -70,6 +70,7 @@ body.synth-display #app * {
 }
 
 body.synth-control {
+	--preview-h: min(calc(min(100vw, 520px) * 9 / 16), 36dvh);
 	position: relative;
 	max-width: 520px;
 	margin: 0 auto;
@@ -183,7 +184,7 @@ body.synth-display .synth-ui {
 	right: 0;
 	bottom: 0;
 	z-index: 130;
-	width: min(520px, 100vw);
+	width: min(520px, calc(100vw - var(--hit)), calc(100% - var(--hit)));
 	overflow: auto;
 	overscroll-behavior: contain;
 	background: var(--bg);
@@ -191,6 +192,25 @@ body.synth-display .synth-ui {
 	transform: translateX(100%);
 	transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 	touch-action: pan-y;
+}
+
+.synth-scrim {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 120;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	appearance: none;
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.synth-scrim.is-open {
+	display: block;
 }
 
 body.synth-display .synth-ui.is-open {
@@ -235,7 +255,7 @@ body.synth-control .synth-panel.is-page {
 	position: sticky;
 	top: var(--chrome-h);
 	z-index: 18;
-	background: var(--bg);
+	background: #0a0a0a;
 	border-bottom: 1px solid var(--line);
 }
 
@@ -262,19 +282,27 @@ body.synth-control .synth-panel.is-page .synth-panel__body {
 
 .synth-preview__frame {
 	position: relative;
+	width: min(100%, calc(var(--preview-h) * 16 / 9));
 	height: var(--preview-h);
+	margin-inline: auto;
 	background: #0a0a0a;
 	overflow: hidden;
 }
 
 .synth-preview__frame canvas {
+	display: none;
 	position: absolute;
 	inset: 0;
 	width: 100% !important;
 	height: 100% !important;
-	display: block;
+	object-fit: contain;
+	object-position: center;
 	pointer-events: none;
 	background: #000;
+}
+
+.synth-preview.is-gpu .synth-preview__frame canvas {
+	display: block;
 }
 
 .synth-preview.is-gpu .synth-preview__frame img,
@@ -283,7 +311,9 @@ body.synth-control .synth-panel.is-page .synth-panel__body {
 }
 
 body.synth-control .synth-preview__frame,
-body.synth-control .synth-preview.is-live .synth-preview__frame {
+body.synth-control .synth-preview.is-live .synth-preview__frame,
+body.synth-control .synth-preview.is-local .synth-preview__frame {
+	width: min(100%, calc(var(--preview-h) * 16 / 9));
 	height: var(--preview-h);
 }
 
@@ -291,12 +321,9 @@ body.synth-control .synth-preview.is-live .synth-preview__frame {
 	display: block;
 	width: 100%;
 	height: 100%;
-	object-fit: cover;
-	background: #000;
-}
-
-body.synth-control .synth-preview__frame img {
 	object-fit: contain;
+	object-position: center;
+	background: #000;
 }
 
 .synth-preview__frame img[hidden] {
@@ -346,11 +373,18 @@ body.synth-control .synth-preview__frame img {
 	pointer-events: none;
 }
 
-.synth-preview__live {
+.synth-preview__modes {
 	position: absolute;
 	top: 8px;
 	right: 8px;
 	z-index: 2;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.synth-preview__live {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -391,6 +425,18 @@ body.synth-control .synth-preview__frame img {
 	background: var(--bad);
 	box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 55%, transparent);
 	animation: synth-live-pulse 1.4s ease-out infinite;
+}
+
+.synth-preview__local.is-on {
+	background: var(--ok);
+	border-color: var(--ok);
+	color: var(--bg);
+}
+
+.synth-preview__local.is-on::before {
+	background: var(--fg);
+	box-shadow: none;
+	animation: none;
 }
 
 @keyframes synth-live-pulse {
@@ -1481,7 +1527,10 @@ body.synth-control.is-sheet-open {
 }
 
 .synth-chrome__help {
+	display: flex;
 	flex: 0 0 auto;
+	align-items: center;
+	gap: 2px;
 }
 
 .synth-chrome__sys {

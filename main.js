@@ -225,6 +225,7 @@
 		panelOpen = open;
 		const ui = document.getElementById('synth-ui');
 		const panel = document.getElementById('ui-root');
+		const scrim = document.getElementById('synth-scrim');
 		if (ui) {
 			ui.classList.toggle('is-open', open);
 			ui.setAttribute('aria-hidden', open ? 'false' : 'true');
@@ -232,12 +233,52 @@
 		} else if (panel) {
 			panel.classList.toggle('is-open', open);
 		}
+		if (scrim) {
+			scrim.hidden = !open;
+			scrim.classList.toggle('is-open', open);
+			scrim.setAttribute('aria-hidden', open ? 'false' : 'true');
+		}
 		if (open) {
 			revealChrome(true);
 			return;
 		}
 		revealChrome();
 		if (uiApi && uiApi.closeOverlays) uiApi.closeOverlays();
+	}
+
+	function setupPanelDismiss() {
+		const helpSlot = document.getElementById('synth-help-slot');
+		if (helpSlot && !helpSlot.querySelector('[data-panel-close]')) {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'synth-icon';
+			btn.setAttribute('data-panel-close', '1');
+			btn.setAttribute('aria-label', 'Close menu');
+			if (window.SynthIcons) btn.appendChild(SynthIcons.svg('x'));
+			btn.addEventListener('click', function (event) {
+				event.preventDefault();
+				event.stopPropagation();
+				setPanel(false);
+			});
+			helpSlot.appendChild(btn);
+		}
+
+		let scrim = document.getElementById('synth-scrim');
+		if (!scrim) {
+			scrim = document.createElement('button');
+			scrim.id = 'synth-scrim';
+			scrim.type = 'button';
+			scrim.className = 'synth-scrim';
+			scrim.hidden = true;
+			scrim.setAttribute('aria-label', 'Close menu');
+			scrim.setAttribute('aria-hidden', 'true');
+			const ui = document.getElementById('synth-ui');
+			if (ui && ui.parentNode) ui.parentNode.insertBefore(scrim, ui);
+			else document.body.appendChild(scrim);
+		}
+		scrim.addEventListener('click', function () {
+			setPanel(false);
+		});
 	}
 
 	function revealChrome(keep) {
@@ -313,9 +354,14 @@
 		});
 
 		window.addEventListener('keydown', function (event) {
-			if (event.key !== 'e' && event.key !== 'E') return;
 			const tag = event.target && event.target.tagName;
 			if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+			if (event.key === 'Escape' && panelOpen) {
+				event.preventDefault();
+				setPanel(false);
+				return;
+			}
+			if (event.key !== 'e' && event.key !== 'E') return;
 			event.preventDefault();
 			setPanel(!panelOpen);
 		});
@@ -381,6 +427,7 @@
 			});
 		}
 
+		setupPanelDismiss();
 		setupGestures();
 		setupIdleChrome();
 		setPanel(false);

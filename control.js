@@ -96,11 +96,12 @@
 			},
 			patch: userPatch,
 			setLivePreview: function (on) {
+				SynthSync.sendLive(on);
+			},
+			setLocalPreview: function (on) {
 				if (window.SynthPreview && SynthPreview.setLive) {
 					SynthPreview.setLive(on);
-					return;
 				}
-				SynthSync.sendLive(on);
 			}
 		});
 
@@ -161,12 +162,11 @@
 				if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 			},
 			onPreview: function (msg) {
-				if (window.SynthPreview && SynthPreview.active && SynthPreview.active()) return;
+				if (window.SynthPreview && SynthPreview.running && SynthPreview.running()) return;
 				if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(msg.url, msg.pipeId);
 			},
 			onLive: function (enabled) {
 				if (uiApi && uiApi.setLiveMode) uiApi.setLiveMode(!!enabled);
-				if (window.SynthPreview && SynthPreview.setLive) SynthPreview.setLive(!!enabled);
 			},
 			onFft: function (msg) {
 				if (window.SynthFft) SynthFft.setRemote(msg);

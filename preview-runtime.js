@@ -1,12 +1,10 @@
 (function (root) {
-	const STILL_MS = 1400;
 	const FPS_SAMPLES = 45;
 	let frameEl = null;
 	let canvasElt = null;
 	let gpuOk = false;
 	let engineReady = false;
 	let live = false;
-	let stillTimer = 0;
 	let placed = false;
 	const fpsDts = [];
 	let lastDrawAt = 0;
@@ -40,19 +38,10 @@
 		return 1000 / (sum / slice.length);
 	}
 
-	function stopStill() {
-		if (stillTimer) {
-			clearInterval(stillTimer);
-			stillTimer = 0;
-		}
-	}
-
-	function startStill() {
-		stopStill();
-		if (live || !gpuOk) return;
-		stillTimer = setInterval(function () {
-			if (typeof redraw === 'function') redraw();
-		}, STILL_MS);
+	function markHost(on) {
+		const host = frameEl && frameEl.closest('.synth-preview');
+		if (host) host.classList.toggle('is-gpu', !!on);
+		if (canvasElt) canvasElt.style.visibility = on ? 'visible' : 'hidden';
 	}
 
 	function fitCanvas() {
@@ -62,7 +51,7 @@
 		if (w === width && h === height) return;
 		resizeCanvas(w, h);
 		if (root.SynthEngine && SynthEngine.resize) SynthEngine.resize();
-		if (!live && typeof redraw === 'function') redraw();
+		if (live && typeof redraw === 'function') redraw();
 	}
 
 	function placeCanvas() {
@@ -72,32 +61,28 @@
 		}
 		frameEl.appendChild(canvasElt);
 		placed = true;
-		const host = frameEl.closest('.synth-preview');
-		if (host) host.classList.add('is-gpu');
-		canvasElt.style.visibility = 'visible';
+		canvasElt.style.visibility = 'hidden';
 		fitCanvas();
 		if (root.ResizeObserver) {
 			new ResizeObserver(function () {
-				fitCanvas();
+				if (live) fitCanvas();
 			}).observe(frameEl);
 		}
-		startStill();
-		if (typeof redraw === 'function') redraw();
 	}
 
 	function setLive(on) {
 		live = !!on;
 		resetFps();
+		markHost(live);
 		if (!gpuOk) return;
-		stopStill();
 		if (live) {
+			fitCanvas();
 			if (typeof frameRate === 'function') frameRate(30);
 			if (typeof loop === 'function') loop();
+			if (typeof redraw === 'function') redraw();
 			return;
 		}
 		if (typeof noLoop === 'function') noLoop();
-		if (typeof redraw === 'function') redraw();
-		startStill();
 	}
 
 	root.SynthPreview = {
@@ -109,8 +94,11 @@
 		active: function () {
 			return gpuOk;
 		},
+		running: function () {
+			return live && gpuOk;
+		},
 		nudge: function () {
-			if (!gpuOk || live) return;
+			if (!gpuOk || !live) return;
 			if (typeof redraw === 'function') redraw();
 		},
 		localFps: function () {
@@ -139,18 +127,19 @@
 		}
 		noLoop();
 		if (frameEl) placeCanvas();
+		if (live) setLive(true);
 	};
 
 	root.draw = function () {
-		if (!engineReady || !root.SynthEngine || !root.SynthState) return;
-		if (live) noteFrame();
+		if (!engineReady || !live || !root.SynthEngine || !root.SynthState) return;
+		noteFrame();
 		try {
 			SynthEngine.draw(SynthState.get(), millis() / 1000, { preview: true });
 		} catch (err) {}
 	};
 
 	root.windowResized = function () {
-		fitCanvas();
+		if (live) fitCanvas();
 	};
 
 	root.touchStarted = function () { return true; };

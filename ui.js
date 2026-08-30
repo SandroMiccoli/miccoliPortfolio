@@ -99,6 +99,7 @@
 		const capturePipe = options.capturePipe;
 		const captureTemplates = options.captureTemplates;
 		const setLivePreview = options.setLivePreview;
+		const setLocalPreview = options.setLocalPreview;
 		let lastSignature = null;
 		let lastGridSig = null;
 		let sliding = false;
@@ -112,6 +113,7 @@
 		let activeStage = 'pipeline';
 		let libInsertAt = 0;
 		let liveOn = false;
+		let localOn = false;
 		let liveFrame = '';
 		let liveFrameId = '';
 		let previewSeq = 0;
@@ -166,16 +168,35 @@
 		previewFrame.appendChild(previewImg);
 		previewFrame.appendChild(previewEmpty);
 		previewFrame.appendChild(previewName);
+		const previewModes = el('div', 'synth-preview__modes');
 		const liveBtn = el('button', 'synth-preview__live', 'Live');
 		liveBtn.type = 'button';
 		liveBtn.setAttribute('aria-pressed', 'false');
-		liveBtn.setAttribute('aria-label', 'Toggle live preview');
+		liveBtn.setAttribute('aria-label', 'Toggle live preview from the renderer');
 		liveBtn.addEventListener('click', function () {
 			const next = !liveOn;
+			if (next) setLocalMode(false, true);
 			setLiveMode(next);
 			if (typeof setLivePreview === 'function') setLivePreview(next);
 		});
-		previewFrame.appendChild(liveBtn);
+		previewModes.appendChild(liveBtn);
+		let localBtn = null;
+		if (document.body.classList.contains('synth-control')) {
+			localBtn = el('button', 'synth-preview__live synth-preview__local', 'Local');
+			localBtn.type = 'button';
+			localBtn.setAttribute('aria-pressed', 'false');
+			localBtn.setAttribute('aria-label', 'Run this ELOS on this device');
+			localBtn.addEventListener('click', function () {
+				const next = !localOn;
+				if (next) {
+					setLiveMode(false);
+					if (typeof setLivePreview === 'function') setLivePreview(false);
+				}
+				setLocalMode(next, true);
+			});
+			previewModes.appendChild(localBtn);
+		}
+		previewFrame.appendChild(previewModes);
 		preview.appendChild(previewFrame);
 		rootEl.appendChild(preview);
 		if (document.body.classList.contains('synth-control') && root.SynthPreview && SynthPreview.attach) {
@@ -1599,6 +1620,7 @@
 			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. An Elo connects one thing to another. A sequence of connected Elos is an ELOS. Order is the patch.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick an ELOS in the grid, then edit its Elos. Each Elo reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES are stored examples you send into the SET. Save an ELOS from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'LIVE streams the renderer output into the preview. LOCAL runs the same ELOS on this device so you can watch the real frame rate without that stream.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. ELOS is the Elo chain. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the ELOS so you can align corners.'));
 			const cats = root.SynthCategories;
 			['generator', 'effect', 'filter', 'color', 'compositing', 'output'].forEach(function (id) {
@@ -3968,10 +3990,14 @@
 			}
 		}
 
+		function localPreviewOn() {
+			return localOn || !!(root.SynthPreview && SynthPreview.running && SynthPreview.running());
+		}
+
 		function refreshPreview(pipe) {
 			const view = viewingTemplate() ? (selectedTemplate() || pipe) : pipe;
 			previewName.textContent = view ? view.name : 'ELOS';
-			if (root.SynthPreview && SynthPreview.active && SynthPreview.active()) {
+			if (localPreviewOn()) {
 				previewImg.hidden = true;
 				previewEmpty.hidden = true;
 				return;
@@ -3995,18 +4021,36 @@
 			liveBtn.setAttribute('aria-pressed', liveOn ? 'true' : 'false');
 			preview.classList.toggle('is-live', liveOn);
 			if (!liveOn) {
-				previewEmpty.textContent = 'Waiting for output';
+				if (!localOn) previewEmpty.textContent = 'Waiting for output';
 				refreshPreview(activePipe());
 				return;
 			}
 			previewEmpty.textContent = 'Waiting for live';
-			if (!liveFrame && previewImg.hidden) {
+			if (!localOn && !liveFrame && previewImg.hidden) {
 				previewEmpty.hidden = false;
 			}
 		}
 
+		function setLocalMode(on, notify) {
+			localOn = !!on;
+			if (localBtn) {
+				localBtn.classList.toggle('is-on', localOn);
+				localBtn.setAttribute('aria-pressed', localOn ? 'true' : 'false');
+			}
+			preview.classList.toggle('is-gpu', localOn);
+			preview.classList.toggle('is-local', localOn);
+			if (localOn) {
+				previewImg.hidden = true;
+				previewEmpty.hidden = true;
+			} else {
+				previewEmpty.textContent = liveOn ? 'Waiting for live' : 'Waiting for output';
+				refreshPreview(activePipe());
+			}
+			if (notify && typeof setLocalPreview === 'function') setLocalPreview(localOn);
+		}
+
 		function setPreviewFrame(url, pipeId) {
-			if (root.SynthPreview && SynthPreview.active && SynthPreview.active()) return;
+			if (localPreviewOn()) return;
 			if (!url) return;
 			liveFrame = url;
 			if (pipeId) liveFrameId = pipeId;
@@ -4014,7 +4058,7 @@
 			const seq = previewSeq;
 			const loader = new Image();
 			loader.onload = function () {
-				if (seq !== previewSeq) return;
+				if (seq !== previewSeq || localPreviewOn()) return;
 				if (previewImg.getAttribute('src') !== url) previewImg.src = url;
 				previewImg.hidden = false;
 				previewEmpty.hidden = true;
@@ -4375,6 +4419,9 @@
 			refreshStats: refreshStats,
 			setPreviewFrame: setPreviewFrame,
 			setLiveMode: setLiveMode,
+			setLocalMode: function (on) {
+				setLocalMode(on, false);
+			},
 			tick: tick,
 			closeOverlays: function () {
 				colorPicker.close();
