@@ -82,8 +82,22 @@ body.synth-display {
 	--sys-h: 42px;
 }
 
+body.synth-control {
+	--sys-h: 64px;
+}
+
 body.is-sys-warn {
 	--sys-h: 68px;
+}
+
+body.synth-control.is-sys-warn {
+	--sys-h: 90px;
+}
+
+@media (min-width: 440px) {
+	body.synth-control:not(.is-sys-warn) {
+		--sys-h: 42px;
+	}
 }
 
 .synth-stage,
@@ -1485,6 +1499,10 @@ body.synth-control.is-sheet-open {
 	gap: 6px 16px;
 	min-height: 34px;
 	padding: 6px 0 8px;
+}
+
+body.synth-control .synth-sys__row {
+	gap: 6px 12px;
 }
 
 .synth-sys__cell {

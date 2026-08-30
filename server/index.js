@@ -829,13 +829,30 @@ async function start() {
 		});
 	}
 
+	function isLoopback(req) {
+		const addr = req && req.socket && req.socket.remoteAddress;
+		return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+	}
+
+	function hasLocalDisplay() {
+		let found = false;
+		wss.clients.forEach((client) => {
+			if (found) return;
+			if (client.readyState === 1 && client.role === 'display' && client.fromLoopback) {
+				found = true;
+			}
+		});
+		return found;
+	}
+
 	function statsPayload() {
 		return {
 			type: 'stats',
 			fps: latestStats.fps,
 			tempC: latestStats.tempC,
 			frameMs: latestStats.frameMs,
-			size: latestStats.size
+			size: latestStats.size,
+			source: 'display'
 		};
 	}
 
@@ -847,7 +864,8 @@ async function start() {
 		});
 	}
 
-	wss.on('connection', (ws) => {
+	wss.on('connection', (ws, req) => {
+		ws.fromLoopback = isLoopback(req);
 		ws.on('message', (raw) => {
 			let msg;
 			try {
@@ -970,6 +988,8 @@ async function start() {
 			}
 
 			if (msg.type === 'stats' && msg.fps != null) {
+				if (ws.role !== 'display') return;
+				if (hasLocalDisplay() && !ws.fromLoopback) return;
 				latestStats.fps = Number(msg.fps);
 				latestStats.frameMs = msg.frameMs != null && isFinite(Number(msg.frameMs))
 					? Number(msg.frameMs)

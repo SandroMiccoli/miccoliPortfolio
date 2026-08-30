@@ -489,7 +489,8 @@
 			const stats = {
 				fps: fps,
 				frameMs: 1000 / fps,
-				size: { w: width, h: height }
+				size: { w: width, h: height },
+				source: 'display'
 			};
 			if (uiApi && uiApi.refreshStats) uiApi.refreshStats(stats);
 			SynthSync.sendStats(stats);

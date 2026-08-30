@@ -1,5 +1,6 @@
 (function (root) {
 	const STILL_MS = 1400;
+	const FPS_SAMPLES = 45;
 	let frameEl = null;
 	let canvasElt = null;
 	let gpuOk = false;
@@ -7,6 +8,37 @@
 	let live = false;
 	let stillTimer = 0;
 	let placed = false;
+	const fpsDts = [];
+	let lastDrawAt = 0;
+
+	function resetFps() {
+		fpsDts.length = 0;
+		lastDrawAt = 0;
+	}
+
+	function noteFrame() {
+		const now = (root.performance && performance.now) ? performance.now() : Date.now();
+		if (lastDrawAt > 0) {
+			const dt = now - lastDrawAt;
+			if (dt >= 8 && dt <= 220) {
+				fpsDts.push(dt);
+				if (fpsDts.length > FPS_SAMPLES) fpsDts.shift();
+			}
+		}
+		lastDrawAt = now;
+	}
+
+	function smoothFps() {
+		if (fpsDts.length < 8) return 0;
+		const sorted = fpsDts.slice().sort(function (a, b) {
+			return a - b;
+		});
+		const drop = Math.max(1, Math.floor(sorted.length * 0.12));
+		const slice = sorted.slice(0, sorted.length - drop);
+		let sum = 0;
+		for (let i = 0; i < slice.length; i += 1) sum += slice[i];
+		return 1000 / (sum / slice.length);
+	}
 
 	function stopStill() {
 		if (stillTimer) {
@@ -55,6 +87,7 @@
 
 	function setLive(on) {
 		live = !!on;
+		resetFps();
 		if (!gpuOk) return;
 		stopStill();
 		if (live) {
@@ -79,6 +112,10 @@
 		nudge: function () {
 			if (!gpuOk || live) return;
 			if (typeof redraw === 'function') redraw();
+		},
+		localFps: function () {
+			if (!live || !gpuOk) return 0;
+			return smoothFps();
 		}
 	};
 
@@ -106,6 +143,7 @@
 
 	root.draw = function () {
 		if (!engineReady || !root.SynthEngine || !root.SynthState) return;
+		if (live) noteFrame();
 		try {
 			SynthEngine.draw(SynthState.get(), millis() / 1000, { preview: true });
 		} catch (err) {}

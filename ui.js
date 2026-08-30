@@ -233,7 +233,9 @@
 		panelBody.appendChild(stack);
 
 		const sysSlot = document.getElementById('synth-sys-slot');
+		const dualFps = document.body.classList.contains('synth-control');
 		let fpsVal = null;
+		let phoneFpsVal = null;
 		let tempVal = null;
 		let drawVal = null;
 		let sizeVal = null;
@@ -241,20 +243,29 @@
 		if (sysSlot) {
 			sysSlot.innerHTML = '';
 			const sys = el('div', 'synth-sys');
-			sys.setAttribute('aria-label', 'System performance');
+			sys.setAttribute('aria-label', dualFps ? 'Pi and phone performance' : 'System performance');
 			const sysRow = el('div', 'synth-sys__row');
-			const makeSysCell = function (key) {
+			const makeSysCell = function (key, hint) {
 				const cell = el('div', 'synth-sys__cell');
-				cell.appendChild(el('span', 'synth-sys__key', key));
+				const label = el('span', 'synth-sys__key', key);
+				if (hint) label.title = hint;
+				cell.appendChild(label);
 				const val = el('span', 'synth-meter', '-');
+				if (hint) val.setAttribute('aria-label', hint);
 				cell.appendChild(val);
 				sysRow.appendChild(cell);
 				return val;
 			};
-			fpsVal = makeSysCell('Fps');
-			tempVal = makeSysCell('Cpu');
-			drawVal = makeSysCell('Ms');
-			sizeVal = makeSysCell('Out');
+			fpsVal = makeSysCell(
+				dualFps ? 'Pi' : 'Fps',
+				dualFps ? 'Raspberry Pi output frames per second' : 'Frames per second'
+			);
+			if (dualFps) {
+				phoneFpsVal = makeSysCell('Phone', 'This phone preview frames per second');
+			}
+			tempVal = makeSysCell('Cpu', dualFps ? 'Raspberry Pi CPU temperature' : 'CPU temperature');
+			drawVal = makeSysCell('Ms', dualFps ? 'Raspberry Pi frame time' : 'Frame time');
+			sizeVal = makeSysCell('Out', dualFps ? 'Raspberry Pi output size' : 'Output size');
 			sys.appendChild(sysRow);
 			sysWarn = el('p', 'synth-sys__warn');
 			sysWarn.hidden = true;
@@ -4195,6 +4206,15 @@
 			if (current.fps != null && fpsVal) {
 				fpsVal.textContent = Number(current.fps).toFixed(1);
 				applyTone(fpsVal, fpsTone(current.fps));
+			}
+			if (Object.prototype.hasOwnProperty.call(stats, 'localFps') && phoneFpsVal) {
+				if (!(stats.localFps >= 1)) {
+					phoneFpsVal.textContent = '-';
+					applyTone(phoneFpsVal, '');
+				} else {
+					phoneFpsVal.textContent = Number(stats.localFps).toFixed(1);
+					applyTone(phoneFpsVal, fpsTone(stats.localFps));
+				}
 			}
 			if (Object.prototype.hasOwnProperty.call(stats, 'tempC') && tempVal) {
 				if (stats.tempC == null) {
