@@ -1,0 +1,130 @@
+{
+  "id": "pipe_9hfq4ke7",
+  "name": "MOIRÉ LINES",
+  "operators": [
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 1,
+        "amount": 30,
+        "width": 0,
+        "rotation": 198,
+        "position": 0.5,
+        "color": "#FFFFFF",
+        "blendMode": "normal"
+      },
+      "modulations": {
+        "position": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 0.3,
+          "outMark": 0.7,
+          "duration": 16,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        },
+        "rotation": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 126,
+          "outMark": 270,
+          "duration": 16,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        }
+      }
+    },
+    {
+      "type": "warp",
+      "parameters": {
+        "amount": 0.98,
+        "frequency": 3.4000000000000004,
+        "speed": 0.08999999999999986,
+        "detail": 0.9,
+        "tile": "hold"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 1,
+        "amount": 30,
+        "width": 0.02,
+        "rotation": 198,
+        "position": 0.5,
+        "color": "#FFFFFF",
+        "blendMode": "difference"
+      },
+      "modulations": {
+        "position": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 0.3,
+          "outMark": 1,
+          "duration": 9.5,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        },
+        "rotation": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 0,
+          "outMark": 270,
+          "duration": 16,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "parameters": {
+        "kind": "circle",
+        "x": 0.5,
+        "y": 0.5,
+        "r": 0.36000000000000004,
+        "sides": 9,
+        "rotation": 0,
+        "feather": 0.17,
+        "color": "#FFFFFF",
+        "blendMode": "multiply"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "lookup",
+      "parameters": {
+        "paletteId": "fire",
+        "colors": [
+          "#5C0812",
+          "#D62408",
+          "#FF9412",
+          "#FFECC6"
+        ],
+        "bg": "#080206",
+        "hue": 0,
+        "saturation": 1,
+        "exposure": 1
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.4,
+        "intensity": 1.1,
+        "radius": 0.6
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

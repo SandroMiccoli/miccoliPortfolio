@@ -1,0 +1,122 @@
+{
+  "id": "pipe_01",
+  "name": "KALEIDO COOL",
+  "operators": [
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 0.64,
+        "amount": 5,
+        "width": 0.04,
+        "rotation": 243,
+        "position": 0.5700000000000001,
+        "color": "#FFFFFF",
+        "blendMode": "normal"
+      },
+      "modulations": {
+        "position": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 0.37,
+          "outMark": 0.77,
+          "duration": 8.75,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        },
+        "rotation": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 171,
+          "outMark": 315,
+          "duration": 13,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        }
+      }
+    },
+    {
+      "type": "warp",
+      "parameters": {
+        "amount": 0.9,
+        "frequency": 11.600000000000001,
+        "speed": 0.4,
+        "detail": 0.65,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "kaleidoscope",
+      "parameters": {
+        "segments": 6,
+        "angle": 0,
+        "zoom": 0.42000000000000004,
+        "offsetX": 0.5,
+        "offsetY": 0.5,
+        "tile": "mirror"
+      },
+      "modulations": {
+        "zoom": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 0.25,
+          "outMark": 1.35,
+          "duration": 16,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        }
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.32,
+        "intensity": 0.9,
+        "radius": 1.35
+      }
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0,
+            "color": "#02040E"
+          },
+          {
+            "id": "n1",
+            "pos": 0.2533632286995516,
+            "color": "#082A6E"
+          },
+          {
+            "id": "n2",
+            "pos": 0.48,
+            "color": "#14A8C4"
+          },
+          {
+            "id": "n3",
+            "pos": 0.76,
+            "color": "#A0E6FF"
+          },
+          {
+            "id": "n4",
+            "pos": 1,
+            "color": "#F0FAFF"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "linear"
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

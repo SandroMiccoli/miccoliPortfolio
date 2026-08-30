@@ -296,11 +296,13 @@
 
 			function ensureLut(colors, bg) {
 				const key = String(bg) + '|' + (colors || []).join(',');
+				if (lut && key !== lastKey) {
+					lut.remove();
+					lut = null;
+				}
 				if (!lut) {
 					lut = createGraphics(256, 1);
 					lut.pixelDensity(1);
-				}
-				if (key !== lastKey) {
 					paintLut(lut, colors, bg);
 					lastKey = key;
 				}

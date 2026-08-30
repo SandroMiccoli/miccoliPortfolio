@@ -1716,6 +1716,10 @@
 			const paramKey = options.paramKey;
 			const spec = options.spec;
 			const bipolar = min < 0 && max > 0;
+			const sliderMax = max;
+			const valueMax = options.typedMax != null && isFinite(Number(options.typedMax))
+				? Math.max(max, Number(options.typedMax))
+				: max;
 			const isStepper = !!(options.stepper || (spec && spec.kind === 'int'));
 			const wrap = el('div', bipolar ? 'synth-field synth-field--bipolar' : 'synth-field');
 			if (isStepper) wrap.classList.add('synth-field--stepper');
@@ -1748,7 +1752,7 @@
 			slider.setAttribute('role', 'slider');
 			slider.setAttribute('aria-label', label);
 			slider.setAttribute('aria-valuemin', String(min));
-			slider.setAttribute('aria-valuemax', String(max));
+			slider.setAttribute('aria-valuemax', String(valueMax));
 			slider.tabIndex = 0;
 			const track = el('div', 'synth-slider__track');
 			const fill = el('div', 'synth-slider__fill');
@@ -1818,15 +1822,26 @@
 			let fftRow = null;
 			const defaultValue = options.defaultValue;
 
-			function clamp(value) {
+			function snapValue(value, lo, hi) {
 				const stepped = Math.round((value - min) / step) * step + min;
-				return Math.min(max, Math.max(min, stepped));
+				return Math.min(hi, Math.max(lo, stepped));
+			}
+
+			function clamp(value) {
+				return snapValue(value, min, sliderMax);
+			}
+
+			function clampTyped(value) {
+				return snapValue(value, min, valueMax);
 			}
 
 			function posFromValue(value) {
-				if (!bipolar) return (value - min) / (max - min || 1);
-				if (value < 0) return 0.5 * (value - min) / (0 - min || 1);
-				return 0.5 + 0.5 * value / (max || 1);
+				let t;
+				if (!bipolar) t = (value - min) / (max - min || 1);
+				else if (value < 0) t = 0.5 * (value - min) / (0 - min || 1);
+				else t = 0.5 + 0.5 * value / (max || 1);
+				if (!isFinite(t)) t = 0;
+				return Math.min(1, Math.max(0, t));
 			}
 
 			function formatDisplay(value) {
@@ -1846,7 +1861,7 @@
 			function parseTyped(text) {
 				const n = parseFloat(String(text).trim().replace(',', '.'));
 				if (!isFinite(n)) return null;
-				return clamp(n);
+				return clampTyped(n);
 			}
 
 			function place(node, value) {
@@ -1896,7 +1911,7 @@
 				thumb.style.left = (t * 100) + '%';
 				paintValue(current);
 				if (minusBtn) minusBtn.disabled = current <= min;
-				if (plusBtn) plusBtn.disabled = current >= max;
+				if (plusBtn) plusBtn.disabled = current >= valueMax;
 				slider.setAttribute('aria-valuenow', String(current));
 				slider.setAttribute('aria-valuetext', formatDisplay(current));
 			}
@@ -1921,7 +1936,7 @@
 			}
 
 			function commit(value, fromUser) {
-				current = clamp(value);
+				current = clampTyped(value);
 				render();
 				if (fromUser) onChange(current);
 			}
@@ -1968,7 +1983,7 @@
 			function resetToDefault() {
 				if (defaultValue == null || !isFinite(Number(defaultValue))) return;
 				finishEdit(false);
-				const next = clamp(defaultValue);
+				const next = clampTyped(defaultValue);
 				current = next;
 				render();
 				if (modOn && opId && paramKey) {
@@ -2058,9 +2073,12 @@
 			slider.addEventListener('keydown', function (event) {
 				if (modOn) return;
 				let next = current;
-				if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next = current + step;
-				else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next = current - step;
-				else return;
+				if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+					next = current + step;
+					if (current <= sliderMax) next = Math.min(next, sliderMax);
+				} else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+					next = current - step;
+				} else return;
 				event.preventDefault();
 				sliding = true;
 				commit(next, true);
@@ -2171,9 +2189,13 @@
 				panel.appendChild(modeRow);
 
 				timeRow = el('div', 'synth-mod__time');
-				speedSlider = makeSlider('Seconds', root.SynthModulate.DURATION_MIN, root.SynthModulate.DURATION_MAX, 0.25, function (value) {
+				speedSlider = makeSlider('Seconds', root.SynthModulate.DURATION_MIN, root.SynthModulate.DURATION_SLIDER_MAX, 0.25, function (value) {
 					patchMod({ duration: value });
-				}, { className: 'synth-mod__speed', defaultValue: 2 });
+				}, {
+					className: 'synth-mod__speed',
+					defaultValue: 2,
+					typedMax: root.SynthModulate.DURATION_MAX
+				});
 				timeRow.appendChild(speedSlider.wrap);
 				panel.appendChild(timeRow);
 
@@ -2382,7 +2404,7 @@
 				step: step,
 				setValue: function (value) {
 					if (editing) return;
-					current = clamp(value);
+					current = clampTyped(value);
 					if (!modOn) render();
 				},
 				setMod: setMod,
@@ -3011,12 +3033,24 @@
 			field.appendChild(edit);
 
 			let activeSlot = null;
+			let lastCatalogSig = '';
 
 			function current() {
 				const found = ops().filter(function (item) {
 					return item.id === op.id;
 				})[0];
 				return lookupParams(found || op);
+			}
+
+			function catalogSig(resolved) {
+				const items = Lookup ? Lookup.catalog(resolved.savedPalettes) : [];
+				return items.map(function (palette) {
+					return palette.id;
+				}).join('|');
+			}
+
+			function selectedId(resolved) {
+				return resolved && !resolved.dirty ? resolved.paletteId : '';
 			}
 
 			function paintChip(node, palette) {
@@ -3031,8 +3065,35 @@
 				node.appendChild(strip);
 			}
 
+			function applySelection(resolved) {
+				const active = selectedId(resolved);
+				grid.querySelectorAll('.synth-palette').forEach(function (btn) {
+					const selected = btn.dataset.paletteId === active;
+					btn.classList.toggle('is-active', selected);
+					btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+				});
+			}
+
+			function applySwatches(resolved) {
+				const faces = edit.querySelectorAll('.synth-swatch__face');
+				faces.forEach(function (btn) {
+					const slot = btn.dataset.slot;
+					const hex = slot === 'bg' ? resolved.bg : resolved.colors[Number(slot)];
+					if (hex) btn.style.background = hex;
+				});
+				const addWrap = edit.querySelector('.synth-swatch--add');
+				if (addWrap) addWrap.hidden = !resolved.dirty;
+			}
+
+			function pickPalette(id) {
+				if (!Lookup) return;
+				patchLookup(op.id, Lookup.applyPreset(current(), id));
+				colorPicker.close();
+			}
+
 			function renderGrid(resolved) {
 				const items = Lookup ? Lookup.catalog(resolved.savedPalettes) : [];
+				lastCatalogSig = catalogSig(resolved);
 				grid.innerHTML = '';
 				items.forEach(function (palette) {
 					const btn = el('button', 'synth-palette');
@@ -3040,13 +3101,16 @@
 					btn.setAttribute('role', 'option');
 					btn.setAttribute('aria-label', 'Palette ' + palette.id);
 					paintChip(btn, palette);
-					const selected = !resolved.dirty && palette.id === resolved.paletteId;
+					const selected = palette.id === selectedId(resolved);
 					btn.classList.toggle('is-active', selected);
 					btn.setAttribute('aria-selected', selected ? 'true' : 'false');
-					btn.addEventListener('click', function () {
-						if (!Lookup) return;
-						patchLookup(op.id, Lookup.applyPreset(current(), palette.id));
-						colorPicker.close();
+					btn.addEventListener('pointerdown', function (event) {
+						if (event.button !== 0 && event.pointerType === 'mouse') return;
+						pickPalette(palette.id);
+					});
+					btn.addEventListener('click', function (event) {
+						event.preventDefault();
+						pickPalette(palette.id);
 					});
 					grid.appendChild(btn);
 				});
@@ -3124,14 +3188,12 @@
 						? Lookup.normalize(parameters || {})
 						: parameters || {};
 					if (picking) {
-						const faces = edit.querySelectorAll('.synth-swatch__face');
-						faces.forEach(function (btn) {
-							const slot = btn.dataset.slot;
-							const hex = slot === 'bg' ? resolved.bg : resolved.colors[Number(slot)];
-							if (hex) btn.style.background = hex;
-						});
-						const addWrap = edit.querySelector('.synth-swatch--add');
-						if (addWrap) addWrap.hidden = !resolved.dirty;
+						applySwatches(resolved);
+						return;
+					}
+					if (catalogSig(resolved) === lastCatalogSig && grid.childNodes.length) {
+						applySelection(resolved);
+						applySwatches(resolved);
 						return;
 					}
 					render(resolved);

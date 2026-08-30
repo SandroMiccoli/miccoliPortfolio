@@ -1,39 +1,73 @@
 {
-  "id": "tpl_stripe",
+  "id": "tpl_doqtr0x9",
   "name": "STRIPE",
   "operators": [
     {
       "type": "lines",
       "parameters": {
-        "fuzzyness": 0.12,
+        "fuzzyness": 0.84,
         "amount": 22,
-        "width": 0.16,
-        "rotation": 8
+        "width": 0,
+        "rotation": 214,
+        "position": 0.54,
+        "color": "#FFFFFF",
+        "blendMode": "normal"
+      },
+      "modulations": {
+        "rotation": {
+          "enabled": true,
+          "source": "bpm",
+          "inMark": 0,
+          "outMark": 99,
+          "duration": 16,
+          "beats": 32,
+          "playMode": "bounce",
+          "band": "low"
+        },
+        "position": {
+          "enabled": true,
+          "source": "time",
+          "inMark": 0.34,
+          "outMark": 0.46,
+          "duration": 8.25,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        }
       }
     },
     {
       "type": "warp",
       "parameters": {
-        "amount": 0.12,
-        "frequency": 2.2,
-        "speed": 0.15,
-        "detail": 0.3
+        "amount": 0.35000000000000003,
+        "frequency": 12.4,
+        "speed": 0.43000000000000016,
+        "detail": 1,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.5,
+        "intensity": 1.67,
+        "radius": 0.6
       }
     },
     {
       "type": "lookup",
       "parameters": {
         "paletteId": "fire",
-        "colors": ["#5C0812", "#D62408", "#FF9412", "#FFECC6"],
-        "bg": "#080206"
-      }
-    },
-    {
-      "type": "bloom",
-      "parameters": {
-        "threshold": 0.4,
-        "intensity": 1.1,
-        "radius": 0.6
+        "colors": [
+          "#5C0812",
+          "#D62408",
+          "#FF9412",
+          "#FFECC6"
+        ],
+        "bg": "#080206",
+        "hue": 0,
+        "saturation": 1,
+        "exposure": 1
       }
     },
     {

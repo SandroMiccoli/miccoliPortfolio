@@ -1,0 +1,99 @@
+{
+  "id": "tpl_nrav8qj3",
+  "name": "Dancing fire",
+  "operators": [
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 1,
+        "amount": 5,
+        "width": 0.06,
+        "rotation": 0,
+        "position": 0.5,
+        "color": "#FFFFFF",
+        "blendMode": "difference"
+      }
+    },
+    {
+      "type": "noise",
+      "parameters": {
+        "scale": 8,
+        "translateX": 0,
+        "translateY": 0,
+        "translateZ": 0.9400000000000004,
+        "speedX": 0,
+        "speedY": 0,
+        "speedZ": 0.71,
+        "amplitude": 2.09,
+        "offset": -1,
+        "octaves": 6,
+        "contrast": 1.73,
+        "blendMode": "normal"
+      },
+      "modulations": {
+        "translateZ": {
+          "enabled": true,
+          "source": "bpm",
+          "inMark": 0.5200000000000005,
+          "outMark": 1.6000000000000005,
+          "duration": 2,
+          "beats": 4,
+          "playMode": "bounce",
+          "band": "low"
+        }
+      }
+    },
+    {
+      "type": "warp",
+      "parameters": {
+        "amount": 0.12,
+        "frequency": 2.2,
+        "speed": 0.15,
+        "detail": 0.3,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "tile",
+      "parameters": {
+        "countX": 2,
+        "countY": 2,
+        "offsetX": 0,
+        "offsetY": 0,
+        "angle": 0,
+        "tile": "mirror"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "lookup",
+      "parameters": {
+        "paletteId": "fire",
+        "colors": [
+          "#5C0812",
+          "#D62408",
+          "#FF9412",
+          "#FFECC6"
+        ],
+        "bg": "#080206",
+        "hue": 0,
+        "saturation": 1,
+        "exposure": 1
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.32,
+        "intensity": 0.9,
+        "radius": 1.35
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

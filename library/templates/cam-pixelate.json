@@ -1,0 +1,92 @@
+{
+  "id": "tpl_b168c9j5",
+  "name": "CAM PIXELATE",
+  "operators": [
+    {
+      "type": "camera",
+      "parameters": {
+        "source": "display",
+        "mirror": 0,
+        "fit": "cover",
+        "blendMode": "darken"
+      }
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0.9551569506726457,
+            "color": "#080000"
+          },
+          {
+            "id": "n1",
+            "pos": 0,
+            "color": "#00FF3E"
+          },
+          {
+            "id": "n2",
+            "pos": 0.55,
+            "color": "#000000"
+          },
+          {
+            "id": "n3",
+            "pos": 0.82,
+            "color": "#000000"
+          },
+          {
+            "id": "n4",
+            "pos": 1,
+            "color": "#FFF6D2"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "linear"
+      }
+    },
+    {
+      "type": "posterize",
+      "parameters": {
+        "levels": 4,
+        "mix": 1,
+        "mode": "rgb"
+      }
+    },
+    {
+      "type": "pixelate",
+      "parameters": {
+        "sizeX": 19,
+        "sizeY": 15,
+        "mix": 1
+      }
+    },
+    {
+      "type": "edge",
+      "parameters": {
+        "threshold": 0,
+        "intensity": 4,
+        "radius": 1.17,
+        "mix": 0.15,
+        "invert": 0,
+        "color": "#FFFFFF",
+        "blendMode": "normal"
+      }
+    },
+    {
+      "type": "invert",
+      "parameters": {
+        "amount": 1,
+        "mode": "rgb"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

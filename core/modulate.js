@@ -3,7 +3,8 @@
 	const PLAY_MODES = ['loop', 'bounce', 'random'];
 	const BANDS = ['low', 'mid', 'high'];
 	const DURATION_MIN = 0.25;
-	const DURATION_MAX = 16;
+	const DURATION_SLIDER_MAX = 30;
+	const DURATION_MAX = 300;
 	const BEATS_MIN = 1;
 	const BEATS_MAX = 32;
 
@@ -200,6 +201,7 @@
 		PLAY_MODES: PLAY_MODES,
 		BANDS: BANDS,
 		DURATION_MIN: DURATION_MIN,
+		DURATION_SLIDER_MAX: DURATION_SLIDER_MAX,
 		DURATION_MAX: DURATION_MAX,
 		BEATS_MIN: BEATS_MIN,
 		BEATS_MAX: BEATS_MAX,
