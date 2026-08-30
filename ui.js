@@ -264,6 +264,8 @@
 			sysSlot.appendChild(sys);
 		}
 
+		const sheetHost = el('div', 'synth-sheet-host');
+		sheetHost.hidden = true;
 		const sheet = el('div', 'synth-sheet');
 		sheet.hidden = true;
 		sheet.setAttribute('role', 'dialog');
@@ -276,7 +278,12 @@
 		sheet.appendChild(sheetHead);
 		const sheetBody = el('div', 'synth-sheet__body');
 		sheet.appendChild(sheetBody);
-		rootEl.appendChild(sheet);
+		sheetHost.appendChild(sheet);
+		if (document.body.classList.contains('synth-control')) {
+			document.body.appendChild(sheetHost);
+		} else {
+			rootEl.appendChild(sheetHost);
+		}
 
 		const tip = el('div', 'synth-float-tip');
 		tip.hidden = true;
@@ -483,10 +490,10 @@
 		stageMap.appendChild(cardRow);
 		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the ELOS so you can pin corners to the display.'));
 
-		rootEl.insertBefore(stageTabs, sheet);
-		rootEl.insertBefore(stagePipeline, sheet);
-		rootEl.insertBefore(stageMask, sheet);
-		rootEl.insertBefore(stageMap, sheet);
+		rootEl.appendChild(stageTabs);
+		rootEl.appendChild(stagePipeline);
+		rootEl.appendChild(stageMask);
+		rootEl.appendChild(stageMap);
 
 		function setActiveStage(id) {
 			activeStage = id === 'mask' || id === 'mapping' ? id : 'pipeline';
@@ -1392,45 +1399,115 @@
 			return fallback;
 		}
 
+		let sheetSavedY = 0;
+		let sheetLocked = false;
+
+		function isControlPage() {
+			return document.body.classList.contains('synth-control');
+		}
+
+		function sheetDockTop() {
+			if (preview && preview.offsetParent) return preview.getBoundingClientRect().bottom;
+			const chrome = document.querySelector('.synth-chrome');
+			return chrome ? chrome.getBoundingClientRect().bottom : 0;
+		}
+
+		function lockSheetPage() {
+			if (!isControlPage() || sheetLocked) return;
+			sheetSavedY = window.scrollY || window.pageYOffset || 0;
+			sheetLocked = true;
+			document.body.classList.add('is-sheet-open');
+		}
+
+		function unlockSheetPage() {
+			if (!sheetLocked) return;
+			sheetLocked = false;
+			document.body.classList.remove('is-sheet-open');
+		}
+
+		function pinSheetHost() {
+			const top = sheetDockTop();
+			const parent = isControlPage() ? document.body : rootEl;
+			const parentRect = parent.getBoundingClientRect();
+			sheetHost.style.top = Math.max(0, top - parentRect.top) + 'px';
+			sheetHost.style.left = '0';
+			sheetHost.style.right = '0';
+			sheetHost.style.width = '100%';
+			sheetHost.style.height = Math.max(160, window.innerHeight - top) + 'px';
+			sheetHost.style.bottom = 'auto';
+		}
+
+		function hideSheetNow() {
+			const g = getGsap();
+			if (g) {
+				g.killTweensOf(sheet);
+				g.set(sheet, { clearProps: 'transform,visibility,opacity' });
+			}
+			sheet.hidden = true;
+			sheetHost.hidden = true;
+			sheetBody.innerHTML = '';
+			unlockSheetPage();
+		}
+
 		function closeSheet() {
+			if (sheet.hidden && sheetHost.hidden) return;
 			hideTip();
 			const g = getGsap();
-			if (!g || sheet.hidden || prefersReduced()) {
-				sheet.hidden = true;
-				sheetBody.innerHTML = '';
+			if (!g || prefersReduced()) {
+				hideSheetNow();
 				return;
 			}
+			g.killTweensOf(sheet);
 			g.to(sheet, {
+				yPercent: -100,
 				autoAlpha: 0,
-				y: 10,
-				duration: dur(0.2),
+				duration: dur(0.22),
 				ease: 'power2.in',
-				onComplete: function () {
-					sheet.hidden = true;
-					sheetBody.innerHTML = '';
-					g.set(sheet, { y: 0, autoAlpha: 1 });
-				}
+				onComplete: hideSheetNow
 			});
 		}
 
 		function openSheet(title) {
-			const wasHidden = sheet.hidden;
+			const wasHidden = sheet.hidden || sheetHost.hidden;
+			if (wasHidden) lockSheetPage();
 			sheetTitle.textContent = title;
+			sheetHost.hidden = false;
 			sheet.hidden = false;
 			sheet.scrollTop = 0;
+			pinSheetHost();
 			const g = getGsap();
 			if (g) g.killTweensOf(sheet);
 			if (wasHidden && g && !prefersReduced()) {
-				g.fromTo(sheet, { autoAlpha: 0, y: 16 }, {
+				g.fromTo(sheet, {
+					yPercent: -100,
+					autoAlpha: 1
+				}, {
+					yPercent: 0,
 					autoAlpha: 1,
-					y: 0,
-					duration: dur(0.28),
-					ease: 'power2.out'
+					duration: dur(0.4),
+					ease: 'power3.out'
 				});
 			} else if (g) {
-				g.set(sheet, { autoAlpha: 1, y: 0 });
+				g.set(sheet, { yPercent: 0, autoAlpha: 1 });
 			}
 		}
+
+		function keepSheetDocked() {
+			if (sheetHost.hidden) return;
+			pinSheetHost();
+		}
+
+		window.addEventListener('resize', keepSheetDocked);
+		window.addEventListener('scroll', keepSheetDocked, { passive: true });
+		if (window.visualViewport) {
+			window.visualViewport.addEventListener('resize', keepSheetDocked);
+			window.visualViewport.addEventListener('scroll', keepSheetDocked);
+		}
+		document.addEventListener('touchmove', function (event) {
+			if (sheetHost.hidden) return;
+			if (sheet.contains(event.target)) return;
+			event.preventDefault();
+		}, { passive: false });
 
 		function openTypesHelp() {
 			openSheet('ELO');
@@ -1513,9 +1590,10 @@
 			if (g && !prefersReduced()) {
 				g.from(sheetBody.querySelectorAll('.synth-chip, .synth-lib__cat-label'), {
 					autoAlpha: 0,
-					y: 8,
-					duration: dur(0.24),
-					stagger: 0.025,
+					y: 10,
+					duration: dur(0.22),
+					stagger: 0.018,
+					delay: 0.12,
 					ease: 'power2.out'
 				});
 			}

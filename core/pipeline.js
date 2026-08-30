@@ -231,6 +231,13 @@
 		if (inst.type === 'invert') {
 			p.amount = clamp(p.amount, 0.55, 1);
 		}
+		if (inst.type === 'chromaKey') {
+			p.tolerance = clamp(p.tolerance, 0.08, 0.32);
+			p.softness = clamp(p.softness, 0.06, 0.28);
+			p.spill = clamp(p.spill, 0.15, 0.6);
+			p.invert = 0;
+			p.fill = '#000000';
+		}
 		if (inst.type === 'screen') {
 			p.gain = 1;
 		}
@@ -269,7 +276,7 @@
 		if (chance(0.32)) types.push('blur');
 		if (chance(0.42)) types.push('edge');
 		if (chance(0.88)) types.push(chance(0.42) ? 'ramp' : 'lookup');
-		if (chance(0.4)) types.push(pick(['hsv', 'levels', 'contrast', 'posterize', 'invert']));
+		if (chance(0.4)) types.push(pick(['hsv', 'levels', 'contrast', 'posterize', 'invert', 'chromaKey']));
 		if (chance(0.55)) types.push('bloom');
 		types.push('screen');
 
@@ -287,6 +294,7 @@
 			if (dropLast(types, 'contrast', 0)) continue;
 			if (dropLast(types, 'posterize', 0)) continue;
 			if (dropLast(types, 'invert', 0)) continue;
+			if (dropLast(types, 'chromaKey', 0)) continue;
 			if (dropLast(types, 'bloom', 0)) continue;
 			if (dropLast(types, 'edge', 0)) continue;
 			if (types.length > 2 && isGenerator(types[0]) && isGenerator(types[1])) {

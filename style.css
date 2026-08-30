@@ -69,6 +69,7 @@ body.synth-display #app * {
 }
 
 body.synth-control {
+	position: relative;
 	max-width: 520px;
 	margin: 0 auto;
 	overflow: visible;
@@ -773,6 +774,26 @@ body.synth-display .synth-float-tip {
 	cursor: auto;
 }
 
+.synth-sheet-host {
+	position: absolute;
+	inset: 0;
+	z-index: 40;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.synth-sheet-host[hidden] {
+	display: none !important;
+}
+
+body.synth-control .synth-sheet-host {
+	position: absolute;
+	inset: auto;
+	z-index: 145;
+	overflow: hidden;
+	pointer-events: auto;
+}
+
 .synth-sheet {
 	position: absolute;
 	inset: 0;
@@ -782,19 +803,22 @@ body.synth-display .synth-float-tip {
 	background: var(--bg);
 	overflow: auto;
 	overscroll-behavior: contain;
+	pointer-events: auto;
+	transform-origin: top center;
 }
 
 .synth-sheet[hidden] {
 	display: none !important;
 }
 
-.synth-panel.is-page .synth-sheet {
-	position: fixed;
-	top: var(--chrome-h);
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 40;
+.synth-panel.is-page .synth-sheet-host .synth-sheet,
+body.synth-control .synth-sheet {
+	z-index: 1;
+}
+
+html.synth-html--control:has(body.is-sheet-open),
+body.synth-control.is-sheet-open {
+	overflow: hidden;
 }
 
 .synth-sheet__head {

@@ -1044,6 +1044,49 @@
 		'}'
 	].join('\n');
 
+	const CHROMA_KEY = [
+		FILTER,
+		'uniform vec3 u_key;',
+		'uniform vec3 u_fill;',
+		'uniform float u_tolerance;',
+		'uniform float u_softness;',
+		'uniform float u_spill;',
+		'uniform float u_invert;',
+		'uniform float u_match;',
+		'',
+		'vec2 rgb2cbcr(vec3 c) {',
+		'  return vec2(',
+		'    -0.168736 * c.r - 0.331264 * c.g + 0.5 * c.b,',
+		'    0.5 * c.r - 0.418688 * c.g - 0.081312 * c.b',
+		'  );',
+		'}',
+		'',
+		'void main() {',
+		'  vec3 col = src().rgb;',
+		'  float dist;',
+		'  if (u_match < 0.5) {',
+		'    dist = distance(rgb2cbcr(col), rgb2cbcr(u_key)) * 1.75;',
+		'  } else {',
+		'    dist = distance(col, u_key);',
+		'  }',
+		'  float t0 = max(u_tolerance, 0.0);',
+		'  float t1 = t0 + max(u_softness, 1.0e-4);',
+		'  float keep = smoothstep(t0, t1, dist);',
+		'  if (u_invert > 0.5) keep = 1.0 - keep;',
+		'  vec3 lumaW = vec3(0.299, 0.587, 0.114);',
+		'  vec3 keyChroma = u_key - vec3(dot(u_key, lumaW));',
+		'  float keyLen = length(keyChroma);',
+		'  vec3 cleaned = col;',
+		'  if (keyLen > 0.001) {',
+		'    vec3 n = keyChroma / keyLen;',
+		'    float along = max(dot(col - vec3(dot(col, lumaW)), n), 0.0);',
+		'    float fringe = keep * (1.0 - smoothstep(t0, t1 + 0.22, dist));',
+		'    cleaned = col - n * along * clamp(u_spill, 0.0, 1.0) * fringe;',
+		'  }',
+		'  gl_FragColor = vec4(clamp(mix(u_fill, cleaned, keep), 0.0, 1.0), 1.0);',
+		'}'
+	].join('\n');
+
 	const WARPED_CONSTELLATIONS = [
 		'varying vec2 vTexCoord;',
 		'uniform vec2 u_resolution;',
@@ -1378,6 +1421,7 @@
 		mirror: MIRROR,
 		tile: TILE,
 		invert: INVERT,
+		chromaKey: CHROMA_KEY,
 		warpedConstellations: WARPED_CONSTELLATIONS
 	};
 })(window);

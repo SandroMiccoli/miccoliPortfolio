@@ -24,7 +24,7 @@
 			id: 'color',
 			label: 'Color',
 			color: '#D4A84B',
-			about: 'Remaps brightness and color of the incoming image. Color Lookup maps luminance to a palette. Color Ramp does the same through authored notches, with phase, period, and linear or step interpolation. HSV, Levels, and Contrast grade the existing color. Posterize cuts it into steps. Invert flips RGB, luma, or hue. Geometry stays. Values change.'
+			about: 'Remaps brightness and color of the incoming image. Color Lookup maps luminance to a palette. Color Ramp does the same through authored notches, with phase, period, and linear or step interpolation. HSV, Levels, and Contrast grade the existing color. Posterize cuts it into steps. Invert flips RGB, luma, or hue. Chroma Key excludes a chosen color. Geometry stays. Values change.'
 		},
 		compositing: {
 			id: 'compositing',
