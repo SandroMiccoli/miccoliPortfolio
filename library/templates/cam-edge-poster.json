@@ -1,0 +1,68 @@
+{
+  "id": "tpl_or3amg6y",
+  "name": "CAM EDGE POSTER",
+  "operators": [
+    {
+      "type": "camera",
+      "parameters": {
+        "source": "display",
+        "mirror": 1,
+        "fit": "cover",
+        "blendMode": "add"
+      }
+    },
+    {
+      "type": "edge",
+      "parameters": {
+        "threshold": 0,
+        "intensity": 4,
+        "radius": 4,
+        "mix": 0.55,
+        "invert": 0,
+        "color": "#FFFFFF",
+        "blendMode": "normal"
+      }
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0,
+            "color": "#101014"
+          },
+          {
+            "id": "n1",
+            "pos": 0.20765027322404372,
+            "color": "#1A3A8C"
+          },
+          {
+            "id": "n2",
+            "pos": 0.55,
+            "color": "#B800AD"
+          },
+          {
+            "id": "n3",
+            "pos": 0.78,
+            "color": "#F0C400"
+          },
+          {
+            "id": "n4",
+            "pos": 1,
+            "color": "#F4F1EA"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "step"
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}
