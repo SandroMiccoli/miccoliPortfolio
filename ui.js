@@ -1406,15 +1406,33 @@
 			return document.body.classList.contains('synth-control');
 		}
 
+		function pageScrollY() {
+			if (window.visualViewport && isFinite(window.visualViewport.pageTop)) {
+				return window.visualViewport.pageTop;
+			}
+			return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+		}
+
+		function viewHeight() {
+			if (window.visualViewport && isFinite(window.visualViewport.height)) {
+				return window.visualViewport.height;
+			}
+			return window.innerHeight;
+		}
+
 		function sheetDockTop() {
-			if (preview && preview.offsetParent) return preview.getBoundingClientRect().bottom;
+			if (preview && preview.offsetParent) {
+				const bottom = preview.getBoundingClientRect().bottom;
+				if (isFinite(bottom)) return bottom;
+			}
 			const chrome = document.querySelector('.synth-chrome');
-			return chrome ? chrome.getBoundingClientRect().bottom : 0;
+			if (chrome) return chrome.getBoundingClientRect().bottom;
+			return 0;
 		}
 
 		function lockSheetPage() {
 			if (!isControlPage() || sheetLocked) return;
-			sheetSavedY = window.scrollY || window.pageYOffset || 0;
+			sheetSavedY = pageScrollY();
 			sheetLocked = true;
 			document.body.classList.add('is-sheet-open');
 		}
@@ -1426,15 +1444,45 @@
 		}
 
 		function pinSheetHost() {
-			const top = sheetDockTop();
-			const parent = isControlPage() ? document.body : rootEl;
-			const parentRect = parent.getBoundingClientRect();
-			sheetHost.style.top = Math.max(0, top - parentRect.top) + 'px';
+			const dock = Math.max(0, sheetDockTop());
+			const viewH = viewHeight();
+			const height = Math.max(160, viewH - dock);
+
+			if (!isControlPage()) {
+				const parentRect = rootEl.getBoundingClientRect();
+				sheetHost.style.position = 'absolute';
+				sheetHost.style.top = Math.max(0, dock - parentRect.top) + 'px';
+				sheetHost.style.left = '0';
+				sheetHost.style.right = '0';
+				sheetHost.style.width = '100%';
+				sheetHost.style.height = height + 'px';
+				sheetHost.style.bottom = 'auto';
+				sheetHost.style.transform = '';
+				return;
+			}
+
+			sheetHost.style.position = 'fixed';
+			sheetHost.style.top = dock + 'px';
 			sheetHost.style.left = '0';
 			sheetHost.style.right = '0';
 			sheetHost.style.width = '100%';
-			sheetHost.style.height = Math.max(160, window.innerHeight - top) + 'px';
+			sheetHost.style.maxWidth = '520px';
+			sheetHost.style.marginLeft = 'auto';
+			sheetHost.style.marginRight = 'auto';
+			sheetHost.style.height = height + 'px';
 			sheetHost.style.bottom = 'auto';
+			sheetHost.style.transform = '';
+
+			const placed = sheetHost.getBoundingClientRect().top;
+			const error = dock - placed;
+			if (Math.abs(error) > 1) {
+				const y = sheetLocked ? sheetSavedY : pageScrollY();
+				sheetHost.style.position = 'absolute';
+				sheetHost.style.top = (y + dock) + 'px';
+				sheetHost.style.maxWidth = '';
+				sheetHost.style.marginLeft = '';
+				sheetHost.style.marginRight = '';
+			}
 		}
 
 		function hideSheetNow() {
@@ -1475,6 +1523,10 @@
 			sheet.hidden = false;
 			sheet.scrollTop = 0;
 			pinSheetHost();
+			window.requestAnimationFrame(function () {
+				pinSheetHost();
+				window.requestAnimationFrame(pinSheetHost);
+			});
 			const g = getGsap();
 			if (g) g.killTweensOf(sheet);
 			if (wasHidden && g && !prefersReduced()) {

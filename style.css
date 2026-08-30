@@ -787,7 +787,7 @@ body.synth-display .synth-float-tip {
 }
 
 body.synth-control .synth-sheet-host {
-	position: absolute;
+	position: fixed;
 	inset: auto;
 	z-index: 145;
 	overflow: hidden;
@@ -802,6 +802,7 @@ body.synth-control .synth-sheet-host {
 	flex-direction: column;
 	background: var(--bg);
 	overflow: auto;
+	-webkit-overflow-scrolling: touch;
 	overscroll-behavior: contain;
 	pointer-events: auto;
 	transform-origin: top center;

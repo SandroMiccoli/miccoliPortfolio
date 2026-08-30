@@ -34,11 +34,7 @@
 		'}'
 	].join('\n');
 
-	const BLEND_FN = [
-		'uniform sampler2D u_input;',
-		'uniform float u_hasInput;',
-		'uniform float u_blendMode;',
-		'',
+	const BLEND_BODY = [
 		'vec3 blendWith(vec3 gen) {',
 		'  if (u_hasInput < 0.5) return gen;',
 		'  vec3 prev = texture2D(u_input, vTexCoord).rgb;',
@@ -56,6 +52,14 @@
 		'  if (u_blendMode < 7.5) return max(prev, gen);',
 		'  return min(prev, gen);',
 		'}'
+	].join('\n');
+
+	const BLEND_FN = [
+		'uniform sampler2D u_input;',
+		'uniform float u_hasInput;',
+		'uniform float u_blendMode;',
+		'',
+		BLEND_BODY
 	].join('\n');
 
 	const LINES = [
@@ -412,6 +416,11 @@
 		'uniform float u_radius;',
 		'uniform float u_mix;',
 		'uniform float u_invert;',
+		'uniform vec3 u_color;',
+		'uniform float u_hasInput;',
+		'uniform float u_blendMode;',
+		'',
+		BLEND_BODY,
 		'',
 		'float lumaAt(vec2 st) {',
 		'  vec3 col = texture2D(u_input, clamp(st, 0.0, 1.0)).rgb;',
@@ -435,7 +444,8 @@
 		'  float edge = clamp((mag - u_threshold) * u_intensity, 0.0, 1.0);',
 		'  edge = mix(edge, 1.0 - edge, clamp(u_invert, 0.0, 1.0));',
 		'  vec3 srcCol = src().rgb;',
-		'  gl_FragColor = vec4(mix(srcCol, vec3(edge), clamp(u_mix, 0.0, 1.0)), 1.0);',
+		'  vec3 blended = blendWith(u_color * edge);',
+		'  gl_FragColor = vec4(mix(srcCol, blended, clamp(u_mix, 0.0, 1.0)), 1.0);',
 		'}'
 	].join('\n');
 
