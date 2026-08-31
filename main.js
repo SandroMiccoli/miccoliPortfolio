@@ -170,7 +170,6 @@
 		const pending = list.filter(function (item) {
 			if (!item) return false;
 			if (previewId && item.id === previewId) return false;
-			if (tplThumbForce) return true;
 			return !item.thumbnail;
 		});
 		if (!pending.length) {
@@ -207,6 +206,7 @@
 		}
 
 		const flipCam = !!liveCameraOps(pipe).length;
+		const persistOk = !pipe.template || switched || !pipe.thumbnail;
 
 		if (livePreview) {
 			if (capturingThumb || millis() < thumbDue) return;
@@ -221,10 +221,12 @@
 			thumbDue = millis() + LIVE_MS;
 			liveThumbAge += LIVE_MS;
 			if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(url, pipe.id);
-			if (liveThumbAge >= PERSIST_MS || switched || changed || camChanged) {
+			if (persistOk && (liveThumbAge >= PERSIST_MS || switched || changed || camChanged)) {
 				liveThumbAge = 0;
 				const thumb = SynthEngine.capture(undefined, flipCam);
 				if (thumb) persistThumb(pipe, thumb);
+			} else if (liveThumbAge >= PERSIST_MS) {
+				liveThumbAge = 0;
 			}
 			return;
 		}
@@ -250,12 +252,15 @@
 		}
 		if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(previewUrl, pipe.id);
 		if (thumbDirty || millis() >= persistThumbDue) {
-			const thumb = SynthEngine.capture(undefined, flipCam);
-			if (!persistThumb(pipe, thumb)) {
-				thumbDue = millis() + 160;
-				return;
+			if (persistOk) {
+				const thumb = SynthEngine.capture(undefined, flipCam);
+				if (!persistThumb(pipe, thumb)) {
+					thumbDue = millis() + 160;
+					return;
+				}
 			}
 			persistThumbDue = millis() + PERSIST_MS;
+			thumbDirty = false;
 		} else {
 			thumbDirty = false;
 		}
