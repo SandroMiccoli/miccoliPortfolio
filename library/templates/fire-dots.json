@@ -1,0 +1,112 @@
+{
+  "id": "tpl_m6pxwvi5",
+  "name": "FIRE DOTS",
+  "operators": [
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 0.64,
+        "amount": 5,
+        "width": 0,
+        "rotation": 0,
+        "position": 0.5,
+        "color": "#FFFFFF",
+        "blendMode": "normal",
+        "density": 18,
+        "thickness": 0.22,
+        "angle": 12,
+        "spread": 38,
+        "speed": 0.25,
+        "mix": 0.55,
+        "invert": 0
+      }
+    },
+    {
+      "type": "lines",
+      "parameters": {
+        "fuzzyness": 0.92,
+        "amount": 9,
+        "width": 0,
+        "rotation": 124,
+        "position": 0.95,
+        "color": "#FFFFFF",
+        "blendMode": "multiply"
+      }
+    },
+    {
+      "type": "warp",
+      "parameters": {
+        "amount": 0.41000000000000003,
+        "frequency": 17.1,
+        "speed": 0.4,
+        "detail": 0.65,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "transform",
+      "parameters": {
+        "translateX": 0,
+        "translateY": 0,
+        "rotate": 0,
+        "scaleX": 0.25,
+        "scaleY": 0.25,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0,
+            "color": "#080000"
+          },
+          {
+            "id": "n1",
+            "pos": 0.45100706096389587,
+            "color": "#C41414"
+          },
+          {
+            "id": "n2",
+            "pos": 0.55,
+            "color": "#FF7A00"
+          },
+          {
+            "id": "n3",
+            "pos": 0.82,
+            "color": "#FFE14A"
+          },
+          {
+            "id": "n4",
+            "pos": 1,
+            "color": "#FFF6D2"
+          },
+          {
+            "id": "ndophdk",
+            "pos": 0.2561241210297701,
+            "color": "#000000"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "linear"
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.32,
+        "intensity": 0.9,
+        "radius": 1.35
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

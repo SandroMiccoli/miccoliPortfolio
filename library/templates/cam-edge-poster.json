@@ -16,8 +16,8 @@
       "parameters": {
         "threshold": 0,
         "intensity": 4,
-        "radius": 4,
-        "mix": 0.55,
+        "radius": 2.6,
+        "mix": 0.75,
         "invert": 0,
         "color": "#FFFFFF",
         "blendMode": "normal"

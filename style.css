@@ -503,6 +503,12 @@ body.synth-display.is-rec-on .synth-preview__frame::before {
 	display: none;
 }
 
+@media (hover: hover) and (pointer: fine) {
+	.synth-rec:not(.is-on) {
+		display: none !important;
+	}
+}
+
 .synth-rec__time {
 	margin: 0;
 	padding: 4px 10px;
@@ -670,13 +676,43 @@ body.synth-display .synth-rec * {
 	transform: scale(0.98);
 }
 
-.synth-pipe-grid__empty {
+.synth-pipe-grid__empty,
+.synth-pipe-grid__hint {
 	grid-column: 1 / -1;
 	margin: 0;
-	padding: 18px 8px;
 	color: var(--muted);
-	font-size: 12px;
 	letter-spacing: 0.04em;
+}
+
+.synth-pipe-grid__empty {
+	padding: 18px 8px;
+	font-size: 12px;
+}
+
+.synth-pipe-grid__hint {
+	padding: 0 2px 2px;
+	font-size: 11px;
+}
+
+.synth-pipe-gallery-actions {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+	margin: 0 0 10px;
+}
+
+.synth-pipe-gallery-actions[hidden] {
+	display: none;
+}
+
+.synth-pipe-gallery-actions .synth-btn--fill {
+	flex: 1;
+	min-height: 44px;
+}
+
+.synth-pipe-gallery-actions .synth-icon {
+	flex: 0 0 auto;
+	border: 1px solid var(--line);
 }
 
 .synth-pipe-grid {
@@ -692,6 +728,10 @@ body.synth-display .synth-rec * {
 	gap: 8px;
 	align-items: stretch;
 	margin: 0 0 12px;
+}
+
+.synth-clock[hidden] {
+	display: none;
 }
 
 .synth-clock__tap {
@@ -3171,6 +3211,12 @@ body.synth-control .synth-toasts {
 
 .synth-stage-tab:active {
 	transform: scale(0.98);
+}
+
+.synth-stage-tabs[hidden],
+.synth-panel.is-templates .synth-stage-tabs,
+.synth-panel.is-templates .synth-stage-panel {
+	display: none !important;
 }
 
 .synth-stage-panel[hidden] {

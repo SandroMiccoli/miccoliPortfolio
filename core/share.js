@@ -320,6 +320,7 @@
 					templatesSeeded: true,
 					previewTemplateId: item.id
 				},
+				item: item,
 				message: 'Template loaded from link'
 			};
 		}

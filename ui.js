@@ -135,10 +135,6 @@
 		}
 
 		function ops() {
-			if (viewingTemplate()) {
-				const tpl = selectedTemplate();
-				return (tpl && tpl.operators) || [];
-			}
 			const pipe = activePipe();
 			return (pipe && pipe.operators) || [];
 		}
@@ -165,13 +161,8 @@
 		}
 
 		function patchOps(operators) {
+			if (viewingTemplate()) return;
 			if (cameraBecameLive(ops(), operators)) armCameraFromOperators(operators);
-			if (viewingTemplate()) {
-				const tpl = selectedTemplate();
-				if (!tpl) return;
-				patch({ templateOps: { id: tpl.id, operators: operators } });
-				return;
-			}
 			patch({ operators: operators });
 		}
 
@@ -261,6 +252,9 @@
 		const grid = el('div', 'synth-pipe-grid');
 		grid.setAttribute('aria-label', 'SET');
 		pipesSec.appendChild(grid);
+		const galleryActions = el('div', 'synth-pipe-gallery-actions');
+		galleryActions.hidden = true;
+		pipesSec.appendChild(galleryActions);
 		panelBody.appendChild(pipesSec);
 
 		const activeBar = el('section', 'synth-pipe-active');
@@ -564,6 +558,18 @@
 			Object.keys(stagePanels).forEach(function (key) {
 				stagePanels[key].hidden = key !== activeStage;
 			});
+		}
+
+		function setEditorHidden(hidden) {
+			rootEl.classList.toggle('is-templates', !!hidden);
+			stageTabs.hidden = !!hidden;
+			if (hidden) {
+				Object.keys(stagePanels).forEach(function (key) {
+					stagePanels[key].hidden = true;
+				});
+				return;
+			}
+			setActiveStage(activeStage);
 		}
 
 		setActiveStage('pipeline');
@@ -912,10 +918,10 @@
 
 		function selectedTemplate() {
 			const items = templates();
-			if (!items.length) return null;
+			if (!items.length || !selectedTemplateId) return null;
 			return root.SynthTemplates
-				? (root.SynthTemplates.find(items, selectedTemplateId) || items[0])
-				: (items.filter(function (item) { return item.id === selectedTemplateId; })[0] || items[0]);
+				? (root.SynthTemplates.find(items, selectedTemplateId) || null)
+				: (items.filter(function (item) { return item.id === selectedTemplateId; })[0] || null);
 		}
 
 		function patchTemplates(list) {
@@ -969,12 +975,9 @@
 			galleryMode = next;
 			lastGridSig = null;
 			if (galleryMode === 'templates') {
-				if (!selectedTemplateId) {
-					const first = templates()[0];
-					selectedTemplateId = first ? first.id : '';
-				}
-				setPreview(selectedTemplateId);
+				setPreview('');
 				requestTemplateThumbs();
+				if (typeof closeSheet === 'function') closeSheet();
 			} else {
 				setPreview('');
 			}
@@ -1038,12 +1041,12 @@
 			if (result.patch.pipes) {
 				galleryMode = 'set';
 				expandedId = null;
-			} else if (result.patch.previewTemplateId) {
+			} else if (result.patch.templates) {
 				galleryMode = 'templates';
-				selectedTemplateId = result.patch.previewTemplateId;
+				if (result.item && result.item.id) selectedTemplateId = result.item.id;
 			}
 			patch(result.patch);
-			if (result.patch.previewTemplateId) requestTemplateThumbs();
+			if (result.patch.templates) requestTemplateThumbs();
 			if (root.SynthCamera && root.SynthCamera.armFromState) {
 				root.SynthCamera.armFromState(getState());
 			}
@@ -1210,11 +1213,7 @@
 		}
 
 		function beginRename() {
-			if (galleryMode === 'templates') {
-				const tpl = selectedTemplate();
-				if (tpl) startRename(tpl, 'template');
-				return;
-			}
+			if (galleryMode === 'templates') return;
 			const pipe = activePipe();
 			if (pipe) startRename(pipe, 'pipe');
 		}
@@ -1229,13 +1228,13 @@
 		const renameBtn = iconBtn(
 			'pencil',
 			'Rename',
-			'Change the name of the selected ELOS or template.',
+			'Change the name of the selected ELOS.',
 			beginRename
 		);
 		const dupBtn = iconBtn(
 			'copy',
 			'Duplicate',
-			'Create an independent copy of the selected ELOS or template.',
+			'Create an independent copy of the selected ELOS.',
 			function () {
 				const s = getState();
 				if (galleryMode === 'templates') {
@@ -1248,7 +1247,7 @@
 					patch({
 						templates: root.SynthTemplates.upsert(templates(), copy),
 						templatesSeeded: true,
-						previewTemplateId: copy.id
+						previewTemplateId: ''
 					});
 					return;
 				}
@@ -1274,14 +1273,13 @@
 			'Copy a link or JSON that reloads this visual with every parameter.',
 			openShareSheet
 		);
-		const addToSetBtn = iconBtn(
-			'plus',
-			'Add to SET',
-			'Copy this template into the SET so you can perform it.',
-			function () {
-				sendTemplateToSet(selectedTemplate());
-			}
-		);
+		const addToSetBtn = el('button', 'synth-btn synth-btn--fill', 'Add to SET');
+		addToSetBtn.type = 'button';
+		addToSetBtn.setAttribute('aria-label', 'Add to SET');
+		addToSetBtn.title = 'Copy this template into the SET so you can edit and perform it.';
+		addToSetBtn.addEventListener('click', function () {
+			sendTemplateToSet(selectedTemplate());
+		});
 		const deletePipeBtn = iconBtn(
 			'trash',
 			'Delete',
@@ -1296,7 +1294,7 @@
 					patch({
 						templates: next,
 						templatesSeeded: true,
-						previewTemplateId: selectedTemplateId
+						previewTemplateId: ''
 					});
 					return;
 				}
@@ -1317,9 +1315,8 @@
 		activeTools.appendChild(dupBtn);
 		activeTools.appendChild(saveTplBtn);
 		activeTools.appendChild(shareBtn);
-		activeTools.appendChild(addToSetBtn);
 		activeTools.appendChild(deletePipeBtn);
-		addToSetBtn.hidden = true;
+		galleryActions.appendChild(addToSetBtn);
 
 		const clockBar = el('div', 'synth-clock');
 		const tapBtn = el('button', 'synth-clock__tap');
@@ -1497,6 +1494,17 @@
 			return document.body.classList.contains('synth-control');
 		}
 
+		function isPhoneClient() {
+			if (window.matchMedia) {
+				const coarse = window.matchMedia('(pointer: coarse)').matches;
+				const noHover = window.matchMedia('(hover: none)').matches;
+				if (coarse && noHover) return true;
+			}
+			return /Android.+Mobile|iPhone|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+				navigator.userAgent || ''
+			);
+		}
+
 		function pageScrollY() {
 			if (window.visualViewport && isFinite(window.visualViewport.pageTop)) {
 				return window.visualViewport.pageTop;
@@ -1659,7 +1667,7 @@
 			sheetBody.innerHTML = '';
 			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. An Elo connects one thing to another. A sequence of connected Elos is an ELOS. Order is the patch.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick an ELOS in the grid, then edit its Elos. Each Elo reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES are stored examples you send into the SET. Save an ELOS from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES is a gallery of stored examples. Send one into the SET to edit and perform it. Save an ELOS from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'LIVE streams the renderer output into the preview. LOCAL runs the same ELOS on this device so you can watch the real frame rate without that stream.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. ELOS is the Elo chain. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the ELOS so you can align corners.'));
 			const cats = root.SynthCategories;
@@ -4038,8 +4046,20 @@
 			return localOn || !!(root.SynthPreview && SynthPreview.running && SynthPreview.running());
 		}
 
-		function refreshPreview(pipe) {
-			const view = viewingTemplate() ? (selectedTemplate() || pipe) : pipe;
+		function previewView() {
+			if (viewingTemplate()) {
+				const previewId = getState().previewTemplateId || '';
+				if (previewId) {
+					const live = root.SynthTemplates
+						? root.SynthTemplates.find(templates(), previewId)
+						: selectedTemplate();
+					if (live) return live;
+				}
+			}
+			return activePipe();
+		}
+
+		function refreshPreview(view) {
 			previewName.textContent = view ? view.name : 'ELOS';
 			if (localPreviewOn()) {
 				previewImg.hidden = true;
@@ -4066,7 +4086,7 @@
 			preview.classList.toggle('is-live', liveOn);
 			if (!liveOn) {
 				if (!localOn) previewEmpty.textContent = 'Waiting for output';
-				refreshPreview(activePipe());
+				refreshPreview(previewView());
 				return;
 			}
 			previewEmpty.textContent = 'Waiting for live';
@@ -4088,7 +4108,7 @@
 				previewEmpty.hidden = true;
 			} else {
 				previewEmpty.textContent = liveOn ? 'Waiting for live' : 'Waiting for output';
-				refreshPreview(activePipe());
+				refreshPreview(previewView());
 			}
 			if (notify && typeof setLocalPreview === 'function') setLocalPreview(localOn);
 		}
@@ -4132,7 +4152,9 @@
 		function paintRecChrome() {
 			const on = recOn();
 			const sheetOpen = sheet && !sheet.hidden;
-			const show = hasLiveCamera(ops()) && (!sheetOpen || on);
+			const show = (isPhoneClient() || on) &&
+				hasLiveCamera((previewView() && previewView().operators) || ops()) &&
+				(!sheetOpen || on);
 			document.body.classList.toggle('is-rec-armed', show);
 			document.body.classList.toggle('is-rec-on', on);
 			if (!recHost) return;
@@ -4226,6 +4248,7 @@
 
 		function startRec() {
 			if (!root.SynthRecorder || recBusy || recOn()) return;
+			if (!isPhoneClient()) return;
 			if (!SynthRecorder.supported()) {
 				if (root.SynthNotify) {
 					SynthNotify.show('warning', 'This browser cannot record video.');
@@ -4283,6 +4306,14 @@
 		document.addEventListener('visibilitychange', function () {
 			if (document.hidden && recOn()) finishRec(false);
 		});
+		if (window.matchMedia) {
+			const phoneMq = window.matchMedia('(pointer: coarse)');
+			const onPhoneMq = function () {
+				paintRecChrome();
+			};
+			if (phoneMq.addEventListener) phoneMq.addEventListener('change', onPhoneMq);
+			else if (phoneMq.addListener) phoneMq.addListener(onPhoneMq);
+		}
 
 		function setPreviewFrame(url, pipeId) {
 			if (localPreviewOn()) return;
@@ -4316,9 +4347,9 @@
 			tile.appendChild(thumb);
 			tile.appendChild(el('span', 'synth-pipe-tile__name', item.name));
 			if (kind === 'template') {
-				tile.setAttribute('aria-label', item.name + '. Tap to select. Tap again to add to the SET.');
+				tile.setAttribute('aria-label', item.name + '. Tap to preview. Tap again to add to the SET.');
 				tile.addEventListener('click', function () {
-					if (selectedTemplateId === item.id) {
+					if (selectedTemplateId === item.id && (getState().previewTemplateId || '') === item.id) {
 						sendTemplateToSet(item);
 						return;
 					}
@@ -4350,6 +4381,11 @@
 					));
 					return;
 				}
+				grid.appendChild(el(
+					'p',
+					'synth-pipe-grid__hint',
+					'Tap to preview. Tap again to add to the SET.'
+				));
 				(items || []).forEach(function (item) {
 					grid.appendChild(makeTile(item, selectedId, 'template'));
 				});
@@ -4402,31 +4438,29 @@
 			});
 			const onSet = galleryMode === 'set';
 			saveTplBtn.hidden = !onSet;
-			addToSetBtn.hidden = onSet;
+			clockBar.hidden = !onSet;
+			setEditorHidden(!onSet);
+			if (onSet) {
+				if (shareBtn.parentNode !== activeTools) activeTools.appendChild(shareBtn);
+				if (deletePipeBtn.parentNode !== activeTools) activeTools.appendChild(deletePipeBtn);
+				galleryActions.hidden = true;
+			} else {
+				galleryActions.appendChild(addToSetBtn);
+				galleryActions.appendChild(shareBtn);
+				galleryActions.appendChild(deletePipeBtn);
+				galleryActions.hidden = !templates().length;
+			}
 		}
 
 		function refresh() {
 			const s = getState();
 			const pipes = s.pipes || [];
 			const items = templates();
-			const previewId = s.previewTemplateId || '';
-			const previewLive = !!(previewId && items.some(function (item) {
-				return item.id === previewId;
-			}));
-			if (previewLive && (galleryMode !== 'templates' || selectedTemplateId !== previewId)) {
-				galleryMode = 'templates';
-				selectedTemplateId = previewId;
-				lastGridSig = null;
-			}
 			const pipeline = ops();
-			if (previewLive) {
-				selectedTemplateId = previewId;
-			}
-			if (!selectedTemplateId && items[0]) selectedTemplateId = items[0].id;
 			if (selectedTemplateId && items.length && !items.some(function (item) {
 				return item.id === selectedTemplateId;
 			})) {
-				selectedTemplateId = items[0] ? items[0].id : '';
+				selectedTemplateId = '';
 			}
 			refreshGalleryChrome();
 			const activeId = galleryMode === 'templates' ? selectedTemplateId : s.activePipeId;
@@ -4447,33 +4481,29 @@
 			const pipe = activePipe();
 			const tpl = selectedTemplate();
 			if (!renaming) {
-				if (galleryMode === 'templates') {
-					activeName.textContent = tpl ? tpl.name : 'TEMPLATE';
-					activeName.setAttribute('aria-label', 'Rename template');
-				} else {
-					activeName.textContent = pipe ? pipe.name : 'ELOS';
-					activeName.setAttribute('aria-label', 'Rename ELOS');
-				}
+				activeName.textContent = pipe ? pipe.name : 'ELOS';
+				activeName.setAttribute('aria-label', 'Rename ELOS');
 			}
-			refreshPreview(pipe);
-			if (recOn() && !hasLiveCamera(pipeline)) finishRec(false);
+			refreshPreview(previewView());
+			if (recOn() && !hasLiveCamera((previewView() && previewView().operators) || pipeline)) finishRec(false);
 			else paintRecChrome();
-			const hasTarget = galleryMode === 'templates' ? !!tpl : !!pipe;
-			renameBtn.disabled = !hasTarget;
-			dupBtn.disabled = !hasTarget;
+			renameBtn.disabled = !pipe || galleryMode === 'templates';
+			dupBtn.disabled = !pipe || galleryMode === 'templates';
 			saveTplBtn.disabled = !pipe;
 			addToSetBtn.disabled = !tpl;
+			shareBtn.disabled = galleryMode === 'templates' ? !tpl : !pipe;
 			deletePipeBtn.disabled = galleryMode === 'templates' ? !tpl : pipes.length <= 1;
 
-			const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '') + ':' + String(s.previewTemplateId || '') + ':' + (
-				root.SynthCamera && root.SynthCamera.deviceSignature ? root.SynthCamera.deviceSignature() : ''
-			);
-			if (signature !== lastSignature) {
-				lastSignature = signature;
-				rebuildStack(pipeline);
-			}
+			if (!viewingTemplate()) {
+				const signature = pipelineSignature(pipeline) + ':' + String(s.activePipeId || '') + ':' + (
+					root.SynthCamera && root.SynthCamera.deviceSignature ? root.SynthCamera.deviceSignature() : ''
+				);
+				if (signature !== lastSignature) {
+					lastSignature = signature;
+					rebuildStack(pipeline);
+				}
 
-			if (!sliding) {
+				if (!sliding) {
 				pipeline.forEach(function (op) {
 					const card = stack.querySelector('[data-id="' + op.id + '"]');
 					if (!card) return;
@@ -4528,6 +4558,7 @@
 					paintCamStatus(card, op);
 					paintVisibleParams(card, op);
 				});
+			}
 			}
 
 			refreshOutput();
