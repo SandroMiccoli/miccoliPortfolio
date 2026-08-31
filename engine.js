@@ -467,7 +467,9 @@
 				nowMs: Date.now(),
 				clock: root.SynthClock && state ? root.SynthClock.fromState(state) : null,
 				fft: root.SynthFft ? root.SynthFft.levels() : null,
-				allowCamera: !!(root.SynthCamera && root.SynthCamera.armed && root.SynthCamera.armed())
+				allowCamera: !!(root.SynthCamera && root.SynthCamera.ready && (
+					root.SynthCamera.ready('display') || root.SynthCamera.ready('phone')
+				))
 			});
 			lastThumbLuma = 0;
 			const gfx = readFrom(dest, false);

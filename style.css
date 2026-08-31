@@ -457,6 +457,128 @@ body.synth-control .synth-preview.is-local .synth-preview__frame {
 	outline-offset: 2px;
 }
 
+body.synth-control.is-rec-on .synth-preview__frame::before,
+body.synth-display.is-rec-on .synth-preview__frame::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	border: 2px solid var(--bad);
+	pointer-events: none;
+}
+
+.synth-cam-video {
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 1px;
+	height: 1px;
+	opacity: 0.01;
+	overflow: hidden;
+	pointer-events: none;
+	z-index: 0;
+}
+
+.synth-rec {
+	position: fixed;
+	left: 50%;
+	bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+	z-index: 40;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	transform: translateX(-50%);
+	pointer-events: none;
+	opacity: 0.25;
+	transition: opacity 0.16s ease;
+}
+
+.synth-rec.is-on,
+.synth-rec:has(.synth-rec__btn:active) {
+	opacity: 1;
+}
+
+.synth-rec[hidden] {
+	display: none;
+}
+
+.synth-rec__time {
+	margin: 0;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: rgb(16 16 16 / 0.78);
+	color: var(--fg);
+	font-family: var(--font);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	font-variant-numeric: tabular-nums;
+}
+
+.synth-rec__time[hidden] {
+	display: none;
+}
+
+.synth-rec__btn {
+	pointer-events: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 72px;
+	height: 72px;
+	min-width: 72px;
+	min-height: 72px;
+	padding: 0;
+	border: 3px solid var(--fg);
+	border-radius: 50%;
+	background: rgb(16 16 16 / 0.42);
+	appearance: none;
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.synth-rec__dot {
+	width: 52px;
+	height: 52px;
+	border-radius: 50%;
+	background: var(--bad);
+	transition: width 0.16s ease, height 0.16s ease, border-radius 0.16s ease;
+}
+
+.synth-rec__btn.is-on .synth-rec__dot {
+	width: 26px;
+	height: 26px;
+	border-radius: 6px;
+}
+
+.synth-rec__btn:active {
+	transform: scale(0.96);
+}
+
+.synth-rec__btn:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 3px;
+}
+
+body.synth-control .synth-rec {
+	z-index: 160;
+}
+
+body.synth-control.is-rec-armed {
+	padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+}
+
+body.synth-control.is-rec-armed .synth-toasts {
+	bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+}
+
+body.synth-display .synth-rec,
+body.synth-display .synth-rec * {
+	cursor: pointer;
+}
+
 /* Panel top + stack */
 
 .synth-panel__top {
@@ -3363,10 +3485,16 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 	.synth-icon:active,
 	.synth-insert__btn:active,
 	.synth-preview__live:active,
+	.synth-rec__btn:active,
 	.synth-palette:active,
 	.synth-swatch__face:active,
 	.synth-palettes__add:active,
 	.synth-ramp__tool:active {
 		transform: none;
+	}
+
+	.synth-rec,
+	.synth-rec__dot {
+		transition: none;
 	}
 }

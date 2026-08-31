@@ -63,6 +63,20 @@
 				return gfx;
 			}
 
+			function drawAuthorizeHint(g, w, h) {
+				const ctx2d = g.drawingContext;
+				ctx2d.setTransform(1, 0, 0, 1, 0, 0);
+				ctx2d.fillStyle = '#000';
+				ctx2d.fillRect(0, 0, w, h);
+				const size = Math.max(10, Math.min(15, Math.min(w, h) * 0.022));
+				ctx2d.font = '400 ' + size + 'px ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace';
+				if (ctx2d.letterSpacing !== undefined) ctx2d.letterSpacing = '0.14em';
+				ctx2d.fillStyle = 'rgba(255,255,255,0.18)';
+				ctx2d.textAlign = 'center';
+				ctx2d.textBaseline = 'middle';
+				ctx2d.fillText('autorize sua câmera', w * 0.5, h * 0.5);
+			}
+
 			function blitFit(ctx2d, el, srcW, srcH, dstW, dstH, cover, mirror) {
 				ctx2d.setTransform(1, 0, 0, 1, 0, 0);
 				ctx2d.fillStyle = '#000';
@@ -109,9 +123,22 @@
 					const cam = root.SynthCamera;
 					const src = cam && cam.frame ? cam.frame(source) : null;
 					if (!src || !src.el || src.w < 2 || src.h < 2) {
-						engine.drawTo(ctx.output, engine.shaders.copy, {
+						if (ctx.allowCamera === false) {
+							engine.drawTo(ctx.output, engine.shaders.copy, {
+								u_input: ctx.input,
+								u_gain: ctx.hasInput ? 1 : 0
+							});
+							return;
+						}
+						const outW = Math.max(2, ctx.width | 0);
+						const outH = Math.max(2, ctx.height | 0);
+						const g = dest(outW, outH);
+						drawAuthorizeHint(g, outW, outH);
+						engine.drawTo(ctx.output, engine.shaders.camera, {
 							u_input: ctx.input,
-							u_gain: ctx.hasInput ? 1 : 0
+							u_hasInput: ctx.hasInput ? 1 : 0,
+							u_blendMode: root.SynthBlend.toUniform(ctx.parameters.blendMode),
+							u_video: g
 						});
 						return;
 					}

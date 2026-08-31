@@ -6,6 +6,9 @@
 	let engineReady = false;
 	let live = false;
 	let placed = false;
+	let recordW = 0;
+	let recordH = 0;
+	let baseDensity = 1;
 	const fpsDts = [];
 	let lastDrawAt = 0;
 
@@ -46,8 +49,12 @@
 
 	function fitCanvas() {
 		if (!frameEl || !gpuOk || typeof resizeCanvas !== 'function') return;
-		const w = Math.max(2, Math.floor(frameEl.clientWidth));
-		const h = Math.max(2, Math.floor(frameEl.clientHeight));
+		const w = recordW > 0
+			? recordW
+			: Math.max(2, Math.floor(frameEl.clientWidth));
+		const h = recordH > 0
+			? recordH
+			: Math.max(2, Math.floor(frameEl.clientHeight));
 		if (w === width && h === height) return;
 		resizeCanvas(w, h);
 		if (root.SynthEngine && SynthEngine.resize) SynthEngine.resize();
@@ -91,6 +98,17 @@
 			if (gpuOk) placeCanvas();
 		},
 		setLive: setLive,
+		canvas: function () {
+			return canvasElt;
+		},
+		setRecordSize: function (w, h) {
+			recordW = w > 0 ? Math.floor(w) : 0;
+			recordH = h > 0 ? Math.floor(h) : 0;
+			if (typeof pixelDensity === 'function') {
+				pixelDensity(recordW > 0 ? 1 : baseDensity);
+			}
+			if (live) fitCanvas();
+		},
 		active: function () {
 			return gpuOk;
 		},
@@ -111,13 +129,15 @@
 		if (typeof p5 !== 'undefined') p5.disableFriendlyErrors = true;
 		setAttributes('antialias', false);
 		setAttributes('alpha', false);
+		setAttributes('preserveDrawingBuffer', true);
 		try {
 			const canvas = createCanvas(2, 2, WEBGL);
 			canvasElt = canvas.elt;
 			canvasElt.style.pointerEvents = 'none';
 			canvasElt.style.visibility = 'hidden';
 			canvasElt.setAttribute('aria-hidden', 'true');
-			pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+			baseDensity = Math.min(2, window.devicePixelRatio || 1);
+			pixelDensity(recordW > 0 ? 1 : baseDensity);
 			if (root.SynthEngine && SynthEngine.init) SynthEngine.init();
 			engineReady = true;
 			gpuOk = true;

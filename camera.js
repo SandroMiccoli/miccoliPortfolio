@@ -121,17 +121,19 @@
 		video.playsInline = true;
 		video.controls = false;
 		video.disablePictureInPicture = true;
+		video.setAttribute('aria-hidden', 'true');
+		video.className = 'synth-cam-video';
 		video.style.cssText = [
 			'position:fixed',
-			'right:8px',
-			'bottom:8px',
-			isControl() ? 'width:90px' : 'width:160px',
-			isControl() ? 'height:160px' : 'height:90px',
-			'opacity:0.06',
+			'left:0',
+			'top:0',
+			'width:1px',
+			'height:1px',
+			'opacity:0.01',
+			'overflow:hidden',
 			'pointer-events:none',
-			'z-index:1',
-			'border:0',
-			'object-fit:cover'
+			'z-index:0',
+			'border:0'
 		].join(';');
 		document.body.appendChild(video);
 		return video;
@@ -666,12 +668,7 @@
 			if (currentKey || ready || starting) stopLocal();
 			return;
 		}
-		if (!userArmed) {
-			if (phase === 'idle' && statusMessage !== waitingMessage()) {
-				setPhase('idle', waitingMessage());
-			}
-			return;
-		}
+		if (!userArmed) arm(false, false);
 		startLocal(params.deviceId, params.deviceId ? '' : 'environment').then(function () {
 			startSender();
 		}).catch(function () { /* status already set */ });
@@ -752,12 +749,7 @@
 				return;
 			}
 			lastCfg = { deviceId: cfg.deviceId || '', facing: '' };
-			if (!userArmed) {
-				if (phase === 'idle' && statusMessage !== waitingMessage()) {
-					setPhase('idle', waitingMessage());
-				}
-				return;
-			}
+			if (!userArmed) arm(false, false);
 			if (restartTimer) return;
 			startLocal(cfg.deviceId || '', '').catch(function () { /* status already set */ });
 		},

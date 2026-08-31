@@ -1,0 +1,118 @@
+{
+  "id": "tpl_4w5olj25",
+  "name": "cam Green Purple Feedback",
+  "operators": [
+    {
+      "type": "camera",
+      "parameters": {
+        "source": "display",
+        "mirror": 0,
+        "fit": "cover",
+        "blendMode": "darken"
+      }
+    },
+    {
+      "type": "blur",
+      "parameters": {
+        "radius": 1.41,
+        "mix": 1
+      }
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0.9551569506726457,
+            "color": "#080000"
+          },
+          {
+            "id": "n1",
+            "pos": 0,
+            "color": "#00FF3E"
+          },
+          {
+            "id": "n2",
+            "pos": 0.3071748878923767,
+            "color": "#000000"
+          },
+          {
+            "id": "n3",
+            "pos": 0.6681614349775785,
+            "color": "#000000"
+          },
+          {
+            "id": "npsb6i0",
+            "pos": 0.13901345291479822,
+            "color": "#004310"
+          },
+          {
+            "id": "n9kkcar",
+            "pos": 0.3721973094170404,
+            "color": "#5A00B4"
+          },
+          {
+            "id": "n8luno1",
+            "pos": 0.27802690582959644,
+            "color": "#001E08"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "linear"
+      }
+    },
+    {
+      "type": "posterize",
+      "parameters": {
+        "levels": 4,
+        "mix": 1,
+        "mode": "rgb"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "edge",
+      "parameters": {
+        "threshold": 0,
+        "intensity": 4,
+        "radius": 1.17,
+        "mix": 1,
+        "invert": 0,
+        "color": "#FFFFFF",
+        "blendMode": "overlay"
+      }
+    },
+    {
+      "type": "chromaKey",
+      "parameters": {
+        "key": "#292929",
+        "fill": "#000000",
+        "tolerance": 0.14,
+        "softness": 0.2,
+        "spill": 1,
+        "invert": 0,
+        "match": "chroma"
+      }
+    },
+    {
+      "type": "feedback",
+      "parameters": {
+        "amount": 0.86,
+        "decay": 0.99,
+        "scale": 1,
+        "rotate": 0,
+        "offsetX": 0,
+        "offsetY": 0,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

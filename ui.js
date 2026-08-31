@@ -1586,6 +1586,7 @@
 			sheetHost.hidden = true;
 			sheetBody.innerHTML = '';
 			unlockSheetPage();
+			if (typeof paintRecChrome === 'function') paintRecChrome();
 		}
 
 		function closeSheet() {
@@ -1612,6 +1613,7 @@
 			sheetTitle.textContent = title;
 			sheetHost.hidden = false;
 			sheet.hidden = false;
+			if (typeof paintRecChrome === 'function') paintRecChrome();
 			sheet.scrollTop = 0;
 			pinSheetHost();
 			window.requestAnimationFrame(function () {
@@ -4091,6 +4093,197 @@
 			if (notify && typeof setLocalPreview === 'function') setLocalPreview(localOn);
 		}
 
+		const recW = 960;
+		const recH = 540;
+		let recBusy = false;
+		let recHost = null;
+		let recBtn = null;
+		let recTime = null;
+
+		function formatRecTime(ms) {
+			const total = Math.max(0, Math.floor(ms / 1000));
+			const m = Math.floor(total / 60);
+			const s = total % 60;
+			return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+		}
+
+		function recOn() {
+			return !!(root.SynthRecorder && SynthRecorder.recording && SynthRecorder.recording());
+		}
+
+		function displayCanvas() {
+			if (root.SynthDisplay && typeof root.SynthDisplay.canvas === 'function') {
+				return root.SynthDisplay.canvas();
+			}
+			return document.querySelector('#app canvas');
+		}
+
+		function recSizeFor(canvas) {
+			if (isControlPage()) return { width: recW, height: recH };
+			const srcW = (canvas && canvas.width) || recW;
+			const srcH = (canvas && canvas.height) || recH;
+			const scale = Math.min(1, 1280 / Math.max(srcW, srcH, 1));
+			return {
+				width: Math.max(2, Math.round(srcW * scale)),
+				height: Math.max(2, Math.round(srcH * scale))
+			};
+		}
+
+		function paintRecChrome() {
+			const on = recOn();
+			const sheetOpen = sheet && !sheet.hidden;
+			const show = hasLiveCamera(ops()) && (!sheetOpen || on);
+			document.body.classList.toggle('is-rec-armed', show);
+			document.body.classList.toggle('is-rec-on', on);
+			if (!recHost) return;
+			recHost.hidden = !show;
+			recHost.classList.toggle('is-on', on);
+			if (recBtn) {
+				recBtn.classList.toggle('is-on', on);
+				recBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+				recBtn.setAttribute('aria-label', on ? 'Stop recording' : 'Record video');
+			}
+			if (recTime) {
+				recTime.hidden = !on;
+				if (on) recTime.textContent = formatRecTime(root.SynthRecorder.elapsed());
+			}
+		}
+
+		function clearRecordSize() {
+			if (root.SynthPreview && SynthPreview.setRecordSize) {
+				SynthPreview.setRecordSize(0, 0);
+			}
+		}
+
+		function waitForCanvas(tries) {
+			return new Promise(function (resolve, reject) {
+				function check(left) {
+					let canvas = null;
+					let ready = false;
+					if (isControlPage()) {
+						canvas = root.SynthPreview && SynthPreview.canvas
+							? SynthPreview.canvas()
+							: null;
+						ready = !!(
+							canvas &&
+							canvas.width > 2 &&
+							canvas.height > 2 &&
+							root.SynthPreview.running &&
+							SynthPreview.running()
+						);
+					} else {
+						canvas = displayCanvas();
+						ready = !!(canvas && canvas.width > 2 && canvas.height > 2);
+					}
+					if (ready) {
+						resolve(canvas);
+						return;
+					}
+					if (left <= 0) {
+						reject(new Error('Preview is not running'));
+						return;
+					}
+					root.requestAnimationFrame(function () {
+						check(left - 1);
+					});
+				}
+				check(tries || 60);
+			});
+		}
+
+		function finishRec(silent) {
+			if (!root.SynthRecorder || recBusy) return;
+			if (!recOn()) {
+				clearRecordSize();
+				paintRecChrome();
+				return;
+			}
+			recBusy = true;
+			SynthRecorder.stop().then(function (blob) {
+				clearRecordSize();
+				paintRecChrome();
+				if (!blob) {
+					if (!silent && root.SynthNotify) {
+						SynthNotify.show('warning', 'Nothing was recorded.');
+					}
+					return;
+				}
+				return SynthRecorder.save(blob).then(function (how) {
+					if (how === 'abort' || how === 'empty') return;
+					if (!root.SynthNotify) return;
+					if (how === 'shared') SynthNotify.show('success', 'Video ready.');
+					else SynthNotify.show('success', 'Video downloaded. Save it to your gallery.');
+				});
+			}).catch(function () {
+				if (!silent && root.SynthNotify) {
+					SynthNotify.show('error', 'Could not save the video.');
+				}
+			}).then(function () {
+				recBusy = false;
+				paintRecChrome();
+			});
+		}
+
+		function startRec() {
+			if (!root.SynthRecorder || recBusy || recOn()) return;
+			if (!SynthRecorder.supported()) {
+				if (root.SynthNotify) {
+					SynthNotify.show('warning', 'This browser cannot record video.');
+				}
+				return;
+			}
+			if (isControlPage()) {
+				if (liveOn) {
+					setLiveMode(false);
+					if (typeof setLivePreview === 'function') setLivePreview(false);
+				}
+				if (!localOn) setLocalMode(true, true);
+				if (root.SynthPreview && SynthPreview.setRecordSize) {
+					SynthPreview.setRecordSize(recW, recH);
+				}
+			}
+			recBusy = true;
+			waitForCanvas(60).then(function (canvas) {
+				return SynthRecorder.start(canvas, recSizeFor(canvas));
+			}).then(function () {
+				recBusy = false;
+				paintRecChrome();
+			}).catch(function () {
+				recBusy = false;
+				clearRecordSize();
+				paintRecChrome();
+				if (root.SynthNotify) {
+					SynthNotify.show('error', 'Could not start recording.');
+				}
+			});
+		}
+
+		function toggleRec() {
+			if (recOn()) finishRec(false);
+			else startRec();
+		}
+
+		recHost = el('div', 'synth-rec');
+		recHost.hidden = true;
+		recTime = el('p', 'synth-rec__time', '00:00');
+		recTime.hidden = true;
+		recTime.setAttribute('aria-live', 'off');
+		recBtn = el('button', 'synth-rec__btn');
+		recBtn.type = 'button';
+		recBtn.setAttribute('aria-pressed', 'false');
+		recBtn.setAttribute('aria-label', 'Record video');
+		recBtn.appendChild(el('span', 'synth-rec__dot'));
+		recBtn.addEventListener('click', toggleRec);
+		recHost.appendChild(recTime);
+		recHost.appendChild(recBtn);
+		document.body.appendChild(recHost);
+		if (root.SynthRecorder && SynthRecorder.onChange) {
+			SynthRecorder.onChange(paintRecChrome);
+		}
+		document.addEventListener('visibilitychange', function () {
+			if (document.hidden && recOn()) finishRec(false);
+		});
+
 		function setPreviewFrame(url, pipeId) {
 			if (localPreviewOn()) return;
 			if (!url) return;
@@ -4263,6 +4456,8 @@
 				}
 			}
 			refreshPreview(pipe);
+			if (recOn() && !hasLiveCamera(pipeline)) finishRec(false);
+			else paintRecChrome();
 			const hasTarget = galleryMode === 'templates' ? !!tpl : !!pipe;
 			renameBtn.disabled = !hasTarget;
 			dupBtn.disabled = !hasTarget;
@@ -4380,6 +4575,7 @@
 				const slider = sliders[id];
 				if (slider && slider.updateLive) slider.updateLive(ctx);
 			});
+			if (recOn() && recTime) recTime.textContent = formatRecTime(root.SynthRecorder.elapsed());
 		}
 
 		function refreshStats(stats) {

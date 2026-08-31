@@ -74,6 +74,13 @@
 		thumbDue = immediate ? 0 : millis() + 180;
 	}
 
+	function requestCamThumb() {
+		camThumbTries = 0;
+		persistThumbDue = 0;
+		liveThumbAge = PERSIST_MS;
+		requestThumb(true);
+	}
+
 	function cameraKey() {
 		return window.SynthCamera && SynthCamera.signature ? SynthCamera.signature() : '';
 	}
@@ -154,8 +161,10 @@
 			watchVis = vis;
 			watchCam = cam;
 			camThumbTries = 0;
-			const waitingCam = !!liveCameraOps(pipe).length;
-			requestThumb((switched || !pipe.thumbnail) && !waitingCam);
+			const waitingCam = cameraNotReady(pipe);
+			const camJustLive = camChanged && !waitingCam && !!liveCameraOps(pipe).length;
+			if (camJustLive) requestCamThumb();
+			else requestThumb((switched || !pipe.thumbnail) && !waitingCam);
 		}
 
 		const flipCam = !!liveCameraOps(pipe).length;
@@ -173,7 +182,7 @@
 			thumbDue = millis() + LIVE_MS;
 			liveThumbAge += LIVE_MS;
 			if (uiApi && uiApi.setPreviewFrame) uiApi.setPreviewFrame(url, pipe.id);
-			if (liveThumbAge >= PERSIST_MS || switched || changed) {
+			if (liveThumbAge >= PERSIST_MS || switched || changed || camChanged) {
 				liveThumbAge = 0;
 				const thumb = SynthEngine.capture(undefined, flipCam);
 				if (thumb) persistThumb(pipe, thumb);
@@ -220,7 +229,8 @@
 			target.closest('#synth-ui') ||
 			target.closest('.synth-panel') ||
 			target.closest('.synth-picker') ||
-			target.closest('.synth-float-tip')
+			target.closest('.synth-float-tip') ||
+			target.closest('.synth-rec')
 		);
 	}
 
@@ -383,6 +393,11 @@
 		pixelDensity(1);
 		frameRate(30);
 		noCursor();
+		window.SynthDisplay = {
+			canvas: function () {
+				return canvas && canvas.elt ? canvas.elt : document.querySelector('#app canvas');
+			}
+		};
 
 		SynthEngine.init();
 
@@ -425,7 +440,7 @@
 				if (uiApi) uiApi.refresh();
 				const pipe = viewPipe(SynthState.get());
 				if (pipe && liveCameraOps(pipe).length && !cameraNotReady(pipe)) {
-					requestThumb(false);
+					requestCamThumb();
 				}
 			});
 		}
