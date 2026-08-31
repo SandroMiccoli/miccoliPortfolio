@@ -6,6 +6,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const express = require('express');
 const { WebSocketServer } = require('ws');
+const irCam = require('./ir');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -791,6 +792,18 @@ async function start() {
 	state.templates = combinedTemplates();
 	state.templatesSeeded = true;
 
+	function mergeCameraList(list) {
+		const ir = irCam.deviceOption();
+		const rest = (Array.isArray(list) ? list : []).filter((item) => {
+			if (!item || !item.id) return false;
+			if (irCam.isIrId(item.id)) return false;
+			const label = String(item.label || '');
+			return !/\bDEPTH\s*$/i.test(label.replace(/\s*\([^)]*\)\s*$/, '').trim());
+		});
+		if (!ir) return rest;
+		return rest.concat(ir);
+	}
+
 	app.get('/api/info', (_req, res) => {
 		res.json(makeInfo(port));
 	});
@@ -800,6 +813,7 @@ async function start() {
 	app.get('/control', (_req, res) => {
 		res.sendFile(path.join(ROOT, 'control.html'));
 	});
+	irCam.attach(app);
 	app.use(express.static(ROOT));
 
 	const server = http.createServer(app);
@@ -889,7 +903,7 @@ async function start() {
 				ws.send(JSON.stringify(Object.assign({ type: 'info' }, makeInfo(port, httpsPort))));
 				ws.send(JSON.stringify(statsPayload()));
 				ws.send(JSON.stringify({ type: 'live', enabled: livePreview }));
-				ws.send(JSON.stringify({ type: 'cameras', devices: cameras }));
+				ws.send(JSON.stringify({ type: 'cameras', devices: mergeCameraList(cameras) }));
 				if (lastNotify && ws.role === 'control' && Date.now() - lastNotify.at < 60000) {
 					ws.send(JSON.stringify(lastNotify.payload));
 				}
@@ -918,7 +932,7 @@ async function start() {
 			}
 
 			if (msg.type === 'cameras') {
-				cameras = Array.isArray(msg.devices) ? msg.devices : [];
+				cameras = mergeCameraList(msg.devices);
 				broadcast({ type: 'cameras', devices: cameras });
 				return;
 			}
@@ -1080,7 +1094,12 @@ async function start() {
 	}
 
 	const info = makeInfo(port, httpsPort);
+	process.on('exit', function () { irCam.stop(); });
+	process.on('SIGTERM', function () { irCam.stop(); process.exit(0); });
 	console.log('ELO');
+	if (irCam.available()) {
+		console.log('  ir      ' + irCam.status().device);
+	}
 	console.log('  local   ' + originFor('127.0.0.1', port));
 	console.log('  lan     ' + (info.ipOrigin || info.url));
 	console.log('  control ' + info.controlUrl);

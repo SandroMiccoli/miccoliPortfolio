@@ -43,8 +43,12 @@
 	const SKIP_CAM = /bcm2835|rpi-hevc|hevc-dec|codec|isp\b|metadata|dummy|loopback|vivid|pisp/i;
 	const PREFER_CAM = /logitech|c270|c920|c922|uvc|usb|webcam|hd camera|0825/i;
 	const REALSENSE = /realsense|8086:0b07/i;
-	const REALSENSE_IR = /\binfrared\b|\bir\s*\d*\b|\bgrey\b|\bgray\b/i;
-	const REALSENSE_RGB = /\brgb\b|\bcolor\b/i;
+	const IR_ID = '__realsense_ir__';
+	let irPoll = 0;
+	let irCanvas = null;
+	let irCtx = null;
+	let irReady = false;
+	let irListed = false;
 
 	function isControl() {
 		return !!(document.body && document.body.classList.contains('synth-control'));
@@ -92,10 +96,19 @@
 		});
 	}
 
+	function stopIr() {
+		if (irPoll) {
+			window.clearTimeout(irPoll);
+			irPoll = 0;
+		}
+		irReady = false;
+	}
+
 	function stopLocal() {
 		ready = false;
 		starting = false;
 		currentKey = '';
+		stopIr();
 		if (sendTimer) {
 			window.clearInterval(sendTimer);
 			sendTimer = 0;
@@ -191,18 +204,30 @@
 		return 'Camera ' + (index + 1);
 	}
 
+	function isIrDevice(id) {
+		return String(id || '') === IR_ID;
+	}
+
 	function isRealSense(label) {
 		return REALSENSE.test(String(label || ''));
 	}
 
+	function realsenseStreamKind(label) {
+		const s = String(label || '')
+			.replace(/intel\(r\)\s*/ig, '')
+			.replace(/\(tm\)/ig, '')
+			.replace(/\s*\([^)]*\)\s*$/, '')
+			.trim();
+		const m = s.match(/\b(INFRARED(?:\s*\d+)?|IR(?:\s*\d+)?|DEPTH|RGB|COLOR)\s*$/i);
+		if (!m) return '';
+		const kind = m[1].toUpperCase();
+		if (kind.indexOf('INFRA') === 0 || kind.indexOf('IR') === 0) return 'IR';
+		if (kind === 'DEPTH') return 'DEPTH';
+		return 'RGB';
+	}
+
 	function isRealSenseDepthLabel(label) {
-		let s = String(label || '').replace(/intel\(r\)\s*/ig, '').replace(/\(tm\)/ig, '');
-		s = s.replace(/\s*\([^)]*\)\s*$/, '').trim();
-		if (!isRealSense(s) && !/\bdepth\b/i.test(s)) return false;
-		if (REALSENSE_IR.test(s) || REALSENSE_RGB.test(s)) return false;
-		if (/\bdepth\s*$/i.test(s)) return true;
-		if (/\bdepth\s*(module|stream|sensor)\b/i.test(s)) return true;
-		return false;
+		return realsenseStreamKind(label) === 'DEPTH';
 	}
 
 	function isSkipCam(label) {
@@ -225,7 +250,8 @@
 		Object.keys(rsIndex).forEach(function (gid) {
 			const nodes = rsIndex[gid];
 			const named = nodes.some(function (n) {
-				return REALSENSE_IR.test(n.label) || REALSENSE_RGB.test(n.label);
+				const kind = realsenseStreamKind(n.label);
+				return kind === 'IR' || kind === 'RGB';
 			});
 			if (!named && nodes.length > 1) skipId[nodes[0].deviceId] = true;
 		});
@@ -236,17 +262,18 @@
 
 	function camScore(item) {
 		const l = String(item.label || '');
+		const kind = realsenseStreamKind(l);
 		if (PREFER_CAM.test(l) && !isRealSense(l)) return 4;
-		if (REALSENSE_IR.test(l) || /\sIR$/i.test(l)) return 3;
-		if (isRealSense(l) || REALSENSE_RGB.test(l)) return 2;
+		if (kind === 'IR' || isIrDevice(item.deviceId || item.id)) return 3;
+		if (isRealSense(l) || kind === 'RGB') return 2;
 		if (PREFER_CAM.test(l)) return 1;
 		return 0;
 	}
 
 	function decorateDisplayLabels(items) {
 		const named = items.some(function (item) {
-			const l = item.label || '';
-			return isRealSense(l) && (REALSENSE_IR.test(l) || REALSENSE_RGB.test(l));
+			const kind = realsenseStreamKind(item.label || '');
+			return isRealSense(item.label) && (kind === 'IR' || kind === 'RGB');
 		});
 		let rsN = 0;
 		return items.map(function (item) {
@@ -293,7 +320,10 @@
 				});
 				phoneDevices = cams;
 			} else {
-				cams = toDeviceOptions(rankCaptureDevices(list, ''));
+				cams = toDeviceOptions(rankCaptureDevices(list, '')).filter(function (item) {
+					return !isIrDevice(item.id) && !isRealSenseDepthLabel(item.label);
+				});
+				if (irListed) cams.push({ id: IR_ID, label: 'RealSense IR' });
 				displayDevices = cams;
 			}
 			emit();
@@ -393,7 +423,12 @@
 		}
 
 		function pickFrom(list) {
-			const ranked = rankCaptureDevices(list, preferredId);
+			if (isIrDevice(preferredId)) {
+				return Promise.reject(new Error('ir'));
+			}
+			const ranked = rankCaptureDevices(list, preferredId).filter(function (item) {
+				return !isIrDevice(item.deviceId) && !isRealSenseDepthLabel(item.label);
+			});
 			const picked = preferredId
 				? ranked.filter(function (item) {
 					return item.deviceId === preferredId;
@@ -506,15 +541,100 @@
 		});
 	}
 
+	function refreshIrFlag() {
+		if (isControl()) return Promise.resolve(false);
+		return fetch('/api/ir', { cache: 'no-store' }).then(function (res) {
+			return res.json();
+		}).then(function (info) {
+			irListed = !!(info && info.available);
+			return irListed;
+		}).catch(function () {
+			irListed = false;
+			return false;
+		});
+	}
+
+	function startIr(my) {
+		starting = true;
+		ready = false;
+		failed = false;
+		currentKey = IR_ID + ':';
+		lastAttemptKey = currentKey;
+		setPhase('connecting', 'Opening RealSense IR…');
+		if (!irCanvas) {
+			irCanvas = document.createElement('canvas');
+			irCtx = irCanvas.getContext('2d', { alpha: false });
+		}
+
+		const watchdog = window.setTimeout(function () {
+			if (my !== bootId || irReady) return;
+			starting = false;
+			failed = true;
+			failMessage = 'RealSense IR did not start. On the Pi: ffmpeg and v4l-utils, GREY node present, then restart elo.';
+			stopLocal();
+			setPhase('error', failMessage);
+		}, FRAME_MS);
+
+		function tick() {
+			if (my !== bootId) return;
+			const img = new Image();
+			img.onload = function () {
+				if (my !== bootId) return;
+				const w = img.naturalWidth || img.width;
+				const h = img.naturalHeight || img.height;
+				if (w < 2 || h < 2) {
+					irPoll = window.setTimeout(tick, 160);
+					return;
+				}
+				if (irCanvas.width !== w || irCanvas.height !== h) {
+					irCanvas.width = w;
+					irCanvas.height = h;
+				}
+				irCtx.drawImage(img, 0, 0, w, h);
+				blitW = w;
+				blitH = h;
+				if (!irReady) {
+					window.clearTimeout(watchdog);
+					irReady = true;
+					starting = false;
+					ready = true;
+					failed = false;
+					lastToast = '';
+					setPhase('live', 'RealSense IR live');
+					readDevices('display').then(function (cams) {
+						if (root.SynthSync && root.SynthSync.sendCameras) {
+							root.SynthSync.sendCameras(cams);
+						}
+						emit();
+					});
+				}
+				irPoll = window.setTimeout(tick, 70);
+			};
+			img.onerror = function () {
+				if (my !== bootId) return;
+				irPoll = window.setTimeout(tick, 180);
+			};
+			img.src = '/ir.jpg?' + Date.now();
+		}
+		tick();
+		return Promise.resolve(true);
+	}
+
 	function startLocal(deviceId, facing) {
 		const key = String(deviceId || '') + ':' + String(facing || '');
 		lastCfg = { deviceId: deviceId || '', facing: facing || '' };
 		if (restartTimer) return Promise.resolve(false);
+		if (isIrDevice(deviceId) && irReady && currentKey === key) return Promise.resolve(true);
 		if (stream && currentKey === key && ready) return Promise.resolve(true);
 		if (starting && currentKey === key) return Promise.resolve(false);
 		if (failed && lastAttemptKey === key) {
 			if (phase !== 'error') setPhase('error', failMessage || 'Camera failed. Tap Reconnect.');
 			return Promise.resolve(false);
+		}
+		if (!isControl() && isIrDevice(deviceId)) {
+			stopLocal();
+			const irBoot = ++bootId;
+			return startIr(irBoot);
 		}
 		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
 			failed = true;
@@ -792,7 +912,9 @@
 			return [{ id: '', label: 'Default USB' }].concat(displayDevices);
 		},
 		setDisplayDevices: function (list) {
-			displayDevices = Array.isArray(list) ? list : [];
+			displayDevices = (Array.isArray(list) ? list : []).filter(function (item) {
+				return item && item.id && !isRealSenseDepthLabel(item.label);
+			});
 			emit();
 		},
 		setRemoteStatus: function (payload) {
@@ -857,6 +979,9 @@
 				const el = ensureRemote();
 				return { el: el, w: el.width, h: el.height };
 			}
+			if (irReady && irCanvas && irCanvas.width > 1) {
+				return { el: irCanvas, w: irCanvas.width, h: irCanvas.height };
+			}
 			if (!ready || !video || video.videoWidth < 2) return null;
 			const vw = video.videoWidth;
 			const vh = video.videoHeight;
@@ -866,9 +991,18 @@
 		},
 		probeDisplay: function () {
 			if (isControl()) return;
+			refreshIrFlag().then(function () {
+				return readDevices('display');
+			}).then(function (cams) {
+				if (root.SynthSync && root.SynthSync.sendCameras) {
+					root.SynthSync.sendCameras(cams);
+				}
+			});
 			if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 				navigator.mediaDevices.addEventListener('devicechange', function () {
-					readDevices('display').then(function (cams) {
+					refreshIrFlag().then(function () {
+						return readDevices('display');
+					}).then(function (cams) {
 						if (root.SynthSync && root.SynthSync.sendCameras) {
 							root.SynthSync.sendCameras(cams);
 						}
@@ -880,6 +1014,7 @@
 			if (source === 'phone') {
 				return remoteReady ? ensureRemote() : null;
 			}
+			if (irReady && irCanvas) return irCanvas;
 			if (!ready) return null;
 			return blitLocal() || video;
 		},
@@ -893,6 +1028,7 @@
 		},
 		ready: function (source) {
 			if (source === 'phone') return remoteReady;
+			if (irReady && irCanvas && irCanvas.width >= 2) return true;
 			return !!(ready && video && video.videoWidth >= 2);
 		},
 		stop: function () {

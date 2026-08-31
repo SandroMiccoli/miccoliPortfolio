@@ -318,11 +318,15 @@ Do **not** add `--use-fake-device-for-media-stream` except as a drawing test; th
 
 ### RealSense D435 infrared (optional)
 
-The D435 exposes Depth (`Z16`), infrared (`GREY`), and RGB. Camera Input never opens Depth (it looks like black-and-white noise in Chromium). Infrared GREY is a normal greyscale picture.
+Chromium only lists the D435 **Depth** and **RGB** nodes. Infrared GREY (`/dev/video2` on the Pi 4) is not a `getUserMedia` camera. ELO reads that GREY node with **ffmpeg** and adds **RealSense IR** to Device.
 
-Plug the D435 into a **USB 3** (blue) port. The Logitech C270 can stay on USB 2. In **Device**, pick **Default USB** for the webcam, or the RealSense entry ending in **IR**. The RGB node may also appear; Depth does not.
+```bash
+sudo apt install -y ffmpeg v4l-utils
+```
 
-Use 640×480. The Pi 4 undervolts easily with both cameras plus kiosk (`vcgencmd get_throttled` should not stay `0x50005`).
+Restart `elo.service` (not only the kiosk) so Node loads the IR helper. Plug the D435 into USB 3. **Default USB** / **UVC Camera** stay the C270. Pick **RealSense IR** for greyscale. Depth is hidden. RGB may still appear.
+
+Confirm: `curl -s http://127.0.0.1:8080/api/ir` should show `"available": true`. Then `curl -o /tmp/ir.jpg http://127.0.0.1:8080/ir.jpg`.
 
 ### Phone camera
 
@@ -343,6 +347,6 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
 | Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream` on the Sway `exec` line, then restart the kiosk. |
 | USB camera times out / LED never on, `ffmpeg` works | Chromium is using PipeWire for the camera. Keep `--disable-features=WebRtcPipeWireCamera` on the Sway `exec` line, then `systemctl restart elo-kiosk`. |
-| RealSense is black-and-white noise | That was the Depth node. Use Device **IR**, not Depth. Restart the kiosk after updating `camera.js`. |
+| RealSense is black-and-white noise | That was the Depth node; it is hidden now. Use **RealSense IR** (needs `ffmpeg` and `elo.service` restart). Check `curl -s http://127.0.0.1:8080/api/ir`. |
 | Phone camera does nothing | Open the printed **https** control URL (port 8443) and accept the certificate. HTTP blocks the phone camera. |
 | CDN scripts fail offline | Vendor GSAP / `qrcode.min.js` next to `index.html`. |
