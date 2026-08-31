@@ -249,7 +249,7 @@
 
 	// Generator → [blend generator] → warp/kaleido → [edge] → [lookup] → [bloom] → screen
 	function randomTypes() {
-		const generators = ['lines', 'noise', 'tape', 'shape', 'gradient', 'warpedConstellations'];
+		const generators = ['lines', 'noise', 'tape', 'shape', 'gradient'];
 		const types = [pick(generators)];
 
 		if (chance(0.38)) {

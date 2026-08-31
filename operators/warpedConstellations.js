@@ -9,6 +9,7 @@
 		color: cat.color,
 		help: 'Travels through a hexagonal lattice of glowing filaments. Speed moves the camera along the path, Travel scrubs depth, Scale sizes the lattice, Glow brightens the threads, Hue shifts their color, Warp bends the light between layers. After another operator, Blending Mode composites this field with whatever came before.',
 		implemented: true,
+		hidden: true,
 		defaults: {
 			speed: 1,
 			travel: 0,

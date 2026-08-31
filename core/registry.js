@@ -6,7 +6,7 @@
 			id: 'generator',
 			label: 'Generators',
 			color: '#B45CC8',
-			about: 'Creates a visual from nothing. Lines, Noise, VHS Tape, Shape, Gradient, Warped Constellations, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
+			about: 'Creates a visual from nothing. Lines, Noise, VHS Tape, Shape, Gradient, and Camera Input start the picture. If another image already exists above it in the stack, the generator composites with that image using Blending Mode (Difference, Add, Multiply, and so on).'
 		},
 		effect: {
 			id: 'effect',
@@ -194,11 +194,17 @@
 			const order = ['generator', 'effect', 'filter', 'color', 'compositing', 'output'];
 			const map = {};
 			this.list().forEach(function (def) {
+				if (def.hidden) return;
 				const cat = def.category || 'other';
 				if (!map[cat]) {
 					map[cat] = { id: cat, label: def.categoryLabel || cat, items: [] };
 				}
 				map[cat].items.push(def);
+			});
+			Object.keys(map).forEach(function (id) {
+				map[id].items.sort(function (a, b) {
+					return String(a.name || a.type).localeCompare(String(b.name || b.type), undefined, { sensitivity: 'base' });
+				});
 			});
 			const groups = [];
 			order.forEach(function (id) {
