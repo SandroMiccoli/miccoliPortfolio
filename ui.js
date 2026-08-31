@@ -2071,14 +2071,14 @@
 			const thumb = el('div', 'synth-slider__thumb synth-slider__thumb--value');
 			const inThumb = el('div', 'synth-slider__thumb synth-slider__thumb--in');
 			const outThumb = el('div', 'synth-slider__thumb synth-slider__thumb--out');
-			const playhead = el('div', 'synth-slider__thumb synth-slider__playhead');
+			const playhead = el('div', 'synth-slider__playhead');
 			track.appendChild(fill);
 			if (bipolar) track.appendChild(el('div', 'synth-slider__zero'));
 			track.appendChild(thumb);
 			track.appendChild(inThumb);
 			track.appendChild(outThumb);
-			track.appendChild(playhead);
 			slider.appendChild(track);
+			slider.appendChild(playhead);
 			wrap.appendChild(topRow);
 
 			let minusBtn = null;
@@ -2180,6 +2180,10 @@
 				node.style.left = (posFromValue(value) * 100) + '%';
 			}
 
+			function placePlayhead(value) {
+				slider.style.setProperty('--mod-t', String(posFromValue(value)));
+			}
+
 			function renderFill(from, to) {
 				const a = posFromValue(from);
 				const b = posFromValue(to);
@@ -2200,7 +2204,7 @@
 					renderFill(inMark, outMark);
 					place(inThumb, inMark);
 					place(outThumb, outMark);
-					place(playhead, liveValue);
+					placePlayhead(liveValue);
 					paintValue(liveValue);
 					slider.setAttribute('aria-valuenow', String(liveValue));
 					slider.setAttribute('aria-valuetext', formatDisplay(liveValue));
@@ -2696,14 +2700,6 @@
 						const beats = mod.beats || 4;
 						beatsEl.textContent = beats + (beats === 1 ? ' beat' : ' beats');
 					}
-					if (spec && root.SynthModulate) {
-						const seeded = root.SynthModulate.evaluate(mod, spec, {
-							nowMs: Date.now(),
-							clock: root.SynthClock ? root.SynthClock.fromState(getState()) : null,
-							fft: root.SynthFft ? root.SynthFft.levels() : null
-						}, opId + ':' + paramKey);
-						if (seeded !== undefined) liveValue = seeded;
-					}
 				}
 				render();
 				if (on !== wasOn && opId) {
@@ -2734,7 +2730,7 @@
 					const value = root.SynthModulate.evaluate(mod, spec, ctx, opId + ':' + paramKey);
 					if (value === undefined) return;
 					liveValue = value;
-					place(playhead, liveValue);
+					placePlayhead(liveValue);
 					paintValue(liveValue);
 					slider.setAttribute('aria-valuenow', String(liveValue));
 					slider.setAttribute('aria-valuetext', formatDisplay(liveValue));
@@ -4965,7 +4961,13 @@
 			}
 		}
 
-			function tick() {
+		function tick() {
+			try {
+				tickLive();
+			} catch (err) { /* keep the control rAF loop alive */ }
+		}
+
+		function tickLive() {
 			const s = getState();
 			const nowMs = Date.now();
 			const clock = root.SynthClock ? root.SynthClock.fromState(s) : null;
@@ -5002,7 +5004,11 @@
 			};
 			Object.keys(sliders).forEach(function (id) {
 				const slider = sliders[id];
-				if (slider && slider.updateLive) slider.updateLive(ctx);
+				if (slider && slider.updateLive) {
+					try {
+						slider.updateLive(ctx);
+					} catch (err) { /* ignore a single slider */ }
+				}
 			});
 			if (recOn() && recTime) recTime.textContent = formatRecTime(root.SynthRecorder.elapsed());
 			paintAutoplayProgress();

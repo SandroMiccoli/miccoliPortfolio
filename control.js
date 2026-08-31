@@ -115,21 +115,26 @@
 		}
 
 		let lastLocalFpsAt = 0;
-		function loop() {
-			if (uiApi && uiApi.tick) uiApi.tick();
-			const now = Date.now();
-			if (now - lastLocalFpsAt > 500) {
-				lastLocalFpsAt = now;
-				const localFps = window.SynthPreview && SynthPreview.localFps
-					? SynthPreview.localFps()
-					: 0;
-				if (uiApi && uiApi.refreshStats) {
-					uiApi.refreshStats({ localFps: localFps >= 1 ? localFps : null });
+		function tickControl() {
+			try {
+				if (uiApi && uiApi.tick) uiApi.tick();
+				const now = Date.now();
+				if (now - lastLocalFpsAt > 500) {
+					lastLocalFpsAt = now;
+					const localFps = window.SynthPreview && SynthPreview.localFps
+						? SynthPreview.localFps()
+						: 0;
+					if (uiApi && uiApi.refreshStats) {
+						uiApi.refreshStats({ localFps: localFps >= 1 ? localFps : null });
+					}
 				}
-			}
-			window.requestAnimationFrame(loop);
+			} catch (err) { /* never abort the control frame loop */ }
+			window.requestAnimationFrame(tickControl);
 		}
-		window.requestAnimationFrame(loop);
+		window.requestAnimationFrame(tickControl);
+		window.setInterval(function () {
+			if (uiApi && uiApi.tick) uiApi.tick();
+		}, 33);
 
 		SynthState.subscribe(function () {
 			if (uiApi) uiApi.refresh();
