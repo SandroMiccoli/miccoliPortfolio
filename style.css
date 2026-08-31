@@ -2527,6 +2527,10 @@ body.synth-control .synth-sys__warn {
 	display: none;
 }
 
+.synth-slider.is-mod .synth-slider__track {
+	overflow: visible;
+}
+
 .synth-slider.is-mod .synth-slider__thumb--value {
 	display: none;
 }
@@ -2535,6 +2539,20 @@ body.synth-control .synth-sys__warn {
 .synth-slider.is-mod .synth-slider__thumb--out,
 .synth-slider.is-mod .synth-slider__playhead {
 	display: block;
+}
+
+.synth-slider__playhead {
+	position: absolute;
+	top: 50%;
+	z-index: 4;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--op-color, var(--fg));
+	border: 1px solid var(--fg);
+	transform: translate(-50%, -50%);
+	pointer-events: none;
+	box-shadow: 0 1px 4px color-mix(in srgb, #101010 55%, transparent);
 }
 
 .synth-field__tail {
@@ -2617,6 +2635,7 @@ body.synth-control .synth-sys__warn {
 
 .synth-op .synth-slider.is-mod .synth-slider__thumb--in,
 .synth-op .synth-slider.is-mod .synth-slider__thumb--out {
+	z-index: 2;
 	width: 10px;
 	height: 10px;
 	border-radius: 1px;

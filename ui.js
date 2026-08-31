@@ -2071,7 +2071,7 @@
 			const thumb = el('div', 'synth-slider__thumb synth-slider__thumb--value');
 			const inThumb = el('div', 'synth-slider__thumb synth-slider__thumb--in');
 			const outThumb = el('div', 'synth-slider__thumb synth-slider__thumb--out');
-			const playhead = el('div', 'synth-slider__playhead');
+			const playhead = el('div', 'synth-slider__thumb synth-slider__playhead');
 			track.appendChild(fill);
 			if (bipolar) track.appendChild(el('div', 'synth-slider__zero'));
 			track.appendChild(thumb);
@@ -2695,6 +2695,14 @@
 					if (beatsEl && beatsEl.parentNode && !beatsEl.parentNode.querySelector('.synth-mod__beats-edit')) {
 						const beats = mod.beats || 4;
 						beatsEl.textContent = beats + (beats === 1 ? ' beat' : ' beats');
+					}
+					if (spec && root.SynthModulate) {
+						const seeded = root.SynthModulate.evaluate(mod, spec, {
+							nowMs: Date.now(),
+							clock: root.SynthClock ? root.SynthClock.fromState(getState()) : null,
+							fft: root.SynthFft ? root.SynthFft.levels() : null
+						}, opId + ':' + paramKey);
+						if (seeded !== undefined) liveValue = seeded;
 					}
 				}
 				render();
@@ -4957,27 +4965,28 @@
 			}
 		}
 
-		function tick() {
-			if (!root.SynthClock) return;
+			function tick() {
 			const s = getState();
-			const clock = root.SynthClock.fromState(s);
 			const nowMs = Date.now();
-			const beat = root.SynthClock.beatInBar(clock, nowMs);
-			if (!editingBpm) bpmVal.textContent = String(Math.round(clock.bpm));
-			tapBtn.setAttribute('aria-valuenow', String(Math.round(clock.bpm)));
-			beatCells.forEach(function (cell, i) {
-				cell.classList.toggle('is-on', i === beat);
-			});
-			if (beat !== lastBeat) {
-				lastBeat = beat;
-				const onCell = beatCells[beat];
-				const g = getGsap();
-				if (onCell && g && !prefersReduced()) {
-					g.fromTo(onCell, { scale: 1.18 }, {
-						scale: 1,
-						duration: dur(0.14),
-						ease: 'power2.out'
-					});
+			const clock = root.SynthClock ? root.SynthClock.fromState(s) : null;
+			if (clock) {
+				const beat = root.SynthClock.beatInBar(clock, nowMs);
+				if (!editingBpm) bpmVal.textContent = String(Math.round(clock.bpm));
+				tapBtn.setAttribute('aria-valuenow', String(Math.round(clock.bpm)));
+				beatCells.forEach(function (cell, i) {
+					cell.classList.toggle('is-on', i === beat);
+				});
+				if (beat !== lastBeat) {
+					lastBeat = beat;
+					const onCell = beatCells[beat];
+					const g = getGsap();
+					if (onCell && g && !prefersReduced()) {
+						g.fromTo(onCell, { scale: 1.18 }, {
+							scale: 1,
+							duration: dur(0.14),
+							ease: 'power2.out'
+						});
+					}
 				}
 			}
 
