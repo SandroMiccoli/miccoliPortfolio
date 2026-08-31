@@ -7,7 +7,7 @@
 		category: 'generator',
 		categoryLabel: cat.label,
 		color: cat.color,
-		help: 'Live camera texture. Display uses the USB webcam on the renderer. Phone uses this control phone and sends frames over the network. Device, Mirror, and Fit appear after that source is live. Reconnect stops and reopens the camera.',
+		help: 'Live camera texture. Display uses a USB webcam on the renderer, or a RealSense infrared (GREY) node if you pick it in Device. Depth is ignored. Phone uses this control phone and sends frames over the network. Device, Mirror, and Fit appear after that source is live. Reconnect stops and reopens the camera.',
 		implemented: true,
 		defaults: {
 			source: 'display',

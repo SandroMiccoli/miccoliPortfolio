@@ -42,6 +42,9 @@
 	const FRAME_MS = 10000;
 	const SKIP_CAM = /bcm2835|rpi-hevc|hevc-dec|codec|isp\b|metadata|dummy|loopback|vivid|pisp/i;
 	const PREFER_CAM = /logitech|c270|c920|c922|uvc|usb|webcam|hd camera|0825/i;
+	const REALSENSE = /realsense|8086:0b07/i;
+	const REALSENSE_IR = /\binfrared\b|\bir\s*\d*\b|\bgrey\b|\bgray\b/i;
+	const REALSENSE_RGB = /\brgb\b|\bcolor\b/i;
 
 	function isControl() {
 		return !!(document.body && document.body.classList.contains('synth-control'));
@@ -188,30 +191,92 @@
 		return 'Camera ' + (index + 1);
 	}
 
-	function isSkipCam(label) {
-		return SKIP_CAM.test(String(label || ''));
+	function isRealSense(label) {
+		return REALSENSE.test(String(label || ''));
 	}
 
-	function rankCaptureDevices(list, preferredId) {
+	function isRealSenseDepthLabel(label) {
+		let s = String(label || '').replace(/intel\(r\)\s*/ig, '').replace(/\(tm\)/ig, '');
+		s = s.replace(/\s*\([^)]*\)\s*$/, '').trim();
+		if (!isRealSense(s) && !/\bdepth\b/i.test(s)) return false;
+		if (REALSENSE_IR.test(s) || REALSENSE_RGB.test(s)) return false;
+		if (/\bdepth\s*$/i.test(s)) return true;
+		if (/\bdepth\s*(module|stream|sensor)\b/i.test(s)) return true;
+		return false;
+	}
+
+	function isSkipCam(label) {
+		const s = String(label || '');
+		return SKIP_CAM.test(s) || isRealSenseDepthLabel(s);
+	}
+
+	function displayCaptureDevices(list) {
 		const raw = (list || []).filter(function (item) {
 			return item.kind === 'videoinput' && item.deviceId && !isSkipCam(item.label);
 		});
-		const seenGroup = {};
-		const out = [];
+		const rsIndex = {};
 		raw.forEach(function (item, i) {
-			const gid = item.groupId || ('solo-' + i);
-			if (seenGroup[gid]) return;
-			seenGroup[gid] = true;
-			out.push(item);
+			if (!isRealSense(item.label)) return;
+			const gid = item.groupId || 'rs-solo-' + i;
+			if (!rsIndex[gid]) rsIndex[gid] = [];
+			rsIndex[gid].push(item);
 		});
+		const skipId = {};
+		Object.keys(rsIndex).forEach(function (gid) {
+			const nodes = rsIndex[gid];
+			const named = nodes.some(function (n) {
+				return REALSENSE_IR.test(n.label) || REALSENSE_RGB.test(n.label);
+			});
+			if (!named && nodes.length > 1) skipId[nodes[0].deviceId] = true;
+		});
+		return raw.filter(function (item) {
+			return !skipId[item.deviceId];
+		});
+	}
+
+	function camScore(item) {
+		const l = String(item.label || '');
+		if (PREFER_CAM.test(l) && !isRealSense(l)) return 4;
+		if (REALSENSE_IR.test(l) || /\sIR$/i.test(l)) return 3;
+		if (isRealSense(l) || REALSENSE_RGB.test(l)) return 2;
+		if (PREFER_CAM.test(l)) return 1;
+		return 0;
+	}
+
+	function decorateDisplayLabels(items) {
+		const named = items.some(function (item) {
+			const l = item.label || '';
+			return isRealSense(l) && (REALSENSE_IR.test(l) || REALSENSE_RGB.test(l));
+		});
+		let rsN = 0;
+		return items.map(function (item) {
+			const id = item.deviceId || item.id;
+			const base = item.label || labelOf(item, 0);
+			if (named || !isRealSense(base) || / IR$| RGB$/i.test(base)) {
+				return { id: id, label: base };
+			}
+			const suffix = rsN === 0 ? ' IR' : (rsN === 1 ? ' RGB' : ' ' + (rsN + 1));
+			rsN += 1;
+			return { id: id, label: base + suffix };
+		});
+	}
+
+	function rankCaptureDevices(list, preferredId) {
+		const out = displayCaptureDevices(list).slice();
 		out.sort(function (a, b) {
 			if (preferredId && a.deviceId === preferredId) return -1;
 			if (preferredId && b.deviceId === preferredId) return 1;
-			const ap = PREFER_CAM.test(a.label) ? 1 : 0;
-			const bp = PREFER_CAM.test(b.label) ? 1 : 0;
-			return bp - ap;
+			return camScore(b) - camScore(a);
 		});
 		return out;
+	}
+
+	function toDeviceOptions(items) {
+		return decorateDisplayLabels(items.map(function (item, i) {
+			return { id: item.deviceId, label: labelOf(item, i), deviceId: item.deviceId };
+		})).map(function (item) {
+			return { id: item.id || item.deviceId, label: item.label };
+		});
 	}
 
 	function readDevices(kind) {
@@ -219,15 +284,18 @@
 			return Promise.resolve([]);
 		}
 		return navigator.mediaDevices.enumerateDevices().then(function (list) {
-			const cams = (list || []).filter(function (item) {
-				if (item.kind !== 'videoinput' || !item.deviceId) return false;
-				if (kind !== 'phone' && isSkipCam(item.label)) return false;
-				return true;
-			}).map(function (item, i) {
-				return { id: item.deviceId, label: labelOf(item, i) };
-			});
-			if (kind === 'phone') phoneDevices = cams;
-			else displayDevices = cams;
+			let cams;
+			if (kind === 'phone') {
+				cams = (list || []).filter(function (item) {
+					return item.kind === 'videoinput' && item.deviceId;
+				}).map(function (item, i) {
+					return { id: item.deviceId, label: labelOf(item, i) };
+				});
+				phoneDevices = cams;
+			} else {
+				cams = toDeviceOptions(rankCaptureDevices(list, ''));
+				displayDevices = cams;
+			}
 			emit();
 			return cams;
 		}).catch(function () {
@@ -308,6 +376,15 @@
 		);
 	}
 
+	function displayConstraints(deviceId) {
+		const video = {
+			width: { ideal: 640 },
+			height: { ideal: 480 }
+		};
+		if (deviceId) video.deviceId = { exact: deviceId };
+		return { audio: false, video: video };
+	}
+
 	function openDisplayStream(preferredId, my) {
 		function attempt(constraints, label) {
 			if (my !== bootId) return Promise.reject(new Error('stale'));
@@ -315,23 +392,34 @@
 			return getUserMediaTimed(constraints, GUM_MS);
 		}
 
-		const sized = {
-			audio: false,
-			video: { width: { ideal: 640 }, height: { ideal: 480 } }
-		};
-		if (preferredId) {
-			return attempt({
-				audio: false,
-				video: {
-					deviceId: { exact: preferredId },
-					width: { ideal: 640 },
-					height: { ideal: 480 }
-				}
-			}, 'selected camera').catch(function () {
-				return attempt(sized, 'USB 640×480');
-			});
+		function pickFrom(list) {
+			const ranked = rankCaptureDevices(list, preferredId);
+			const picked = preferredId
+				? ranked.filter(function (item) {
+					return item.deviceId === preferredId;
+				})[0] || ranked[0]
+				: ranked[0];
+			if (!picked || !picked.deviceId) {
+				return Promise.reject(new Error('No camera found'));
+			}
+			return attempt(displayConstraints(picked.deviceId), labelOf(picked, 0));
 		}
-		return attempt(sized, 'USB 640×480');
+
+		if (!navigator.mediaDevices.enumerateDevices) {
+			return attempt(displayConstraints(preferredId || ''), preferredId ? 'selected camera' : 'USB 640×480');
+		}
+
+		return navigator.mediaDevices.enumerateDevices().then(function (list) {
+			const labeled = (list || []).some(function (item) {
+				return item.kind === 'videoinput' && item.label;
+			});
+			if (labeled) return pickFrom(list);
+			setPhase('connecting', 'Allowing camera so the device list can load…');
+			return getUserMediaTimed(displayConstraints(''), GUM_TRY_MS).then(function (probe) {
+				stopTracks(probe);
+				return navigator.mediaDevices.enumerateDevices().then(pickFrom);
+			});
+		});
 	}
 
 	function waitForFrame(node, my) {

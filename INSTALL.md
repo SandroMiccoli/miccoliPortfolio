@@ -316,6 +316,14 @@ Do **not** add `--use-fake-device-for-media-stream` except as a drawing test; th
 
 4. Add **Camera Input**, leave Source on **Display**, and tap **Reconnect** if the status card is in error.
 
+### RealSense D435 infrared (optional)
+
+The D435 exposes Depth (`Z16`), infrared (`GREY`), and RGB. Camera Input never opens Depth (it looks like black-and-white noise in Chromium). Infrared GREY is a normal greyscale picture.
+
+Plug the D435 into a **USB 3** (blue) port. The Logitech C270 can stay on USB 2. In **Device**, pick **Default USB** for the webcam, or the RealSense entry ending in **IR**. The RGB node may also appear; Depth does not.
+
+Use 640×480. The Pi 4 undervolts easily with both cameras plus kiosk (`vcgencmd get_throttled` should not stay `0x50005`).
+
 ### Phone camera
 
 Modern browsers block `getUserMedia` on plain HTTP. The server also listens on HTTPS (port 8443) with a self-signed certificate. Open the printed `https   .../control` URL, accept the certificate warning, then set Source to **Phone**. HTTP control still works for everything except the phone camera.
@@ -335,5 +343,6 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
 | Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream` on the Sway `exec` line, then restart the kiosk. |
 | USB camera times out / LED never on, `ffmpeg` works | Chromium is using PipeWire for the camera. Keep `--disable-features=WebRtcPipeWireCamera` on the Sway `exec` line, then `systemctl restart elo-kiosk`. |
+| RealSense is black-and-white noise | That was the Depth node. Use Device **IR**, not Depth. Restart the kiosk after updating `camera.js`. |
 | Phone camera does nothing | Open the printed **https** control URL (port 8443) and accept the certificate. HTTP blocks the phone camera. |
 | CDN scripts fail offline | Vendor GSAP / `qrcode.min.js` next to `index.html`. |
