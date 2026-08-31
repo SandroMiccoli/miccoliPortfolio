@@ -57,9 +57,6 @@
 		if (!message || message === lastToast) return;
 		lastToast = message;
 		if (root.SynthNotify) root.SynthNotify.show(level, message);
-		if (root.SynthSync && typeof root.SynthSync.sendNotify === 'function') {
-			root.SynthSync.sendNotify(level, message);
-		}
 	}
 
 	function sendStatus() {

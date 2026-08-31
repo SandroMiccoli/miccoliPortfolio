@@ -6,6 +6,10 @@
 		error: 8000
 	};
 
+	function isDisplay() {
+		return !!(document.body && document.body.classList.contains('synth-display'));
+	}
+
 	function ensureRoot() {
 		let el = document.getElementById('synth-toasts');
 		if (el) return el;
@@ -21,6 +25,12 @@
 
 	function show(level, message) {
 		if (!message) return;
+		if (isDisplay()) {
+			if (root.SynthSync && typeof root.SynthSync.sendNotify === 'function') {
+				root.SynthSync.sendNotify(level, message);
+			}
+			return;
+		}
 		const hold = ensureRoot();
 		const kind = level === 'error' || level === 'warning' || level === 'success' || level === 'info'
 			? level

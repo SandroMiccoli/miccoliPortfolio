@@ -508,9 +508,6 @@
 				}
 				consumeShare();
 			},
-			onNotify: function (level, message) {
-				if (window.SynthNotify) SynthNotify.show(level, message);
-			},
 			onStats: function (stats) {
 				updateStats(stats);
 			},

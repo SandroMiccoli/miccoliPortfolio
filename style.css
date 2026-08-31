@@ -1279,9 +1279,12 @@ body.synth-display .synth-ui.is-open,
 body.synth-display .synth-ui.is-open *,
 body.synth-display .synth-panel.is-open,
 body.synth-display .synth-picker,
-body.synth-display .synth-toasts,
 body.synth-display .synth-float-tip {
 	cursor: auto;
+}
+
+body.synth-display .synth-toasts {
+	display: none !important;
 }
 
 .synth-sheet-host {
