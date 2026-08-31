@@ -2440,23 +2440,34 @@
 				patch({ opMod: { id: opId, key: paramKey, modulation: partial } });
 			}
 
-			function toggleMod() {
+			function toggleMod(event) {
+				if (event) {
+					event.preventDefault();
+					event.stopPropagation();
+				}
 				const existing = liveMod(opId, paramKey);
+				let next;
 				if (existing && existing.enabled) {
+					next = Object.assign({}, existing, { enabled: false });
+					setMod(next);
 					patchMod({ enabled: false });
 					return;
 				}
 				if (existing) {
+					next = Object.assign({}, existing, { enabled: true });
+					setMod(next);
 					patchMod({ enabled: true });
 					return;
 				}
 				const op = liveOp(opId);
 				const value = op && op.parameters ? op.parameters[paramKey] : current;
+				next = root.SynthModulate.defaults(spec, value);
+				setMod(next);
 				patch({
 					opMod: {
 						id: opId,
 						key: paramKey,
-						modulation: root.SynthModulate.defaults(spec, value)
+						modulation: next
 					}
 				});
 			}
@@ -2704,11 +2715,12 @@
 				render();
 				if (on !== wasOn && opId) {
 					relayoutOpBody(opId);
-					if (on && panel && modPrimed) {
-						window.requestAnimationFrame(function () {
+					window.requestAnimationFrame(function () {
+						relayoutOpBody(opId);
+						if (on && panel && modPrimed) {
 							panel.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-						});
-					}
+						}
+					});
 				}
 				modPrimed = true;
 			}
@@ -2802,17 +2814,16 @@
 			if (g) {
 				g.killTweensOf(body);
 				g.set(body, {
-					height: 'auto',
-					overflow: 'hidden',
 					autoAlpha: 1,
-					display: 'block'
+					display: 'block',
+					overflow: 'hidden'
 				});
-			} else {
-				body.style.display = 'block';
-				body.style.height = 'auto';
-				body.style.opacity = '1';
-				body.style.visibility = 'visible';
 			}
+			body.style.display = 'block';
+			body.style.overflow = 'hidden';
+			body.style.opacity = '1';
+			body.style.visibility = 'visible';
+			body.style.height = 'auto';
 		}
 
 		function userPresets() {
@@ -3934,14 +3945,14 @@
 			const vars = { height: open ? 'auto' : 0, autoAlpha: open ? 1 : 0 };
 			if (instant) {
 				g.set(body, vars);
-				if (open) g.set(body, { height: 'auto' });
+				body.style.height = open ? 'auto' : '0px';
 				return;
 			}
 			g.to(body, Object.assign({
 				duration: open ? dur(0.38) : dur(0.26),
 				ease: open ? 'power2.out' : 'power2.in',
 				onComplete: function () {
-					if (open) g.set(body, { height: 'auto' });
+					if (open) body.style.height = 'auto';
 				}
 			}, vars));
 		}
@@ -4896,7 +4907,6 @@
 					rebuildStack(pipeline);
 				}
 
-				if (!sliding) {
 				pipeline.forEach(function (op) {
 					const card = stack.querySelector('[data-id="' + op.id + '"]');
 					if (!card) return;
@@ -4915,7 +4925,7 @@
 						if (slider) {
 							const mod = (op.modulations || {})[key];
 							if (slider.setMod) slider.setMod(mod);
-							if (!(mod && mod.enabled)) slider.setValue(op.parameters[key]);
+							if (!sliding && !(mod && mod.enabled)) slider.setValue(op.parameters[key]);
 						}
 						const colorField = colors[op.id + ':' + key];
 						if (colorField && colorField.setValue) {
@@ -4951,7 +4961,6 @@
 					paintCamStatus(card, op);
 					paintVisibleParams(card, op);
 				});
-			}
 			}
 
 			refreshOutput();
