@@ -2,15 +2,15 @@
 
 **ELO (Effect Linked Operators)** is a modular visual instrument for generative and reactive visuals.
 
-An **ELO** is an operator: a processing module that can generate, transform, filter, or manipulate a visual signal.
+You create visuals by connecting **operators**. Each operator generates, transforms, filters, or otherwise changes a visual signal.
 
-A sequence of connected ELOs is an **ELOS**. Each ELO receives a texture, performs its operation, and passes the result to the next.
+A sequence of connected operators is a **chain** — the consolidated visual. Each operator receives a texture, performs its operation, and passes the result to the next.
 
 ```text
 Generator → Effect → Filter → Color → Output
 ```
 
-Order defines the result. `Lines → Warp` produces a different image from `Warp → Lines`. ELOs can be bypassed, reordered, duplicated, or replaced, and the sequence recomputes immediately.
+Order defines the result. `Lines → Warp` produces a different image from `Warp → Lines`. Operators can be bypassed, reordered, duplicated, or replaced, and the chain recomputes immediately.
 
 The interaction stays immediate:
 
@@ -26,17 +26,17 @@ Product thinking, phases, and operator principles live in [ROADMAP.md](ROADMAP.m
 
 The live instrument already has:
 
-* Linear ELOS you can create, duplicate, rename, and switch
+* Linear chains you can create, duplicate, rename, and switch
 * Parameter modulation from **Speed**, **BPM**, and **FFT**
 * Operator **presets**
-* Shareable ELOS: copy a link, download JSON, or keep templates as files
+* Shareable chains: copy a link, download JSON, or keep templates as files
 * Output **Corner Pin** and stackable **Rectangle / Circle** masks
 * **DEBUG / SYSTEM** overlay with FPS, CPU, and runtime
 * Phone control and Camera Input from a USB webcam or phone
 
-Shipped ELOs:
+Shipped operators:
 
-| Category   | ELOs                                                      |
+| Category   | Operators                                                 |
 | ---------- | --------------------------------------------------------- |
 | Generators | Lines, Noise, Shape, Gradient, Camera Input               |
 | Effects    | Warp, Transform, Kaleidoscope, Displace, Feedback, Glitch, Pixelate, Mirror, Tile |
@@ -46,7 +46,7 @@ Shipped ELOs:
 
 ## Next
 
-The next ELOs are **Particles**, then **Video**, then **Blend**. The following stage expands the instrument from a single ELOS into multiple ELOS working together, leading toward multi-input processing and eventually a graph architecture.
+The next operators are **Particles**, then **Video**, then **Blend**. The following stage expands the instrument from a single chain into multiple chains working together, leading toward multi-input processing and eventually a graph architecture.
 
 ```text
 New operators
@@ -80,6 +80,6 @@ bundle exec jekyll serve
 
 Default templates are JSON files in `library/templates/`. Edit those files in the repo to change the shipped set. Anything you **Save template** on an instance is written to `server/data/templates/` and shows up immediately for every client connected to that instance (desktop and phone).
 
-The Share button copies a link with the full ELOS inside it. Open that link on this machine, the Pi, or another ELO instance to load the same operators and parameters. You can also download the JSON and drop it into `library/templates/` or import it from the Share panel.
+The Share button copies a link with the full chain inside it. Open that link on this machine, the Pi, or another ELO instance to load the same operators and parameters. You can also download the JSON and drop it into `library/templates/` or import it from the Share panel.
 
 To run automatically on a Raspberry Pi, follow [INSTALL.md](INSTALL.md).

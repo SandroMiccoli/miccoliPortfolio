@@ -4,17 +4,17 @@
 
 **ELO (Effect Linked Operators)** is a modular visual instrument for creating generative and reactive geometric visuals.
 
-The core idea is simple: instead of building a visual through a monolithic shader with dozens of parameters, the image is constructed through **ELOs** — visual operators connected in a specific sequence.
+The core idea is simple: instead of building a visual through a monolithic shader with dozens of parameters, the image is constructed by connecting **operators** in a specific sequence.
 
-An **Elo always connects one thing to another**.
+An **operator always connects one thing to another**.
 
-Each Elo receives visual data, transforms it, and passes the result to the next Elo.
+Each operator receives visual data, transforms it, and passes the result to the next operator.
 
 ```text
 Generator → Effect → Effect → Color → Output
 ```
 
-A sequence of connected Elos forms an **ELOS**.
+A sequence of connected operators forms a **chain** — the consolidated visual.
 
 The system should remain fast to experiment with, immediate to manipulate, and expressive enough to become a performance instrument.
 
@@ -28,9 +28,9 @@ ELO is not intended to reproduce the architecture of a traditional synthesizer. 
 
 ## 2. Core Model
 
-### ELO
+### Operator
 
-An **Elo** is a modular visual processing unit.
+An **operator** is a modular visual processing unit.
 
 It represents one operation in the visual signal chain and connects an input to an output.
 
@@ -52,11 +52,11 @@ The order is meaningful.
 
 `Lines → Warp` produces a different visual process from `Warp → Lines`.
 
-An Elo can be created, configured, bypassed, duplicated, reordered, and connected to another Elo.
+An operator can be created, configured, bypassed, duplicated, reordered, and connected to another operator.
 
-### ELOS
+### Chain
 
-An **ELOS** is a sequence of connected Elos that forms a complete visual process.
+A **chain** is a sequence of connected operators that forms a complete visual — the consolidated effect.
 
 ```text
 Lines
@@ -70,15 +70,13 @@ Color Lookup
 Screen
 ```
 
-The sequence itself is the visual instrument's basic building block.
+The chain itself is the visual instrument's basic building block.
 
-Multiple Elos can be combined into different Elos configurations, duplicated, renamed, activated, and eventually performed.
+Multiple operators can be combined into different chains, duplicated, renamed, activated, and eventually performed.
 
-The collection of available Elos and their configurations becomes the user's visual vocabulary.
+The collection of available operators and their chains becomes the user's visual vocabulary.
 
-### Operators
-
-Operators are the implementation model behind Elos.
+### Execution
 
 Each operator should:
 
@@ -93,13 +91,13 @@ Each operator should:
 The executor should remain generic:
 
 ```text
-for operator in elo.operators:
+for operator in chain.operators:
     texture = operator.process(texture)
 ```
 
 Adding an operator should not require changing the execution architecture.
 
-The user interacts with **Elos**; the system implements them as **operators**.
+The user interacts with **operators** connected into **chains**.
 
 ---
 
@@ -135,7 +133,7 @@ Runtime modulation describes what is happening now.
 
 ## 4. Current Operator Vocabulary
 
-Shipped Elos in the live instrument.
+Shipped operators in the live instrument.
 
 ### Generators
 
@@ -197,7 +195,7 @@ Shipped Elos in the live instrument.
 
 **Screen** — displays the current texture.
 
-This vocabulary should grow organically around the same Elo-based signal-chain model. New generators, outputs, and operators after 0.1.0-beta are ordered by how much new visual territory they open.
+This vocabulary should grow organically around the same operator-chain model. New generators, outputs, and operators after 0.1.0-beta are ordered by how much new visual territory they open.
 
 ---
 
@@ -208,7 +206,7 @@ The architecture should preserve three independent layers:
 ```text
 PATCH
   ↓
-ELOS / OPERATORS
+CHAIN / OPERATORS
   ↓
 RUNTIME
   ↓
@@ -217,7 +215,7 @@ OUTPUT
 
 The patch describes **what exists**.
 
-The ELOS describe **how visual operations are connected**.
+The chain describes **how visual operations are connected**.
 
 The runtime describes **what is happening now**.
 
@@ -264,7 +262,7 @@ The linear chain remains the interaction model. Composition happens without a no
 Fluid execution of operators — Generators, Effects, Filters, Color — designed to run in browsers and on mobile devices.
 
 ```text
-for operator in elo.operators:
+for operator in chain.operators:
     texture = operator.process(texture)
 ```
 
@@ -281,7 +279,7 @@ The ELO stores the instrument. The modulation system performs it.
 Save, load, and switch between:
 
 * operator presets
-* complete ELOS configurations
+* complete chain configurations
 
 Presets store operator parameters, not runtime modulation state.
 
@@ -301,7 +299,7 @@ The same preset can behave differently depending on the performance context.
 
 ### Output Mapping and Masks
 
-Output mapping is an output-stage concern, not an Elo.
+Output mapping is an output-stage concern, not an operator.
 
 **Corner Pin** — 4-point perspective deformation of the final image.
 
@@ -336,12 +334,12 @@ It exposes runtime information such as FPS, CPU, rendering information, and syst
 
 The overlay is never part of the rendered visual texture.
 
-### ELOS Reuse (Sub-patching)
+### Chain Reuse (Sub-patching)
 
-A new operator inserts a previously saved ELOS into a new chain as a single block.
+A new operator inserts a previously saved chain into a new chain as a single block.
 
 ```text
-[ Saved ELOS ]
+[ Saved chain ]
       ↓
 [ Warp ]
       ↓
@@ -350,16 +348,16 @@ A new operator inserts a previously saved ELOS into a new chain as a single bloc
 [ Screen ]
 ```
 
-The nested ELOS is one Elo in the parent chain. Internally it is still a sequence of operators.
+The nested chain is one operator in the parent chain. Internally it is still a sequence of operators.
 
 ### Secondary Inputs via Parameter
 
-Operators that need a second map — Displace, Blend, and similar — expose a simple dropdown in the UI to pull the texture from another existing ELOS.
+Operators that need a second map — Displace, Blend, and similar — expose a simple dropdown in the UI to pull the texture from another existing chain.
 
 No node graph.
 
 ```text
-ELOS A (main chain)              ELOS B (texture source)
+Chain A (main chain)              Chain B (texture source)
 Lines                            Noise
   ↓                                ↓
 Warp                             Kaleidoscope
@@ -378,12 +376,12 @@ The rendering core calculates execution order behind the scenes.
 It resolves nested chains (sub-patches) and secondary texture sources before processing the main chain.
 
 ```text
-1. Resolve nested ELOS
+1. Resolve nested chains
 2. Resolve secondary texture sources
 3. Execute the main chain
 ```
 
-Operators stay unaware of whether their input comes from the previous Elo, a nested ELOS, or another ELOS selected in a dropdown. The executor absorbs that complexity.
+Operators stay unaware of whether their input comes from the previous operator, a nested chain, or another chain selected in a dropdown. The executor absorbs that complexity.
 
 ---
 
@@ -395,13 +393,13 @@ Priority is fluid. The table below is the current order.
 
 ### Composition Operators
 
-The first Elos after launch exist to prove the secondary-input architecture in real patches.
+The first operators after launch exist to prove the secondary-input architecture in real patches.
 
-**Blend** — the first Elo to make real use of the secondary-input dropdown, opening the composition era.
+**Blend** — the first operator to make real use of the secondary-input dropdown, opening the composition era.
 
-**Mask** — spatial cuts inside the chain, using other ELOS as reference, independent from output masks.
+**Mask** — spatial cuts inside the chain, using other chains as reference, independent from output masks.
 
-**Add** / **Multiply** — dedicated mix Elos. Useful for testing multi-input stability. May later collapse into Blend modes.
+**Add** / **Multiply** — dedicated mix operators. Useful for testing multi-input stability. May later collapse into Blend modes.
 
 ### New Generator Sources
 
@@ -435,29 +433,29 @@ These signals modulate parameters in real time. Visual rendering remains on the 
 
 Organic addition of new effect and color operators, always evaluated by their potential to create new visual territories — not to inflate the catalog.
 
-Each new operator should become a useful **Elo** in the visual vocabulary.
+Each new operator should earn a place in the visual vocabulary.
 
-## Desired Elos (priority)
+## Desired operators (priority)
 
-| Pri | Elo | Category | Why it is next |
+| Pri | Operator | Category | Why it is next |
 | --- | --- | --- | --- |
-| 1 | **Blend** | Compositing | First Elo to make real use of the secondary-input dropdown from 0.1.0-beta, opening the composition era. |
-| 2 | **Mask** | Compositing | Spatial cuts inside the chain using other ELOS as reference, independent from output masks. |
+| 1 | **Blend** | Compositing | First operator to make real use of the secondary-input dropdown from 0.1.0-beta, opening the composition era. |
+| 2 | **Mask** | Compositing | Spatial cuts inside the chain using other chains as reference, independent from output masks. |
 | 3 | **Add** | Compositing | Dedicated additive mix. Tests multi-input flow stability. May later be absorbed by Blend. |
 | 4 | **Multiply** | Compositing | Dedicated multiplicative mix. Same logic as Add. |
 | 5 | **Video** | Generator | Timed source besides Camera. After composition, still essential for expanding sources. |
 | 6 | **Particles** | Generator | New motion language. Below composition so it does not delay architecture validation. |
-| 7 | **Texture** | Output | Named render target. Lets an ELOS write somewhere other than Screen. |
+| 7 | **Texture** | Output | Named render target. Lets a chain write somewhere other than Screen. |
 | 8 | **Syphon / Spout** | Output | Desktop interop. Connect ELO to software such as Resolume or TouchDesigner. |
 | 9 | **NDI** | Output | Network video out. The same patch sending image to other devices. |
 
-Revisit this table whenever a new Elo is proposed. Promote, demote, or drop items based on territory, not count.
+Revisit this table whenever a new operator is proposed. Promote, demote, or drop items based on territory, not count.
 
 ---
 
-# 8. Later Evolution — From Linear ELOS to a Graph
+# 8. Later Evolution — From Linear Chains to a Graph
 
-The linear ELOS model remains the primary interaction model for as long as possible.
+The linear chain model remains the primary interaction model for as long as possible.
 
 0.1.0-beta already combines multiple sources through sub-patching and dropdown secondary inputs. A visual graph is not required for that.
 
@@ -481,13 +479,13 @@ This should be an evolution of the existing ELO system, not a rewrite.
 
 The concept remains the same: **ELO means connection**.
 
-The visual graph is simply a more expressive form of connected Elos.
+The visual graph is simply a more expressive form of connected operators.
 
 Operators should remain unaware of whether their input comes from:
 
-* the previous operator in an ELOS;
-* a nested ELOS (sub-patch);
-* another ELOS selected as a secondary input;
+* the previous operator in a chain;
+* a nested chain (sub-patch);
+* another chain selected as a secondary input;
 * a graph connection;
 * a texture source.
 
@@ -521,7 +519,7 @@ Avoid unnecessary framebuffer allocations and texture copies.
 
 **Preview efficiency**
 
-ELOS thumbnails should remain based on actual rendered output while using reduced-resolution buffers.
+Chain thumbnails should remain based on actual rendered output while using reduced-resolution buffers.
 
 **Runtime monitoring**
 
@@ -565,8 +563,8 @@ The system should increasingly distinguish between **authoring** and **performan
 ### Authoring
 
 ```text
-Create ELOS
-Add Elos
+Create chain
+Add operators
 Tune parameters
 Save presets
 Build visual systems
@@ -575,8 +573,8 @@ Build visual systems
 ### Performance
 
 ```text
-Activate ELOS
-Switch ELOS
+Activate chain
+Switch chains
 Modulate parameters
 Change BPM
 React to audio
@@ -607,9 +605,9 @@ COMPOSITE
 OUTPUT
 ```
 
-Not every ELOS needs every category.
+Not every chain needs every category.
 
-A valid ELOS could be:
+A valid chain could be:
 
 ```text
 Noise → Warp → Screen
@@ -643,13 +641,13 @@ The system should encourage experimentation without forcing a rigid recipe.
 
 # 13. Product Principles
 
-### 1. The ELOS are the instrument
+### 1. The chains are the instrument
 
 The power of ELO should come from connecting simple operators rather than making individual operators excessively complex.
 
-### 2. Every Elo connects
+### 2. Every operator connects
 
-An Elo exists as part of a relationship between an input and an output.
+An operator exists as part of a relationship between an input and an output.
 
 Connection is the fundamental organizing principle of the system.
 
@@ -694,7 +692,7 @@ Immediate work is the 0.1.0-beta MVP:
 ```text
 Stable linear engine
       ↓
-Sub-patching (ELOS reuse)
+Sub-patching (chain reuse)
       ↓
 Secondary inputs via parameter
       ↓
@@ -723,10 +721,10 @@ It is to progressively transform the existing visual effect system into **ELO �
 
 The core abstraction is no longer the pipeline.
 
-It is the **Elo**:
+It is the **chain of operators**:
 
-> **An Elo connects one thing to another.**
+> **An operator connects one thing to another.**
 
-A sequence of connected Elos forms an **ELOS**.
+A sequence of connected operators forms a **chain** — the consolidated visual.
 
 Together, they form the instrument.

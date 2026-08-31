@@ -68,7 +68,7 @@ const DEFAULT_STATE = {
 	pipes: [
 		{
 			id: 'pipe_01',
-			name: 'ELOS 01',
+			name: 'Chain 01',
 			thumbnail: '',
 			operators: DEFAULT_OPERATORS
 		}

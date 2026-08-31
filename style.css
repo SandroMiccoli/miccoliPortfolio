@@ -1,6 +1,6 @@
 /* ELO UI
    tokens: off-black / off-white / hairline
-   radius: 0 for chrome / grid / sheets; 12px for Elo blocks (ELOS building blocks)
+   radius: 0 for chrome / grid / sheets; 12px for operator blocks (chain building blocks)
    z: preview 18, chrome 20, sys warn 190, map overlay 115, panel 130, picker 148, sheet 145, toasts 180, tip 185
 */
 
@@ -3463,7 +3463,7 @@ body.synth-control .synth-toasts {
 	color: var(--bad);
 }
 
-/* Stage tabs: ELOS / Mask / Mapping */
+/* Stage tabs: Chain / Mask / Mapping */
 
 .synth-stage-tabs {
 	display: grid;

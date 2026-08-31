@@ -1,6 +1,6 @@
 # Install ELO on a Raspberry Pi
 
-The Pi is the renderer, web server, and WebSocket server. Chromium runs `index.html` in kiosk mode on the HDMI display. A phone on the same network opens `/control` and drives ELOS over WebSocket. Live preview on the phone is a JPEG stream of the current output.
+The Pi is the renderer, web server, and WebSocket server. Chromium runs `index.html` in kiosk mode on the HDMI display. A phone on the same network opens `/control` and drives chains over WebSocket. Live preview on the phone is a JPEG stream of the current output.
 
 These steps assume Raspberry Pi OS **Debian 13 (Trixie) Lite** (no desktop), user **pi**, and a Raspberry Pi 4 or 5.
 
@@ -271,7 +271,7 @@ Keep the same `PAMName` / `XDG_*` / PipeWire environment as the Sway unit. There
 
 1. Join the same Wi-Fi as the Pi
 2. Scan the boot QR, or open `http://<pi-ip>:8080/control`
-3. Change ELOS and operators: activate, add, bypass, reorder, tweak parameters. The Pi display updates immediately
+3. Change chains and operators: activate, add, bypass, reorder, tweak parameters. The Pi display updates immediately
 4. On the Pi, press **U** or tap the right edge for the same panel
 
 The phone never receives the rendered video. It only sends patches over WebSocket, plus optional FFT and phone-camera frames. Thumbnails are generated on the display and come back in state.

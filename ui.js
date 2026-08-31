@@ -169,7 +169,7 @@
 		rootEl.innerHTML = '';
 
 		const preview = el('section', 'synth-preview');
-		preview.setAttribute('aria-label', 'ELOS output preview');
+		preview.setAttribute('aria-label', 'Chain output preview');
 		const previewFrame = el('div', 'synth-preview__frame');
 		const previewImg = el('img');
 		previewImg.alt = '';
@@ -177,7 +177,7 @@
 		previewImg.draggable = false;
 		previewImg.decoding = 'async';
 		const previewEmpty = el('p', 'synth-preview__empty', 'Waiting for output');
-		const previewName = el('p', 'synth-preview__name', 'ELOS');
+		const previewName = el('p', 'synth-preview__name', 'Chain');
 		previewFrame.appendChild(previewImg);
 		previewFrame.appendChild(previewEmpty);
 		previewFrame.appendChild(previewName);
@@ -198,7 +198,7 @@
 			localBtn = el('button', 'synth-preview__live synth-preview__local', 'Local');
 			localBtn.type = 'button';
 			localBtn.setAttribute('aria-pressed', 'false');
-			localBtn.setAttribute('aria-label', 'Run this ELOS on this device');
+			localBtn.setAttribute('aria-label', 'Run this chain on this device');
 			localBtn.addEventListener('click', function () {
 				const next = !localOn;
 				if (next) {
@@ -226,7 +226,7 @@
 		const pipesSec = el('section', 'synth-pipes');
 		const galleryTabs = el('div', 'synth-gallery-tabs');
 		galleryTabs.setAttribute('role', 'tablist');
-		galleryTabs.setAttribute('aria-label', 'ELOS collections');
+		galleryTabs.setAttribute('aria-label', 'Chain collections');
 		const galleryTabBtns = {};
 		[
 			{ id: 'set', label: 'Set' },
@@ -259,10 +259,10 @@
 
 		const activeBar = el('section', 'synth-pipe-active');
 		const activeHead = el('header', 'synth-pipe-active__head');
-		const activeName = el('h2', 'synth-pipe-active__name', 'ELOS');
+		const activeName = el('h2', 'synth-pipe-active__name', 'Chain');
 		activeName.tabIndex = 0;
 		activeName.setAttribute('role', 'button');
-		activeName.setAttribute('aria-label', 'Rename ELOS');
+		activeName.setAttribute('aria-label', 'Rename chain');
 		activeHead.appendChild(activeName);
 		const activeTools = el('div', 'synth-pipe-active__tools');
 		activeHead.appendChild(activeTools);
@@ -270,7 +270,7 @@
 		panelBody.appendChild(activeBar);
 
 		const stack = el('div', 'synth-stack');
-		stack.setAttribute('aria-label', 'Elo chain');
+		stack.setAttribute('aria-label', 'Operator chain');
 		panelBody.appendChild(stack);
 
 		const sysSlot = document.getElementById('synth-sys-slot');
@@ -405,7 +405,7 @@
 		top.appendChild(iconBtn(
 			'question',
 			'About ELO',
-			'What this instrument is, and how Elo families work.',
+			'What this instrument is, and how operators and chains work.',
 			openTypesHelp
 		));
 		const helpSlot = document.getElementById('synth-help-slot');
@@ -419,7 +419,7 @@
 		const tabBtns = {};
 		const stagePanels = {};
 		[
-			{ id: 'pipeline', label: 'ELOS' },
+			{ id: 'pipeline', label: 'Chain' },
 			{ id: 'mask', label: 'Mask' },
 			{ id: 'mapping', label: 'Mapping' }
 		].forEach(function (tab) {
@@ -541,7 +541,7 @@
 		});
 		cardRow.appendChild(cardToggle);
 		stageMap.appendChild(cardRow);
-		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the ELOS so you can pin corners to the display.'));
+		stageMap.appendChild(el('p', 'synth-sec__hint', 'Covers the chain so you can pin corners to the display.'));
 
 		rootEl.appendChild(stageTabs);
 		rootEl.appendChild(stagePipeline);
@@ -1102,7 +1102,7 @@
 			downloadBtn.addEventListener('click', function () {
 				const doc = root.SynthShare.toDocument(item);
 				root.SynthShare.downloadJson(
-					root.SynthShare.fileName(item.name, 'elos'),
+					root.SynthShare.fileName(item.name, 'chain'),
 					doc
 				);
 			});
@@ -1157,7 +1157,7 @@
 			const input = el('input', 'synth-pipe-rename');
 			input.type = 'text';
 			input.value = item.name;
-			input.setAttribute('aria-label', kind === 'template' ? 'Template name' : 'ELOS name');
+			input.setAttribute('aria-label', kind === 'template' ? 'Template name' : 'Chain name');
 			input.setAttribute('enterkeyhint', 'done');
 			input.autocomplete = 'off';
 			input.autocapitalize = 'characters';
@@ -1235,13 +1235,13 @@
 		const renameBtn = iconBtn(
 			'pencil',
 			'Rename',
-			'Change the name of the selected ELOS.',
+			'Change the name of the selected chain.',
 			beginRename
 		);
 		const dupBtn = iconBtn(
 			'copy',
 			'Duplicate',
-			'Create an independent copy of the selected ELOS.',
+			'Create an independent copy of the selected chain.',
 			function () {
 				const s = getState();
 				if (galleryMode === 'templates') {
@@ -1271,7 +1271,7 @@
 		const saveTplBtn = iconBtn(
 			'disk',
 			'Save template',
-			'Store this ELOS on disk and add it to TEMPLATES.',
+			'Store this chain on disk and add it to TEMPLATES.',
 			saveActiveToTemplates
 		);
 		const shareBtn = iconBtn(
@@ -1290,7 +1290,7 @@
 		const deletePipeBtn = iconBtn(
 			'trash',
 			'Delete',
-			'Remove the selected ELOS or template.',
+			'Remove the selected chain or template.',
 			function () {
 				if (galleryMode === 'templates') {
 					const tpl = selectedTemplate();
@@ -1372,7 +1372,7 @@
 		playBtn.setAttribute('aria-pressed', 'false');
 		playBtn.setAttribute('aria-label', 'Play SET autoplay');
 		playBtn.dataset.tip = 'Autoplay';
-		playBtn.dataset.tipDesc = 'Cycle the SET on a timer. Needs two or more ELOS.';
+		playBtn.dataset.tipDesc = 'Cycle the SET on a timer. Needs two or more chains.';
 		bindTip(playBtn);
 		const playIconWrap = el('span', 'synth-autoplay__play-icon');
 		playIconWrap.appendChild(root.SynthIcons.svg('play'));
@@ -1906,12 +1906,12 @@
 		function openTypesHelp() {
 			openSheet('ELO');
 			sheetBody.innerHTML = '';
-			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. An Elo connects one thing to another. A sequence of connected Elos is an ELOS. Order is the patch.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick an ELOS in the grid, then edit its Elos. Each Elo reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES is a gallery of stored examples. Send one into the SET to edit and perform it. Save an ELOS from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'AUTOPLAY cycles the SET on a timer. Seq, Inv, and Rand pick the order (Rand shuffles without repeating until every ELOS has played). Interval is seconds or bars of the BPM clock. Editing an ELOS does not stop it. Previewing a template pauses it until you return to the SET.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'LIVE streams the renderer output into the preview. LOCAL runs the same ELOS on this device so you can watch the real frame rate without that stream.'));
-			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. ELOS is the Elo chain. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the ELOS so you can align corners.'));
+			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. You create visuals by connecting operators. Each operator does one job. A chain is a sequence of connected operators — the consolidated visual. Order is the patch.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick a chain in the grid, then edit its operators. Each operator reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of chains you can activate for the live output. TEMPLATES is a gallery of stored examples. Send one into the SET to edit and perform it. Save a chain from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'AUTOPLAY cycles the SET on a timer. Seq, Inv, and Rand pick the order (Rand shuffles without repeating until every chain has played). Interval is seconds or bars of the BPM clock. Editing a chain does not stop it. Previewing a template pauses it until you return to the SET.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'LIVE streams the renderer output into the preview. LOCAL runs the same chain on this device so you can watch the real frame rate without that stream.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. Chain is the operator stack. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the chain so you can align corners.'));
 			const cats = root.SynthCategories;
 			['generator', 'effect', 'filter', 'color', 'compositing', 'output'].forEach(function (id) {
 				const cat = cats[id];
@@ -1925,7 +1925,7 @@
 		}
 
 		function openOpHelp(def) {
-			openSheet(def.name || 'Elo');
+			openSheet(def.name || 'Operator');
 			sheetBody.innerHTML = '';
 			const block = el('article', 'synth-help__cat');
 			block.style.setProperty('--op-color', def.color || '#8E8E8E');
@@ -1936,7 +1936,7 @@
 
 		function openLibrary(index) {
 			libInsertAt = index;
-			openSheet('Add Elo');
+			openSheet('Add Operator');
 			sheetBody.innerHTML = '';
 			const groups = root.SynthRegistry.listByCategory();
 			groups.forEach(function (group) {
@@ -2828,7 +2828,7 @@
 			field.appendChild(top);
 			const grid = el('div', 'synth-presets__grid');
 			grid.setAttribute('role', 'listbox');
-			grid.setAttribute('aria-label', 'Elo presets');
+			grid.setAttribute('aria-label', 'Operator presets');
 			field.appendChild(grid);
 			const tools = el('div', 'synth-presets__tools');
 			field.appendChild(tools);
@@ -3820,11 +3820,11 @@
 			const wrap = el('div', isAdd ? 'synth-insert synth-insert--add' : 'synth-insert synth-insert--node');
 			const btn = el('button', 'synth-insert__btn');
 			btn.type = 'button';
-			btn.setAttribute('aria-label', 'Add Elo here');
-			btn.dataset.tip = 'Add Elo';
-			btn.dataset.tipDesc = 'Open the library and insert a new Elo at this point in the chain.';
+			btn.setAttribute('aria-label', 'Add operator here');
+			btn.dataset.tip = 'Add Operator';
+			btn.dataset.tipDesc = 'Open the library and insert a new operator at this point in the chain.';
 			btn.appendChild(root.SynthIcons.svg('plus'));
-			if (isAdd) btn.appendChild(el('span', 'synth-insert__label', 'Add Elo'));
+			if (isAdd) btn.appendChild(el('span', 'synth-insert__label', 'Add Operator'));
 			btn.addEventListener('click', function () {
 				openLibrary(index);
 			});
@@ -3970,7 +3970,7 @@
 		function paintCamStatus(card, op) {
 			if (!card || op.type !== 'camera') return;
 			const view = op.bypassed
-				? { phase: 'idle', message: 'Bypassed. Enable the Elo to open the camera.', live: false, hasDevices: false }
+				? { phase: 'idle', message: 'Bypassed. Enable the operator to open the camera.', live: false, hasDevices: false }
 				: cameraView(op);
 			const status = card.querySelector('.synth-cam-status');
 			if (status) {
@@ -4015,7 +4015,7 @@
 			grip.type = 'button';
 			grip.setAttribute('aria-label', 'Drag to reorder');
 			grip.dataset.tip = 'Reorder';
-			grip.dataset.tipDesc = 'Drag this handle to change the Elo order in the chain.';
+			grip.dataset.tipDesc = 'Drag this handle to change the operator order in the chain.';
 			grip.appendChild(root.SynthIcons.svg('grip'));
 			bindTip(grip);
 			bindGrip(grip, op.id);
@@ -4044,11 +4044,11 @@
 			if (def.category === 'generator') {
 				const soloBtn = el('button', 'synth-icon synth-op__solo', 'S');
 				soloBtn.type = 'button';
-				soloBtn.setAttribute('aria-label', 'Solo. Bypass every other Elo and leave only this generator on the output.');
+				soloBtn.setAttribute('aria-label', 'Solo. Bypass every other operator and leave only this generator on the output.');
 				soloBtn.setAttribute('aria-pressed', soloed ? 'true' : 'false');
 				if (soloed) soloBtn.classList.add('is-active');
 				soloBtn.dataset.tip = 'Solo';
-				soloBtn.dataset.tipDesc = 'Bypass every other Elo and leave only this generator on the output.';
+				soloBtn.dataset.tipDesc = 'Bypass every other operator and leave only this generator on the output.';
 				bindTip(soloBtn);
 				soloBtn.addEventListener('pointerup', function (event) {
 					if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -4063,7 +4063,7 @@
 			const bypassBtn = iconBtn(
 				op.bypassed ? 'eye-slash' : 'eye',
 				'Bypass',
-				'Skip this Elo. The previous image passes through unchanged.',
+				'Skip this operator. The previous image passes through unchanged.',
 				function () {
 					const current = ops().find(function (item) {
 						return item.id === op.id;
@@ -4083,29 +4083,29 @@
 			tools.appendChild(iconBtn(
 				'question',
 				def.name || 'Help',
-				def.help || 'Elo help',
+				def.help || 'Operator help',
 				function () {
 					openOpHelp(def);
 				}
 			));
 
-			const upBtn = iconBtn('caret-up', 'Move up', 'Move this Elo one step earlier in the chain.', function () {
+			const upBtn = iconBtn('caret-up', 'Move up', 'Move this operator one step earlier in the chain.', function () {
 				patchOps(root.SynthPipeline.move(ops(), op.id, -1));
 			});
 			upBtn.disabled = index === 0;
 			tools.appendChild(upBtn);
 
-			const downBtn = iconBtn('caret-down', 'Move down', 'Move this Elo one step later in the chain.', function () {
+			const downBtn = iconBtn('caret-down', 'Move down', 'Move this operator one step later in the chain.', function () {
 				patchOps(root.SynthPipeline.move(ops(), op.id, 1));
 			});
 			downBtn.disabled = index === total - 1;
 			tools.appendChild(downBtn);
 
-			tools.appendChild(iconBtn('copy', 'Duplicate', 'Insert a copy of this Elo directly below it.', function () {
+			tools.appendChild(iconBtn('copy', 'Duplicate', 'Insert a copy of this operator directly below it.', function () {
 				patchOps(root.SynthPipeline.duplicate(ops(), op.id));
 			}));
 
-			tools.appendChild(iconBtn('trash', 'Delete', 'Remove this Elo from the chain.', function () {
+			tools.appendChild(iconBtn('trash', 'Delete', 'Remove this operator from the chain.', function () {
 				if (expandedId === op.id) expandedId = null;
 				patchOps(root.SynthPipeline.remove(ops(), op.id));
 			}));
@@ -4237,7 +4237,7 @@
 			stack.innerHTML = '';
 			stack.classList.toggle('is-empty', !pipeline.length);
 			if (!pipeline.length) {
-				stack.appendChild(el('p', 'synth-stack__empty', 'Tap Add Elo to start the chain.'));
+				stack.appendChild(el('p', 'synth-stack__empty', 'Tap Add Operator to start the chain.'));
 				stack.appendChild(insertBtn(0, 'add'));
 				if (state && Flip && g) {
 					Flip.from(state, {
@@ -4302,7 +4302,7 @@
 		}
 
 		function refreshPreview(view) {
-			previewName.textContent = view ? view.name : 'ELOS';
+			previewName.textContent = view ? view.name : 'Chain';
 			if (localPreviewOn()) {
 				previewImg.hidden = true;
 				previewEmpty.hidden = true;
@@ -4610,7 +4610,7 @@
 					grid.appendChild(el(
 						'p',
 						'synth-pipe-grid__empty',
-						'Save an ELOS from the SET to keep it here.'
+						'Save a chain from the SET to keep it here.'
 					));
 					return;
 				}
@@ -4630,11 +4630,11 @@
 			});
 			const add = el('button', 'synth-pipe-tile synth-pipe-tile--new');
 			add.type = 'button';
-			add.setAttribute('aria-label', 'New ELOS');
+			add.setAttribute('aria-label', 'New chain');
 			const plusWrap = el('span', 'synth-pipe-tile__plus');
 			plusWrap.appendChild(root.SynthIcons.svg('plus'));
 			add.appendChild(plusWrap);
-			add.appendChild(el('span', 'synth-pipe-tile__name', 'New ELOS'));
+			add.appendChild(el('span', 'synth-pipe-tile__name', 'New Chain'));
 			add.addEventListener('click', function () {
 				const s = getState();
 				const pipe = root.SynthPipes.createNew(s.pipes);
@@ -4781,7 +4781,7 @@
 			playBtn.disabled = !runnable && !ap.enabled;
 			playBtn.title = runnable
 				? (on ? 'Pause SET autoplay' : 'Play SET autoplay')
-				: 'Add another ELOS to the SET to use autoplay';
+				: 'Add another chain to the SET to use autoplay';
 			playBtn.classList.toggle('is-on', on);
 			playBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
 			playBtn.setAttribute('aria-label', on ? 'Pause SET autoplay' : 'Play SET autoplay');
@@ -4870,8 +4870,8 @@
 			const pipe = activePipe();
 			const tpl = selectedTemplate();
 			if (!renaming) {
-				activeName.textContent = pipe ? pipe.name : 'ELOS';
-				activeName.setAttribute('aria-label', 'Rename ELOS');
+				activeName.textContent = pipe ? pipe.name : 'Chain';
+				activeName.setAttribute('aria-label', 'Rename chain');
 			}
 			refreshPreview(previewView());
 			if (recOn() && !hasLiveCamera((previewView() && previewView().operators) || pipeline)) finishRec(false);

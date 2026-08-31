@@ -38,7 +38,7 @@
 		return {
 			v: 1,
 			kind: 'elos',
-			name: String(name || 'ELOS').slice(0, 32),
+			name: String(name || 'Chain').slice(0, 32),
 			operators: compactOperators(operators)
 		};
 	}
@@ -129,7 +129,7 @@
 	function parseObject(raw) {
 		if (!raw || typeof raw !== 'object') return null;
 		if (Array.isArray(raw.operators) && raw.operators.length) {
-			const name = String(raw.name || 'ELOS').trim().slice(0, 32) || 'ELOS';
+			const name = String(raw.name || 'Chain').trim().slice(0, 32) || 'Chain';
 			return {
 				v: 1,
 				kind: raw.kind === 'template' ? 'template' : 'elos',

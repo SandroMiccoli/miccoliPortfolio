@@ -24,7 +24,7 @@
 	function defaultState() {
 		const pipe = root.SynthPipes && root.SynthPipes.createDefault
 			? root.SynthPipes.createDefault()
-			: { id: 'pipe_01', name: 'ELOS 01', thumbnail: '', operators: [] };
+			: { id: 'pipe_01', name: 'Chain 01', thumbnail: '', operators: [] };
 		const templates = root.SynthTemplates ? root.SynthTemplates.initial() : [];
 		return {
 			pipes: [pipe],
@@ -131,8 +131,8 @@
 			};
 		} else if (raw.pipeline) {
 			const pipe = root.SynthPipes
-				? root.SynthPipes.create(raw.pipeline, 'ELOS 01', 'pipe_01')
-				: { id: 'pipe_01', name: 'ELOS 01', thumbnail: '', operators: clone(raw.pipeline) };
+				? root.SynthPipes.create(raw.pipeline, 'Chain 01', 'pipe_01')
+				: { id: 'pipe_01', name: 'Chain 01', thumbnail: '', operators: clone(raw.pipeline) };
 			state = {
 				pipes: [pipe],
 				activePipeId: pipe.id,

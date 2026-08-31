@@ -17,10 +17,10 @@
 			used[pipe.name] = true;
 		});
 		let n = 1;
-		let name = 'ELOS ' + pad(n);
+		let name = 'Chain ' + pad(n);
 		while (used[name]) {
 			n += 1;
-			name = 'ELOS ' + pad(n);
+			name = 'Chain ' + pad(n);
 		}
 		return name;
 	}
@@ -35,7 +35,7 @@
 	function createPipe(operators, name, id) {
 		return {
 			id: id || uid(),
-			name: name || 'ELOS 01',
+			name: name || 'Chain 01',
 			thumbnail: '',
 			operators: operators || []
 		};
@@ -93,7 +93,7 @@
 
 		createDefault: function () {
 			const ops = root.SynthPipeline.createDefault();
-			return createPipe(ops, 'ELOS 01', 'pipe_01');
+			return createPipe(ops, 'Chain 01', 'pipe_01');
 		},
 
 		createNew: function (pipes) {
