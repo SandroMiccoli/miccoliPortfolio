@@ -1,5 +1,10 @@
 [
   "stripe.json",
   "tape.json",
-  "cam-edge-poster.json"
+  "cam-edge-poster.json",
+  "cam-pixelate.json",
+  "dancing-fire.json",
+  "moir-lines.json",
+  "kaleido-cool.json",
+  "kaleido-fire.json"
 ]

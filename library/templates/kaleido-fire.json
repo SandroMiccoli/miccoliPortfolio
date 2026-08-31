@@ -1,0 +1,97 @@
+{
+  "id": "pipe_cf5zp6i4",
+  "name": "KALEIDO FIRE",
+  "operators": [
+    {
+      "type": "noise",
+      "parameters": {
+        "scale": 16.5,
+        "translateX": 0,
+        "translateY": 0,
+        "translateZ": 0,
+        "speedX": 0,
+        "speedY": 0,
+        "speedZ": 0.27,
+        "amplitude": 1.45,
+        "offset": -0.30999999999999994,
+        "octaves": 6,
+        "contrast": 0.69,
+        "blendMode": "normal"
+      }
+    },
+    {
+      "type": "kaleidoscope",
+      "parameters": {
+        "segments": 6,
+        "angle": 0,
+        "zoom": 1.12,
+        "offsetX": 0.5,
+        "offsetY": 0.5,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "pixelate",
+      "parameters": {
+        "sizeX": 18,
+        "sizeY": 18,
+        "mix": 1
+      },
+      "bypassed": true
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0,
+            "color": "#210000"
+          },
+          {
+            "id": "n1",
+            "pos": 0.08605245831061263,
+            "color": "#C41414"
+          },
+          {
+            "id": "n2",
+            "pos": 0.55,
+            "color": "#FF7A00"
+          },
+          {
+            "id": "n3",
+            "pos": 0.82,
+            "color": "#FFE14A"
+          },
+          {
+            "id": "n4",
+            "pos": 1,
+            "color": "#FFF6D2"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "linear"
+      }
+    },
+    {
+      "type": "edge",
+      "parameters": {
+        "threshold": 0.06,
+        "intensity": 3.3200000000000003,
+        "radius": 0.88,
+        "mix": 1,
+        "invert": 0,
+        "color": "#FFFFFF",
+        "blendMode": "subtract"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}
