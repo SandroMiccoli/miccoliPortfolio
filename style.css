@@ -1476,21 +1476,25 @@ body.synth-control.is-sheet-open {
 	outline-offset: -1px;
 }
 
-.synth-panel .synth-help__lead,
-.synth-panel .synth-help__text {
+.synth-panel p.synth-help__lead,
+.synth-panel p.synth-help__text {
 	font-size: 12px;
 	line-height: 1.5;
 	color: var(--muted);
-	margin: 0 0 12px;
+	margin: 0 0 14px;
 }
 
-.synth-panel .synth-help__lead {
-	margin-bottom: 10px;
+.synth-panel p.synth-help__lead {
+	margin-bottom: 14px;
 	color: var(--fg);
 }
 
-.synth-panel .synth-sheet__body > .synth-help__text {
-	margin-bottom: 20px;
+.synth-panel .synth-sheet__body > p.synth-help__text {
+	margin-bottom: 14px;
+}
+
+.synth-panel .synth-sheet__body > p.synth-help__text:last-of-type {
+	margin-bottom: 22px;
 }
 
 .synth-panel .synth-help__cat {
@@ -1511,7 +1515,7 @@ body.synth-control.is-sheet-open {
 	color: var(--fg);
 }
 
-.synth-panel .synth-help__cat .synth-help__text {
+.synth-panel .synth-help__cat p.synth-help__text {
 	margin: 0;
 }
 
