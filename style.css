@@ -862,6 +862,297 @@ body.synth-display .synth-rec * {
 	border-color: var(--fg);
 }
 
+.synth-autoplay {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.synth-autoplay[hidden] {
+	display: none;
+}
+
+.synth-autoplay__row {
+	display: grid;
+	gap: 8px;
+	align-items: stretch;
+}
+
+.synth-autoplay__row--modes {
+	grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.synth-autoplay__row--time {
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+}
+
+.synth-autoplay__play {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	min-height: 44px;
+	padding: 6px 4px;
+	border: 1px solid var(--line);
+	background: var(--fill);
+	color: var(--fg);
+	font: inherit;
+	cursor: pointer;
+	appearance: none;
+	touch-action: manipulation;
+}
+
+.synth-autoplay__play.is-on {
+	border-color: var(--fg);
+	background: var(--fg);
+	color: var(--bg);
+}
+
+.synth-autoplay__play:disabled {
+	opacity: 0.35;
+	pointer-events: none;
+}
+
+.synth-autoplay__play:active {
+	transform: scale(0.98);
+}
+
+.synth-autoplay__play-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.synth-autoplay__play-icon .synth-ph {
+	width: 18px;
+	height: 18px;
+}
+
+.synth-autoplay__play-label {
+	font-size: 9px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	line-height: 1;
+}
+
+.synth-autoplay__modes,
+.synth-autoplay__units,
+.synth-autoplay__step {
+	display: grid;
+	border: 1px solid var(--line);
+	background: var(--bg);
+	min-height: 44px;
+}
+
+.synth-autoplay__modes {
+	grid-template-columns: 1fr 1fr 1fr;
+}
+
+.synth-autoplay__units {
+	grid-template-columns: 1fr 1fr;
+}
+
+.synth-autoplay__seg {
+	min-height: 44px;
+	padding: 0 4px;
+	border: 0;
+	border-right: 1px solid var(--line);
+	background: transparent;
+	color: var(--muted);
+	font: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	cursor: pointer;
+	appearance: none;
+	touch-action: manipulation;
+}
+
+.synth-autoplay__seg:last-child {
+	border-right: 0;
+}
+
+.synth-autoplay__seg.is-active {
+	background: var(--fg);
+	color: var(--bg);
+}
+
+.synth-autoplay__seg:active {
+	transform: scale(0.98);
+}
+
+.synth-autoplay__step {
+	grid-template-columns: 44px minmax(0, 1fr) 44px;
+	align-items: stretch;
+}
+
+.synth-autoplay__step-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	background: var(--fill);
+	color: var(--fg);
+	cursor: pointer;
+	appearance: none;
+	touch-action: manipulation;
+}
+
+.synth-autoplay__step-btn:first-child {
+	border-right: 1px solid var(--line);
+}
+
+.synth-autoplay__step-btn:last-child {
+	border-left: 1px solid var(--line);
+}
+
+.synth-autoplay__step-btn .synth-ph {
+	width: 16px;
+	height: 16px;
+}
+
+.synth-autoplay__step-btn:disabled {
+	opacity: 0.35;
+	pointer-events: none;
+}
+
+.synth-autoplay__step-btn:active {
+	background: color-mix(in srgb, var(--fg) 8%, var(--fill));
+}
+
+.synth-autoplay__interval {
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	gap: 5px;
+	height: 100%;
+	padding: 4px 6px 5px;
+	min-width: 0;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--fg);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.synth-autoplay__interval-num {
+	display: block;
+	font-size: 32px;
+	font-weight: 600;
+	letter-spacing: -0.04em;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.synth-autoplay__interval-num:focus-visible {
+	outline: 1px solid var(--fg);
+	outline-offset: 2px;
+}
+
+.synth-autoplay__interval-unit {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--muted);
+	line-height: 1;
+}
+
+.synth-autoplay__edit {
+	width: 2.4em;
+	min-width: 0;
+	height: calc(100% - 8px);
+	padding: 0 2px;
+	border: 1px solid var(--fg);
+	background: var(--bg);
+	color: var(--fg);
+	font: inherit;
+	font-size: 32px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.04em;
+	line-height: 1;
+	text-align: center;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+.synth-autoplay__edit:focus {
+	outline: none;
+}
+
+.synth-autoplay__meter {
+	position: relative;
+	height: 16px;
+	border: 1px solid var(--line);
+	background: var(--bg);
+	overflow: hidden;
+}
+
+.synth-autoplay__meter.is-on {
+	border-color: var(--fg);
+}
+
+.synth-autoplay__meter-fill {
+	display: block;
+	height: 100%;
+	width: 100%;
+	background: var(--fg);
+	transform: scaleX(0);
+	transform-origin: left center;
+	pointer-events: none;
+}
+
+.synth-autoplay__meter.is-bars .synth-autoplay__meter-fill {
+	display: none;
+}
+
+.synth-autoplay__meter.is-seconds .synth-autoplay__meter-bars {
+	display: none;
+}
+
+.synth-autoplay__meter-bars {
+	display: grid;
+	height: 100%;
+	gap: 2px;
+	padding: 2px;
+}
+
+.synth-autoplay__meter-bar {
+	position: relative;
+	min-width: 0;
+	background: var(--line);
+	overflow: hidden;
+}
+
+.synth-autoplay__meter-bar::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: var(--fg);
+	transform: scaleX(var(--bar-p, 0));
+	transform-origin: left center;
+}
+
+.synth-autoplay.is-held .synth-autoplay__play {
+	opacity: 0.7;
+}
+
+.synth-pipe-tile__progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 2px;
+	background: var(--fg);
+	transform: scaleX(0);
+	transform-origin: left center;
+	pointer-events: none;
+}
+
 .synth-pipe-tile {
 	display: flex;
 	flex-direction: column;
@@ -885,6 +1176,7 @@ body.synth-display .synth-rec * {
 }
 
 .synth-pipe-tile__thumb {
+	position: relative;
 	aspect-ratio: 16 / 9;
 	background: #0a0a0a;
 	overflow: hidden;
@@ -3518,7 +3810,10 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 	.synth-chip,
 	.synth-icon,
 	.synth-insert__btn,
-	.synth-op {
+	.synth-op,
+	.synth-autoplay__play,
+	.synth-autoplay__seg,
+	.synth-autoplay__step-btn {
 		transition: none;
 	}
 
@@ -3535,7 +3830,10 @@ body.synth-display.is-map-edit .synth-map-handle:active {
 	.synth-palette:active,
 	.synth-swatch__face:active,
 	.synth-palettes__add:active,
-	.synth-ramp__tool:active {
+	.synth-ramp__tool:active,
+	.synth-autoplay__play:active,
+	.synth-autoplay__seg:active,
+	.synth-autoplay__step-btn:active {
 		transform: none;
 	}
 

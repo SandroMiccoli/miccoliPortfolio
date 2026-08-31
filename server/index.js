@@ -82,6 +82,15 @@ const DEFAULT_STATE = {
 		bpm: 120,
 		originMs: Date.now()
 	},
+	autoplay: {
+		enabled: false,
+		mode: 'sequential',
+		unit: 'seconds',
+		intervalSec: 8,
+		intervalBars: 4,
+		lastSwitchMs: 0,
+		shuffleQueue: []
+	},
 	debug: {
 		enabled: false
 	},

@@ -26,6 +26,8 @@
 	let tplThumbDue = 0;
 	let tplThumbForce = false;
 	let sawRemoteState = false;
+	let autoplayHeld = false;
+	let lastAutoplayAdvance = 0;
 
 	if (window.SynthShare && SynthShare.captureLocation) SynthShare.captureLocation();
 
@@ -98,6 +100,43 @@
 			const source = (op.parameters && op.parameters.source) || 'display';
 			return !SynthCamera.ready(source);
 		});
+	}
+
+	function tickAutoplay(state) {
+		if (!window.SynthAutoplay) return;
+		if (applyingRemote) return;
+		const ap = SynthAutoplay.normalize(state.autoplay);
+		if (!ap.enabled) {
+			autoplayHeld = false;
+			return;
+		}
+		if (!SynthAutoplay.canRun(state)) {
+			autoplayHeld = false;
+			userPatch({ autoplay: { enabled: false } });
+			return;
+		}
+		if (state.previewTemplateId) {
+			autoplayHeld = true;
+			return;
+		}
+		if (autoplayHeld) {
+			autoplayHeld = false;
+			userPatch({ autoplay: { lastSwitchMs: Date.now() } });
+			return;
+		}
+		const now = Date.now();
+		if (!SynthAutoplay.isDue(state, now)) return;
+		if (now - lastAutoplayAdvance < 80) return;
+		const next = SynthAutoplay.advancePatch(state, now);
+		if (!next) return;
+		lastAutoplayAdvance = now;
+		const pipe = (state.pipes || []).filter(function (item) {
+			return item.id === next.activePipeId;
+		})[0];
+		if (pipe && window.SynthCamera && SynthCamera.armFromOperators) {
+			SynthCamera.armFromOperators(pipe.operators);
+		}
+		userPatch(next);
 	}
 
 	function persistThumb(pipe, url) {
@@ -553,6 +592,7 @@
 	}
 
 	function draw() {
+		tickAutoplay(SynthState.get());
 		const state = SynthState.get();
 		SynthEngine.draw(state, millis() / 1000);
 		syncGpu();

@@ -1,0 +1,107 @@
+{
+  "id": "pipe_01",
+  "name": "CAM GRID",
+  "operators": [
+    {
+      "type": "camera",
+      "parameters": {
+        "source": "display",
+        "mirror": 1,
+        "fit": "cover",
+        "blendMode": "darken"
+      }
+    },
+    {
+      "type": "transform",
+      "parameters": {
+        "translateX": 0,
+        "translateY": 0,
+        "rotate": -5,
+        "scaleX": 1.8,
+        "scaleY": 1,
+        "tile": "hold"
+      },
+      "bypassed": true
+    },
+    {
+      "type": "tile",
+      "parameters": {
+        "countX": 3,
+        "countY": 3,
+        "offsetX": 0,
+        "offsetY": 0,
+        "angle": 0,
+        "tile": "mirror"
+      }
+    },
+    {
+      "type": "posterize",
+      "parameters": {
+        "levels": 3,
+        "mix": 0.7000000000000001,
+        "mode": "luma"
+      }
+    },
+    {
+      "type": "ramp",
+      "parameters": {
+        "stops": [
+          {
+            "id": "n0",
+            "pos": 0,
+            "color": "#101014"
+          },
+          {
+            "id": "n1",
+            "pos": 0.15022421524663676,
+            "color": "#5E1A8C"
+          },
+          {
+            "id": "n2",
+            "pos": 0.4304932735426009,
+            "color": "#7C0ADC"
+          },
+          {
+            "id": "n3",
+            "pos": 0.6681614349775785,
+            "color": "#F0C400"
+          },
+          {
+            "id": "n4",
+            "pos": 1,
+            "color": "#F4F1EA"
+          }
+        ],
+        "phase": 0,
+        "period": 1,
+        "interpolate": "linear"
+      }
+    },
+    {
+      "type": "edge",
+      "parameters": {
+        "threshold": 0.06,
+        "intensity": 1.4,
+        "radius": 1.71,
+        "mix": 0.16,
+        "invert": 0,
+        "color": "#FFF800",
+        "blendMode": "normal"
+      }
+    },
+    {
+      "type": "bloom",
+      "parameters": {
+        "threshold": 0.32,
+        "intensity": 0.9,
+        "radius": 1.35
+      }
+    },
+    {
+      "type": "screen",
+      "parameters": {
+        "gain": 1
+      }
+    }
+  ]
+}

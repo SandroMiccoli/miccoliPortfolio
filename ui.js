@@ -989,6 +989,13 @@
 			});
 		}
 
+		function mergeAutoplaySelect(base, id) {
+			if (!root.SynthAutoplay) return base;
+			const extra = root.SynthAutoplay.manualSelectPatch(getState(), id, Date.now());
+			if (!extra) return base;
+			return Object.assign({}, base, extra);
+		}
+
 		function sendTemplateToSet(template) {
 			if (!template || !root.SynthTemplates) return;
 			armCameraFromOperators(template.operators);
@@ -998,11 +1005,11 @@
 			expandedId = null;
 			galleryMode = 'set';
 			lastGridSig = null;
-			patch({
+			patch(mergeAutoplaySelect({
 				pipes: (s.pipes || []).concat([copy]),
 				activePipeId: copy.id,
 				previewTemplateId: ''
-			});
+			}, copy.id));
 			if (root.SynthNotify) root.SynthNotify.show('success', 'Added to SET');
 		}
 
@@ -1255,10 +1262,10 @@
 				if (!pipe) return;
 				const copy = root.SynthPipes.duplicate(pipe, s.pipes);
 				expandedId = null;
-				patch({
+				patch(mergeAutoplaySelect({
 					pipes: (s.pipes || []).concat([copy]),
 					activePipeId: copy.id
-				});
+				}, copy.id));
 			}
 		);
 		const saveTplBtn = iconBtn(
@@ -1305,10 +1312,13 @@
 					return item.id !== pipe.id;
 				});
 				expandedId = null;
-				patch({
+				const next = {
 					pipes: pipes,
 					activePipeId: pipes[0].id
-				});
+				};
+				if (pipes.length < 2) next.autoplay = { enabled: false };
+				else Object.assign(next, mergeAutoplaySelect(next, pipes[0].id));
+				patch(next);
 			}
 		);
 		activeTools.appendChild(renameBtn);
@@ -1353,6 +1363,183 @@
 		syncBtn.classList.add('synth-clock__sync');
 		clockBar.appendChild(syncBtn);
 		pipesSec.appendChild(clockBar);
+
+		const autoplayBar = el('div', 'synth-autoplay');
+		autoplayBar.setAttribute('aria-label', 'SET autoplay');
+		const autoplayRowModes = el('div', 'synth-autoplay__row synth-autoplay__row--modes');
+		const playBtn = el('button', 'synth-autoplay__play');
+		playBtn.type = 'button';
+		playBtn.setAttribute('aria-pressed', 'false');
+		playBtn.setAttribute('aria-label', 'Play SET autoplay');
+		playBtn.dataset.tip = 'Autoplay';
+		playBtn.dataset.tipDesc = 'Cycle the SET on a timer. Needs two or more ELOS.';
+		bindTip(playBtn);
+		const playIconWrap = el('span', 'synth-autoplay__play-icon');
+		playIconWrap.appendChild(root.SynthIcons.svg('play'));
+		playBtn.appendChild(playIconWrap);
+		playBtn.appendChild(el('span', 'synth-autoplay__play-label', 'Play'));
+		playBtn.addEventListener('click', function () {
+			if (!root.SynthAutoplay) return;
+			const s = getState();
+			if (root.SynthAutoplay.normalize(s.autoplay).enabled) {
+				patch(root.SynthAutoplay.stopPatch());
+				return;
+			}
+			patch(root.SynthAutoplay.startPatch(s, Date.now()));
+		});
+		const modeGroup = el('div', 'synth-autoplay__modes');
+		modeGroup.setAttribute('role', 'group');
+		modeGroup.setAttribute('aria-label', 'Autoplay order');
+		const modeBtns = {};
+		[
+			{ id: 'sequential', label: 'Seq' },
+			{ id: 'inverse', label: 'Inv' },
+			{ id: 'random', label: 'Rand' }
+		].forEach(function (mode) {
+			const btn = el('button', 'synth-autoplay__seg', mode.label);
+			btn.type = 'button';
+			btn.dataset.mode = mode.id;
+			btn.setAttribute('aria-pressed', mode.id === 'sequential' ? 'true' : 'false');
+			btn.addEventListener('click', function () {
+				if (!root.SynthAutoplay) return;
+				patch(root.SynthAutoplay.modePatch(getState(), mode.id, Date.now()));
+			});
+			modeBtns[mode.id] = btn;
+			modeGroup.appendChild(btn);
+		});
+		autoplayRowModes.appendChild(playBtn);
+		autoplayRowModes.appendChild(modeGroup);
+		autoplayBar.appendChild(autoplayRowModes);
+
+		const autoplayRowTime = el('div', 'synth-autoplay__row synth-autoplay__row--time');
+		const unitGroup = el('div', 'synth-autoplay__units');
+		unitGroup.setAttribute('role', 'group');
+		unitGroup.setAttribute('aria-label', 'Autoplay interval unit');
+		const unitBtns = {};
+		[
+			{ id: 'seconds', label: 'Sec' },
+			{ id: 'bars', label: 'Bars' }
+		].forEach(function (unit) {
+			const btn = el('button', 'synth-autoplay__seg', unit.label);
+			btn.type = 'button';
+			btn.dataset.unit = unit.id;
+			btn.setAttribute('aria-pressed', unit.id === 'seconds' ? 'true' : 'false');
+			btn.addEventListener('click', function () {
+				if (!root.SynthAutoplay) return;
+				if (typeof finishIntervalEdit === 'function') finishIntervalEdit(false);
+				patch(root.SynthAutoplay.unitPatch(getState(), unit.id, Date.now()));
+			});
+			unitBtns[unit.id] = btn;
+			unitGroup.appendChild(btn);
+		});
+		const step = el('div', 'synth-autoplay__step');
+		const minusBtn = el('button', 'synth-autoplay__step-btn');
+		minusBtn.type = 'button';
+		minusBtn.setAttribute('aria-label', 'Shorter autoplay interval');
+		minusBtn.appendChild(root.SynthIcons.svg('minus'));
+		minusBtn.addEventListener('click', function () {
+			if (!root.SynthAutoplay) return;
+			finishIntervalEdit(false);
+			patch(root.SynthAutoplay.nudgeIntervalPatch(getState(), -1, Date.now()));
+		});
+		const intervalVal = el('span', 'synth-autoplay__interval');
+		intervalVal.setAttribute('aria-live', 'polite');
+		const intervalNum = el('span', 'synth-autoplay__interval-num', '8');
+		intervalNum.tabIndex = 0;
+		intervalNum.setAttribute('role', 'textbox');
+		intervalNum.setAttribute('aria-label', 'Autoplay interval');
+		const intervalUnit = el('span', 'synth-autoplay__interval-unit', 's');
+		intervalVal.appendChild(intervalNum);
+		intervalVal.appendChild(intervalUnit);
+		const plusBtn = el('button', 'synth-autoplay__step-btn');
+		plusBtn.type = 'button';
+		plusBtn.setAttribute('aria-label', 'Longer autoplay interval');
+		plusBtn.appendChild(root.SynthIcons.svg('plus'));
+		plusBtn.addEventListener('click', function () {
+			if (!root.SynthAutoplay) return;
+			finishIntervalEdit(false);
+			patch(root.SynthAutoplay.nudgeIntervalPatch(getState(), 1, Date.now()));
+		});
+		step.appendChild(minusBtn);
+		step.appendChild(intervalVal);
+		step.appendChild(plusBtn);
+		autoplayRowTime.appendChild(unitGroup);
+		autoplayRowTime.appendChild(step);
+		autoplayBar.appendChild(autoplayRowTime);
+
+		const meter = el('div', 'synth-autoplay__meter is-seconds');
+		meter.setAttribute('aria-hidden', 'true');
+		const meterFill = el('span', 'synth-autoplay__meter-fill');
+		const meterBars = el('div', 'synth-autoplay__meter-bars');
+		meter.appendChild(meterFill);
+		meter.appendChild(meterBars);
+		autoplayBar.appendChild(meter);
+		pipesSec.appendChild(autoplayBar);
+
+		let editingInterval = false;
+		let intervalEditInput = null;
+		let lastMeterBars = 0;
+
+		function finishIntervalEdit(shouldCommit) {
+			if (!editingInterval) return;
+			editingInterval = false;
+			const input = intervalEditInput;
+			intervalEditInput = null;
+			const typed = input ? parseFloat(String(input.value).trim().replace(',', '.')) : NaN;
+			if (input && input.parentNode) input.replaceWith(intervalNum);
+			if (shouldCommit && isFinite(typed) && root.SynthAutoplay) {
+				patch(root.SynthAutoplay.setIntervalPatch(getState(), typed, Date.now()));
+			} else if (root.SynthAutoplay) {
+				const ap = root.SynthAutoplay.normalize(getState().autoplay);
+				intervalNum.textContent = String(ap.unit === 'bars' ? ap.intervalBars : ap.intervalSec);
+			}
+		}
+
+		function startIntervalEdit() {
+			if (editingInterval || !root.SynthAutoplay) return;
+			editingInterval = true;
+			const ap = root.SynthAutoplay.normalize(getState().autoplay);
+			const input = el('input', 'synth-autoplay__edit');
+			input.type = 'text';
+			input.inputMode = 'numeric';
+			input.autocomplete = 'off';
+			input.spellcheck = false;
+			input.setAttribute('aria-label', ap.unit === 'bars' ? 'Autoplay bars' : 'Autoplay seconds');
+			input.value = String(ap.unit === 'bars' ? ap.intervalBars : ap.intervalSec);
+			intervalNum.replaceWith(input);
+			intervalEditInput = input;
+			input.focus();
+			input.select();
+			input.addEventListener('keydown', function (event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					finishIntervalEdit(true);
+				} else if (event.key === 'Escape') {
+					event.preventDefault();
+					finishIntervalEdit(false);
+				}
+			});
+			input.addEventListener('blur', function () {
+				finishIntervalEdit(true);
+			});
+		}
+
+		intervalNum.addEventListener('click', function (event) {
+			event.preventDefault();
+			event.stopPropagation();
+			startIntervalEdit();
+		});
+		intervalNum.addEventListener('keydown', function (event) {
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				startIntervalEdit();
+			}
+		});
+		intervalVal.addEventListener('click', function (event) {
+			if (event.target.closest('.synth-autoplay__edit')) return;
+			if (editingInterval) return;
+			startIntervalEdit();
+		});
 
 		let lastBeat = -1;
 		let editingBpm = false;
@@ -1668,6 +1855,7 @@
 			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. An Elo connects one thing to another. A sequence of connected Elos is an ELOS. Order is the patch.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick an ELOS in the grid, then edit its Elos. Each Elo reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'The SET is the collection of ELOS you can activate for the live output. TEMPLATES is a gallery of stored examples. Send one into the SET to edit and perform it. Save an ELOS from the SET to keep it on disk as a template. Share copies a link that reloads the visual on this instance or another. Default templates live as JSON files in library/templates.'));
+			sheetBody.appendChild(el('p', 'synth-help__text', 'AUTOPLAY cycles the SET on a timer. Seq, Inv, and Rand pick the order (Rand shuffles without repeating until every ELOS has played). Interval is seconds or bars of the BPM clock. Editing an ELOS does not stop it. Previewing a template pauses it until you return to the SET.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'LIVE streams the renderer output into the preview. LOCAL runs the same ELOS on this device so you can watch the real frame rate without that stream.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Below the SET, three tabs split the rest of the instrument. ELOS is the Elo chain. Mask cuts the image with stacked rectangles and circles. Mapping pins that image to the display, and the mapping card covers the ELOS so you can align corners.'));
 			const cats = root.SynthCategories;
@@ -4344,6 +4532,9 @@
 			if (item.thumbnail) img.src = item.thumbnail;
 			else img.hidden = true;
 			thumb.appendChild(img);
+			const progress = el('span', 'synth-pipe-tile__progress');
+			progress.setAttribute('aria-hidden', 'true');
+			thumb.appendChild(progress);
 			tile.appendChild(thumb);
 			tile.appendChild(el('span', 'synth-pipe-tile__name', item.name));
 			if (kind === 'template') {
@@ -4363,8 +4554,14 @@
 				expandedId = null;
 				if (typeof capturePipe === 'function') capturePipe();
 				armCameraFromOperators(item.operators);
-				if (getState().activePipeId === item.id) return;
-				patch({ activePipeId: item.id });
+				if (getState().activePipeId === item.id) {
+					const bump = root.SynthAutoplay
+						? root.SynthAutoplay.manualSelectPatch(getState(), item.id, Date.now())
+						: null;
+					if (bump) patch(bump);
+					return;
+				}
+				patch(mergeAutoplaySelect({ activePipeId: item.id }, item.id));
 			});
 			return tile;
 		}
@@ -4406,10 +4603,10 @@
 				const s = getState();
 				const pipe = root.SynthPipes.createNew(s.pipes);
 				expandedId = null;
-				patch({
+				patch(mergeAutoplaySelect({
 					pipes: (s.pipes || []).concat([pipe]),
 					activePipeId: pipe.id
-				});
+				}, pipe.id));
 			});
 			grid.appendChild(add);
 		}
@@ -4430,6 +4627,116 @@
 			});
 		}
 
+		function paintPlayIcon(on) {
+			const key = on ? 'pause' : 'play';
+			if (playBtn.dataset.icon === key) return;
+			playBtn.dataset.icon = key;
+			playIconWrap.innerHTML = '';
+			playIconWrap.appendChild(root.SynthIcons.svg(key));
+			const label = playBtn.querySelector('.synth-autoplay__play-label');
+			if (label) label.textContent = on ? 'Pause' : 'Play';
+		}
+
+		let frozenAutoplayProgress = 0;
+
+		function ensureMeterBars(count) {
+			const n = Math.max(1, Math.round(count) || 1);
+			if (n === lastMeterBars && meterBars.childNodes.length === n) return;
+			lastMeterBars = n;
+			meterBars.innerHTML = '';
+			meterBars.style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
+			for (let i = 0; i < n; i += 1) {
+				meterBars.appendChild(el('span', 'synth-autoplay__meter-bar'));
+			}
+		}
+
+		function paintAutoplayProgress(s, ap, on) {
+			if (!root.SynthAutoplay) return;
+			s = s || getState();
+			ap = ap || root.SynthAutoplay.normalize(s.autoplay);
+			if (on == null) on = !!(ap.enabled && root.SynthAutoplay.canRun(s));
+			let p = 0;
+			if (on) {
+				if (s.previewTemplateId) p = frozenAutoplayProgress;
+				else {
+					p = root.SynthAutoplay.progress(s, Date.now());
+					frozenAutoplayProgress = p;
+				}
+			} else {
+				frozenAutoplayProgress = 0;
+			}
+			const activeId = s.activePipeId;
+			grid.querySelectorAll('.synth-pipe-tile__progress').forEach(function (bar) {
+				const tile = bar.closest('[data-pipe]');
+				const show = on && galleryMode === 'set' && tile && tile.dataset.pipe === activeId;
+				bar.style.transform = 'scaleX(' + (show ? p : 0) + ')';
+			});
+			const barsMode = ap.unit === 'bars';
+			meter.classList.toggle('is-bars', barsMode);
+			meter.classList.toggle('is-seconds', !barsMode);
+			meter.classList.toggle('is-on', on);
+			if (barsMode) {
+				ensureMeterBars(ap.intervalBars);
+				const pos = p * ap.intervalBars;
+				const cells = meterBars.children;
+				for (let i = 0; i < cells.length; i += 1) {
+					const cell = cells[i];
+					const frac = Math.max(0, Math.min(1, pos - i));
+					cell.classList.toggle('is-done', frac >= 1);
+					cell.classList.toggle('is-on', on && frac > 0 && frac < 1);
+					cell.style.setProperty('--bar-p', String(frac));
+				}
+				meterFill.style.transform = 'scaleX(0)';
+			} else {
+				meterFill.style.transform = 'scaleX(' + (on ? p : 0) + ')';
+			}
+		}
+
+		function refreshAutoplay() {
+			if (!root.SynthAutoplay) return;
+			const s = getState();
+			const ap = root.SynthAutoplay.normalize(s.autoplay);
+			const runnable = root.SynthAutoplay.canRun(s);
+			const on = ap.enabled && runnable;
+			playBtn.disabled = !runnable && !ap.enabled;
+			playBtn.title = runnable
+				? (on ? 'Pause SET autoplay' : 'Play SET autoplay')
+				: 'Add another ELOS to the SET to use autoplay';
+			playBtn.classList.toggle('is-on', on);
+			playBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+			playBtn.setAttribute('aria-label', on ? 'Pause SET autoplay' : 'Play SET autoplay');
+			intervalNum.setAttribute(
+				'aria-label',
+				ap.unit === 'bars' ? 'Autoplay bars' : 'Autoplay seconds'
+			);
+			paintPlayIcon(on);
+			Object.keys(modeBtns).forEach(function (id) {
+				const active = ap.mode === id;
+				modeBtns[id].classList.toggle('is-active', active);
+				modeBtns[id].setAttribute('aria-pressed', active ? 'true' : 'false');
+			});
+			Object.keys(unitBtns).forEach(function (id) {
+				const active = ap.unit === id;
+				unitBtns[id].classList.toggle('is-active', active);
+				unitBtns[id].setAttribute('aria-pressed', active ? 'true' : 'false');
+			});
+			if (!editingInterval) {
+				intervalNum.textContent = String(ap.unit === 'bars' ? ap.intervalBars : ap.intervalSec);
+				intervalUnit.textContent = ap.unit === 'bars'
+					? (ap.intervalBars === 1 ? 'bar' : 'bars')
+					: 's';
+			}
+			minusBtn.disabled = ap.unit === 'bars'
+				? ap.intervalBars <= root.SynthAutoplay.BAR_MIN
+				: ap.intervalSec <= root.SynthAutoplay.SEC_MIN;
+			plusBtn.disabled = ap.unit === 'bars'
+				? ap.intervalBars >= root.SynthAutoplay.BAR_MAX
+				: ap.intervalSec >= root.SynthAutoplay.SEC_MAX;
+			autoplayBar.classList.toggle('is-on', on);
+			autoplayBar.classList.toggle('is-held', on && !!s.previewTemplateId);
+			paintAutoplayProgress(s, ap, on);
+		}
+
 		function refreshGalleryChrome() {
 			Object.keys(galleryTabBtns).forEach(function (id) {
 				const on = galleryMode === id;
@@ -4439,6 +4746,7 @@
 			const onSet = galleryMode === 'set';
 			saveTplBtn.hidden = !onSet;
 			clockBar.hidden = !onSet;
+			autoplayBar.hidden = !onSet;
 			setEditorHidden(!onSet);
 			if (onSet) {
 				if (shareBtn.parentNode !== activeTools) activeTools.appendChild(shareBtn);
@@ -4477,6 +4785,7 @@
 					tile.setAttribute('aria-pressed', item.id === activeId ? 'true' : 'false');
 				});
 			}
+			refreshAutoplay();
 
 			const pipe = activePipe();
 			const tpl = selectedTemplate();
@@ -4607,6 +4916,7 @@
 				if (slider && slider.updateLive) slider.updateLive(ctx);
 			});
 			if (recOn() && recTime) recTime.textContent = formatRecTime(root.SynthRecorder.elapsed());
+			paintAutoplayProgress();
 		}
 
 		function refreshStats(stats) {

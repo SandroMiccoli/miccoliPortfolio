@@ -34,6 +34,15 @@
 			templatesSeeded: true,
 			previewTemplateId: '',
 			clock: root.SynthClock ? root.SynthClock.defaults() : { bpm: 120, originMs: Date.now() },
+			autoplay: root.SynthAutoplay ? root.SynthAutoplay.defaults() : {
+				enabled: false,
+				mode: 'sequential',
+				unit: 'seconds',
+				intervalSec: 8,
+				intervalBars: 4,
+				lastSwitchMs: 0,
+				shuffleQueue: []
+			},
 			debug: { enabled: false },
 			output: root.SynthOutput ? root.SynthOutput.defaults() : {
 				mapping: { enabled: true, mode: 'cornerPin', edit: false, corners: { tl: { x: 0, y: 0 }, tr: { x: 1, y: 0 }, br: { x: 1, y: 1 }, bl: { x: 0, y: 1 } } },
@@ -85,6 +94,17 @@
 		const clock = root.SynthClock
 			? root.SynthClock.fromState(raw)
 			: Object.assign({ bpm: 120, originMs: Date.now() }, raw.clock || {});
+		const autoplay = root.SynthAutoplay
+			? root.SynthAutoplay.normalize(raw.autoplay)
+			: Object.assign({
+				enabled: false,
+				mode: 'sequential',
+				unit: 'seconds',
+				intervalSec: 8,
+				intervalBars: 4,
+				lastSwitchMs: 0,
+				shuffleQueue: []
+			}, raw.autoplay || {});
 		const output = root.SynthOutput
 			? root.SynthOutput.normalize(raw.output)
 			: (raw.output || base.output);
@@ -105,6 +125,7 @@
 				templatesSeeded: true,
 				previewTemplateId: raw.previewTemplateId || '',
 				clock: clock,
+				autoplay: autoplay,
 				debug: raw.debug || { enabled: false },
 				output: output
 			};
@@ -120,6 +141,7 @@
 				templatesSeeded: true,
 				previewTemplateId: raw.previewTemplateId || '',
 				clock: clock,
+				autoplay: autoplay,
 				debug: raw.debug || { enabled: false },
 				output: output
 			};
@@ -128,6 +150,9 @@
 		}
 		state.pipes = migrateOperators(state.pipes);
 		state.templates = migrateOperators(state.templates);
+		state.autoplay = root.SynthAutoplay
+			? root.SynthAutoplay.normalize(state.autoplay)
+			: (state.autoplay || autoplay);
 		return state;
 	}
 
