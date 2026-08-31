@@ -4664,13 +4664,13 @@
 		}
 
 		function paintPlayIcon(on) {
-			const key = on ? 'pause' : 'play';
+			const key = on ? 'stop' : 'play';
 			if (playBtn.dataset.icon === key) return;
 			playBtn.dataset.icon = key;
 			playIconWrap.innerHTML = '';
 			playIconWrap.appendChild(root.SynthIcons.svg(key));
 			const label = playBtn.querySelector('.synth-autoplay__play-label');
-			if (label) label.textContent = on ? 'Pause' : 'Play';
+			if (label) label.textContent = on ? 'Stop' : 'Play';
 		}
 
 		let frozenAutoplayProgress = 0;
@@ -4780,11 +4780,11 @@
 			const on = ap.enabled && runnable;
 			playBtn.disabled = !runnable && !ap.enabled;
 			playBtn.title = runnable
-				? (on ? 'Pause SET autoplay' : 'Play SET autoplay')
+				? (on ? 'Stop SET autoplay' : 'Play SET autoplay')
 				: 'Add another chain to the SET to use autoplay';
 			playBtn.classList.toggle('is-on', on);
 			playBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-			playBtn.setAttribute('aria-label', on ? 'Pause SET autoplay' : 'Play SET autoplay');
+			playBtn.setAttribute('aria-label', on ? 'Stop SET autoplay' : 'Play SET autoplay');
 			intervalNum.setAttribute(
 				'aria-label',
 				ap.unit === 'bars' ? 'Autoplay bars' : 'Autoplay seconds'

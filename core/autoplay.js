@@ -5,7 +5,7 @@
 	const BAR_MIN = 1;
 	const BAR_MAX = 32;
 	const SEC_MIN = 2;
-	const SEC_MAX = 60;
+	const SEC_MAX = 900;
 	const SEC_DEFAULT = 8;
 	const BAR_DEFAULT = 4;
 
