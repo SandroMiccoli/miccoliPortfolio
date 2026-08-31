@@ -32,6 +32,7 @@
 	let lastCfg = { deviceId: '', facing: '' };
 	let bootId = 0;
 	let restartTimer = 0;
+	let userArmed = false;
 	const listeners = [];
 	const MAX_BLIT_W = 1280;
 	const PHONE_SEND_W = 270;
@@ -517,27 +518,74 @@
 		}, 120);
 	}
 
-	function neededPhone(state) {
-		const view = root.SynthPipes && root.SynthPipes.output
-			? root.SynthPipes.output(state)
-			: null;
-		let pipe = view;
-		if (!pipe) {
-			const pipes = (state && state.pipes) || [];
-			const activeId = state && state.activePipeId;
-			pipe = pipes.filter(function (item) {
-				return item.id === activeId;
-			})[0] || pipes[0];
+	function outputPipe(state) {
+		if (root.SynthPipes && root.SynthPipes.output) {
+			return root.SynthPipes.output(state);
 		}
-		if (!pipe) return null;
-		const ops = pipe.operators || [];
+		const pipes = (state && state.pipes) || [];
+		const activeId = state && state.activePipeId;
+		return pipes.filter(function (item) {
+			return item.id === activeId;
+		})[0] || pipes[0] || null;
+	}
+
+	function liveCameraOp(operators, source) {
+		const ops = operators || [];
 		for (let i = 0; i < ops.length; i += 1) {
 			const op = ops[i];
-			if (op.type !== 'camera' || op.bypassed) continue;
+			if (!op || op.type !== 'camera' || op.bypassed) continue;
 			const src = (op.parameters && op.parameters.source) || 'display';
-			if (src === 'phone') return op.parameters || {};
+			if (!source || src === source) return op;
 		}
 		return null;
+	}
+
+	function operatorsHaveCamera(operators) {
+		return !!liveCameraOp(operators);
+	}
+
+	function neededPhone(state) {
+		const pipe = outputPipe(state);
+		if (!pipe) return null;
+		const op = liveCameraOp(pipe.operators, 'phone');
+		return op ? (op.parameters || {}) : null;
+	}
+
+	function neededDisplay(state) {
+		const pipe = outputPipe(state);
+		if (!pipe) return null;
+		const op = liveCameraOp(pipe.operators, 'display');
+		return op ? (op.parameters || {}) : null;
+	}
+
+	function waitingMessage() {
+		return 'Load a camera effect, add Camera Input, or tap Reconnect to open.';
+	}
+
+	function startIfNeeded() {
+		if (!userArmed) return;
+		if (isControl()) {
+			syncControl(root.SynthState ? root.SynthState.get() : null);
+			return;
+		}
+		const params = neededDisplay(root.SynthState ? root.SynthState.get() : null);
+		if (!params) return;
+		startLocal(params.deviceId || '', '').catch(function () { /* status already set */ });
+	}
+
+	function arm(fromRemote, startNow) {
+		if (!userArmed) {
+			userArmed = true;
+			if (!fromRemote && root.SynthSync && typeof root.SynthSync.sendCameraArm === 'function') {
+				root.SynthSync.sendCameraArm();
+			}
+			emit();
+		}
+		if (startNow !== false) startIfNeeded();
+	}
+
+	function armFromOperators(operators, fromRemote) {
+		if (operatorsHaveCamera(operators)) arm(fromRemote);
 	}
 
 	function viewFor(source) {
@@ -559,6 +607,14 @@
 				hasDevices: remoteReady
 			};
 		}
+		if (!userArmed && !ready && !starting) {
+			return {
+				phase: 'idle',
+				message: waitingMessage(),
+				live: false,
+				hasDevices: (isControl() ? phoneDevices : displayDevices).length > 0
+			};
+		}
 		return {
 			phase: phase,
 			message: statusMessage,
@@ -568,6 +624,7 @@
 	}
 
 	function reconnect(fromRemote) {
+		arm(fromRemote, false);
 		bootId += 1;
 		lastToast = '';
 		failed = false;
@@ -607,6 +664,12 @@
 		const params = neededPhone(state);
 		if (!params) {
 			if (currentKey || ready || starting) stopLocal();
+			return;
+		}
+		if (!userArmed) {
+			if (phase === 'idle' && statusMessage !== waitingMessage()) {
+				setPhase('idle', waitingMessage());
+			}
 			return;
 		}
 		startLocal(params.deviceId, params.deviceId ? '' : 'environment').then(function () {
@@ -665,6 +728,15 @@
 			ensureRemote();
 			remoteImage.src = url;
 		},
+		armed: function () {
+			return userArmed;
+		},
+		arm: arm,
+		armFromOperators: armFromOperators,
+		armFromState: function (state, fromRemote) {
+			const pipe = outputPipe(state);
+			armFromOperators(pipe && pipe.operators, fromRemote);
+		},
 		syncControl: syncControl,
 		reconnect: reconnect,
 		ensure: function (cfg) {
@@ -680,8 +752,27 @@
 				return;
 			}
 			lastCfg = { deviceId: cfg.deviceId || '', facing: '' };
+			if (!userArmed) {
+				if (phase === 'idle' && statusMessage !== waitingMessage()) {
+					setPhase('idle', waitingMessage());
+				}
+				return;
+			}
 			if (restartTimer) return;
 			startLocal(cfg.deviceId || '', '').catch(function () { /* status already set */ });
+		},
+		release: function () {
+			if (isControl()) {
+				if (neededPhone(root.SynthState ? root.SynthState.get() : null)) return;
+			} else if (neededDisplay(root.SynthState ? root.SynthState.get() : null)) {
+				return;
+			}
+			if (currentKey || ready || starting) stopLocal();
+			if (phase === 'idle') return;
+			phase = 'idle';
+			statusMessage = 'Camera stopped.';
+			emit();
+			sendStatus();
 		},
 		frame: function (source) {
 			if (source === 'phone') {

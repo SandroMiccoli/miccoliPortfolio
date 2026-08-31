@@ -987,6 +987,15 @@ async function start() {
 				return;
 			}
 
+			if (msg.type === 'cameraArm') {
+				const packed = JSON.stringify({ type: 'cameraArm' });
+				wss.clients.forEach((client) => {
+					if (client === ws || client.readyState !== 1) return;
+					client.send(packed);
+				});
+				return;
+			}
+
 			if (msg.type === 'stats' && msg.fps != null) {
 				if (ws.role !== 'display') return;
 				if (hasLocalDisplay() && !ws.fromLoopback) return;

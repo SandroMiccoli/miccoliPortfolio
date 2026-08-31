@@ -100,7 +100,7 @@
 			return {
 				process: function (ctx) {
 					const source = ctx.parameters.source || 'display';
-					if (root.SynthCamera) {
+					if (ctx.allowCamera !== false && root.SynthCamera) {
 						root.SynthCamera.ensure({
 							source: source,
 							deviceId: ctx.parameters.deviceId || ''
@@ -138,7 +138,10 @@
 				dispose: function () {
 					if (gfx && gfx.remove) gfx.remove();
 					gfx = null;
-					if (root.SynthCamera) root.SynthCamera.stop();
+					if (root.SynthCamera) {
+						if (root.SynthCamera.release) root.SynthCamera.release();
+						else root.SynthCamera.stop();
+					}
 				}
 			};
 		}

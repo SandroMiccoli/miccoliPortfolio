@@ -143,7 +143,29 @@
 			return (pipe && pipe.operators) || [];
 		}
 
+		function hasLiveCamera(operators) {
+			return (operators || []).some(function (op) {
+				return op && op.type === 'camera' && !op.bypassed;
+			});
+		}
+
+		function armCameraFromOperators(operators) {
+			if (!hasLiveCamera(operators) || !root.SynthCamera || !root.SynthCamera.armFromOperators) return;
+			root.SynthCamera.armFromOperators(operators);
+		}
+
+		function cameraBecameLive(prev, next) {
+			const live = {};
+			(prev || []).forEach(function (op) {
+				if (op && op.type === 'camera' && !op.bypassed) live[op.id] = true;
+			});
+			return (next || []).some(function (op) {
+				return op && op.type === 'camera' && !op.bypassed && !live[op.id];
+			});
+		}
+
 		function patchOps(operators) {
+			if (cameraBecameLive(ops(), operators)) armCameraFromOperators(operators);
 			if (viewingTemplate()) {
 				const tpl = selectedTemplate();
 				if (!tpl) return;
@@ -913,7 +935,19 @@
 
 		function setPreview(id) {
 			const next = id || '';
-			if ((getState().previewTemplateId || '') === next) return;
+			if ((getState().previewTemplateId || '') === next) {
+				if (next) {
+					const same = selectedTemplate();
+					armCameraFromOperators(same && same.operators);
+				}
+				return;
+			}
+			if (next) {
+				const tpl = root.SynthTemplates
+					? root.SynthTemplates.find(templates(), next)
+					: (templates().filter(function (item) { return item.id === next; })[0] || null);
+				armCameraFromOperators(tpl && tpl.operators);
+			}
 			patch({ previewTemplateId: next });
 		}
 
@@ -954,6 +988,7 @@
 
 		function sendTemplateToSet(template) {
 			if (!template || !root.SynthTemplates) return;
+			armCameraFromOperators(template.operators);
 			const s = getState();
 			const copy = root.SynthTemplates.instantiate(template, s.pipes || []);
 			if (!copy) return;
@@ -1009,6 +1044,9 @@
 			}
 			patch(result.patch);
 			if (result.patch.previewTemplateId) requestTemplateThumbs();
+			if (root.SynthCamera && root.SynthCamera.armFromState) {
+				root.SynthCamera.armFromState(getState());
+			}
 			if (result.message && root.SynthNotify) root.SynthNotify.show('success', result.message);
 			return true;
 		}
@@ -2482,6 +2520,10 @@
 		}
 
 		function setParam(id, key, value) {
+			const op = ops().filter(function (item) {
+				return item.id === id;
+			})[0];
+			if (op && op.type === 'camera' && !op.bypassed) armCameraFromOperators([op]);
 			patch({ opParam: { id: id, key: key, value: value, presetId: null } });
 		}
 
@@ -4096,6 +4138,7 @@
 			tile.addEventListener('click', function () {
 				expandedId = null;
 				if (typeof capturePipe === 'function') capturePipe();
+				armCameraFromOperators(item.operators);
 				if (getState().activePipeId === item.id) return;
 				patch({ activePipeId: item.id });
 			});

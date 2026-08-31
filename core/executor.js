@@ -115,7 +115,8 @@
 							time: time,
 							width: w,
 							height: h,
-							engine: engine
+							engine: engine,
+							allowCamera: opts.allowCamera !== false
 						});
 
 						if (isScreen) {

@@ -116,6 +116,8 @@
 				handlers.onCameraStatus(msg);
 			} else if (msg.type === 'cameraReconnect' && handlers.onCameraReconnect) {
 				handlers.onCameraReconnect();
+			} else if (msg.type === 'cameraArm' && handlers.onCameraArm) {
+				handlers.onCameraArm();
 			}
 		});
 
@@ -189,6 +191,9 @@
 		},
 		sendCameraReconnect: function () {
 			send({ type: 'cameraReconnect' });
+		},
+		sendCameraArm: function () {
+			send({ type: 'cameraArm' });
 		},
 		connected: function () {
 			return connected;

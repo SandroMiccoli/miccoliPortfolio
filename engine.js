@@ -466,7 +466,8 @@
 				height: dest.height || THUMB_H,
 				nowMs: Date.now(),
 				clock: root.SynthClock && state ? root.SynthClock.fromState(state) : null,
-				fft: root.SynthFft ? root.SynthFft.levels() : null
+				fft: root.SynthFft ? root.SynthFft.levels() : null,
+				allowCamera: !!(root.SynthCamera && root.SynthCamera.armed && root.SynthCamera.armed())
 			});
 			lastThumbLuma = 0;
 			const gfx = readFrom(dest, false);

@@ -52,6 +52,9 @@
 			if ((patch.templates || patch.templateThumb || patch.templateOps) && window.SynthTemplates) {
 				SynthTemplates.syncDisk(SynthState.get().templates);
 			}
+			if (window.SynthCamera && SynthCamera.armFromState) {
+				SynthCamera.armFromState(SynthState.get());
+			}
 		});
 	}
 
@@ -470,6 +473,9 @@
 			},
 			onCameraReconnect: function () {
 				if (window.SynthCamera) SynthCamera.reconnect(true);
+			},
+			onCameraArm: function () {
+				if (window.SynthCamera && SynthCamera.arm) SynthCamera.arm(true);
 			}
 		});
 
