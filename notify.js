@@ -13,7 +13,9 @@
 		el.id = 'synth-toasts';
 		el.className = 'synth-toasts';
 		el.setAttribute('aria-live', 'polite');
-		document.body.appendChild(el);
+		const chrome = document.querySelector('body.synth-control > .synth-chrome');
+		if (chrome) chrome.appendChild(el);
+		else document.body.appendChild(el);
 		return el;
 	}
 

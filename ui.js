@@ -1479,6 +1479,60 @@
 		let editingInterval = false;
 		let intervalEditInput = null;
 		let lastMeterBars = 0;
+		let meterMotionKey = '';
+
+		function cancelScaleAnim(el) {
+			if (!el) return;
+			if (el._synthTimer) {
+				window.clearTimeout(el._synthTimer);
+				el._synthTimer = 0;
+			}
+			if (el._synthAnim && typeof el._synthAnim.cancel === 'function') {
+				el._synthAnim.cancel();
+			}
+			el._synthAnim = null;
+			el.style.transition = 'none';
+		}
+
+		function animateScaleX(el, from, to, ms, delay) {
+			if (!el) return;
+			cancelScaleAnim(el);
+			const start = Math.max(0, Math.min(1, from));
+			const end = Math.max(0, Math.min(1, to));
+			const wait = Math.max(0, delay || 0);
+			const dur = Math.max(0, ms || 0);
+			el.style.transform = 'scaleX(' + start + ')';
+			if (dur <= 16 && wait <= 16) {
+				el.style.transform = 'scaleX(' + end + ')';
+				return;
+			}
+			if (typeof el.animate === 'function') {
+				el._synthAnim = el.animate(
+					[
+						{ transform: 'scaleX(' + start + ')' },
+						{ transform: 'scaleX(' + end + ')' }
+					],
+					{
+						duration: Math.max(16, dur),
+						delay: wait,
+						easing: 'linear',
+						fill: 'forwards'
+					}
+				);
+				return;
+			}
+			const startMotion = function () {
+				el._synthTimer = 0;
+				void el.offsetWidth;
+				el.style.transition = 'transform ' + Math.round(Math.max(16, dur)) + 'ms linear';
+				el.style.transform = 'scaleX(' + end + ')';
+			};
+			if (wait > 16) {
+				el._synthTimer = window.setTimeout(startMotion, wait);
+				return;
+			}
+			startMotion();
+		}
 
 		function finishIntervalEdit(shouldCommit) {
 			if (!editingInterval) return;
@@ -4327,7 +4381,6 @@
 		}
 
 		function recSizeFor(canvas) {
-			if (isControlPage()) return { width: recW, height: recH };
 			const srcW = (canvas && canvas.width) || recW;
 			const srcH = (canvas && canvas.height) || recH;
 			const scale = Math.min(1, 1280 / Math.max(srcW, srcH, 1));
@@ -4338,6 +4391,11 @@
 		}
 
 		function paintRecChrome() {
+			if (isControlPage()) {
+				document.body.classList.remove('is-rec-armed', 'is-rec-on');
+				if (recHost) recHost.hidden = true;
+				return;
+			}
 			const on = recOn();
 			const sheetOpen = sheet && !sheet.hidden;
 			const show = (isPhoneClient() || on) &&
@@ -4368,23 +4426,8 @@
 		function waitForCanvas(tries) {
 			return new Promise(function (resolve, reject) {
 				function check(left) {
-					let canvas = null;
-					let ready = false;
-					if (isControlPage()) {
-						canvas = root.SynthPreview && SynthPreview.canvas
-							? SynthPreview.canvas()
-							: null;
-						ready = !!(
-							canvas &&
-							canvas.width > 2 &&
-							canvas.height > 2 &&
-							root.SynthPreview.running &&
-							SynthPreview.running()
-						);
-					} else {
-						canvas = displayCanvas();
-						ready = !!(canvas && canvas.width > 2 && canvas.height > 2);
-					}
+					const canvas = displayCanvas();
+					const ready = !!(canvas && canvas.width > 2 && canvas.height > 2);
 					if (ready) {
 						resolve(canvas);
 						return;
@@ -4436,22 +4479,12 @@
 
 		function startRec() {
 			if (!root.SynthRecorder || recBusy || recOn()) return;
-			if (!isPhoneClient()) return;
+			if (isControlPage() || !isPhoneClient()) return;
 			if (!SynthRecorder.supported()) {
 				if (root.SynthNotify) {
 					SynthNotify.show('warning', 'This browser cannot record video.');
 				}
 				return;
-			}
-			if (isControlPage()) {
-				if (liveOn) {
-					setLiveMode(false);
-					if (typeof setLivePreview === 'function') setLivePreview(false);
-				}
-				if (!localOn) setLocalMode(true, true);
-				if (root.SynthPreview && SynthPreview.setRecordSize) {
-					SynthPreview.setRecordSize(recW, recH);
-				}
 			}
 			recBusy = true;
 			waitForCanvas(60).then(function (canvas) {
@@ -4474,33 +4507,35 @@
 			else startRec();
 		}
 
-		recHost = el('div', 'synth-rec');
-		recHost.hidden = true;
-		recTime = el('p', 'synth-rec__time', '00:00');
-		recTime.hidden = true;
-		recTime.setAttribute('aria-live', 'off');
-		recBtn = el('button', 'synth-rec__btn');
-		recBtn.type = 'button';
-		recBtn.setAttribute('aria-pressed', 'false');
-		recBtn.setAttribute('aria-label', 'Record video');
-		recBtn.appendChild(el('span', 'synth-rec__dot'));
-		recBtn.addEventListener('click', toggleRec);
-		recHost.appendChild(recTime);
-		recHost.appendChild(recBtn);
-		document.body.appendChild(recHost);
-		if (root.SynthRecorder && SynthRecorder.onChange) {
-			SynthRecorder.onChange(paintRecChrome);
-		}
-		document.addEventListener('visibilitychange', function () {
-			if (document.hidden && recOn()) finishRec(false);
-		});
-		if (window.matchMedia) {
-			const phoneMq = window.matchMedia('(pointer: coarse)');
-			const onPhoneMq = function () {
-				paintRecChrome();
-			};
-			if (phoneMq.addEventListener) phoneMq.addEventListener('change', onPhoneMq);
-			else if (phoneMq.addListener) phoneMq.addListener(onPhoneMq);
+		if (!isControlPage()) {
+			recHost = el('div', 'synth-rec');
+			recHost.hidden = true;
+			recTime = el('p', 'synth-rec__time', '00:00');
+			recTime.hidden = true;
+			recTime.setAttribute('aria-live', 'off');
+			recBtn = el('button', 'synth-rec__btn');
+			recBtn.type = 'button';
+			recBtn.setAttribute('aria-pressed', 'false');
+			recBtn.setAttribute('aria-label', 'Record video');
+			recBtn.appendChild(el('span', 'synth-rec__dot'));
+			recBtn.addEventListener('click', toggleRec);
+			recHost.appendChild(recTime);
+			recHost.appendChild(recBtn);
+			document.body.appendChild(recHost);
+			if (root.SynthRecorder && SynthRecorder.onChange) {
+				SynthRecorder.onChange(paintRecChrome);
+			}
+			document.addEventListener('visibilitychange', function () {
+				if (document.hidden && recOn()) finishRec(false);
+			});
+			if (window.matchMedia) {
+				const phoneMq = window.matchMedia('(pointer: coarse)');
+				const onPhoneMq = function () {
+					paintRecChrome();
+				};
+				if (phoneMq.addEventListener) phoneMq.addEventListener('change', onPhoneMq);
+				else if (phoneMq.addListener) phoneMq.addListener(onPhoneMq);
+			}
 		}
 
 		function setPreviewFrame(url, pipeId) {
@@ -4567,6 +4602,7 @@
 		}
 
 		function rebuildGrid(pipes, activeId, items, selectedId) {
+			meterMotionKey = '';
 			grid.innerHTML = '';
 			if (galleryMode === 'templates') {
 				grid.setAttribute('aria-label', 'TEMPLATES');
@@ -4641,13 +4677,16 @@
 
 		function ensureMeterBars(count) {
 			const n = Math.max(1, Math.round(count) || 1);
-			if (n === lastMeterBars && meterBars.childNodes.length === n) return;
+			if (n === lastMeterBars && meterBars.childNodes.length === n) return false;
 			lastMeterBars = n;
 			meterBars.innerHTML = '';
 			meterBars.style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
 			for (let i = 0; i < n; i += 1) {
-				meterBars.appendChild(el('span', 'synth-autoplay__meter-bar'));
+				const cell = el('span', 'synth-autoplay__meter-bar');
+				cell.appendChild(el('span', 'synth-autoplay__meter-bar-fill'));
+				meterBars.appendChild(cell);
 			}
+			return true;
 		}
 
 		function paintAutoplayProgress(s, ap, on) {
@@ -4655,21 +4694,42 @@
 			s = s || getState();
 			ap = ap || root.SynthAutoplay.normalize(s.autoplay);
 			if (on == null) on = !!(ap.enabled && root.SynthAutoplay.canRun(s));
+			const held = !!(on && s.previewTemplateId);
+			const dur = on ? root.SynthAutoplay.durationMs(s) : 0;
 			let p = 0;
-			if (on) {
-				if (s.previewTemplateId) p = frozenAutoplayProgress;
-				else {
-					p = root.SynthAutoplay.progress(s, Date.now());
-					frozenAutoplayProgress = p;
-				}
+			let remain = 0;
+			if (held) {
+				p = frozenAutoplayProgress;
+			} else if (on) {
+				p = root.SynthAutoplay.progress(s, Date.now());
+				frozenAutoplayProgress = p;
+				remain = dur > 0 ? Math.max(0, (1 - p) * dur) : 0;
 			} else {
 				frozenAutoplayProgress = 0;
 			}
+			const clock = root.SynthClock ? root.SynthClock.fromState(s) : null;
+			const key = [
+				on ? (held ? 'hold' : 'run') : 'off',
+				ap.lastSwitchMs,
+				ap.unit,
+				ap.intervalSec,
+				ap.intervalBars,
+				s.activePipeId || '',
+				galleryMode,
+				clock ? clock.bpm : ''
+			].join('|');
+			if (key === meterMotionKey) return;
+			meterMotionKey = key;
+
 			const activeId = s.activePipeId;
 			grid.querySelectorAll('.synth-pipe-tile__progress').forEach(function (bar) {
 				const tile = bar.closest('[data-pipe]');
 				const show = on && galleryMode === 'set' && tile && tile.dataset.pipe === activeId;
-				bar.style.transform = 'scaleX(' + (show ? p : 0) + ')';
+				if (show && !held) animateScaleX(bar, p, 1, remain);
+				else {
+					cancelScaleAnim(bar);
+					bar.style.transform = 'scaleX(' + (show ? p : 0) + ')';
+				}
 			});
 			const barsMode = ap.unit === 'bars';
 			meter.classList.toggle('is-bars', barsMode);
@@ -4677,17 +4737,37 @@
 			meter.classList.toggle('is-on', on);
 			if (barsMode) {
 				ensureMeterBars(ap.intervalBars);
-				const pos = p * ap.intervalBars;
+				cancelScaleAnim(meterFill);
+				meterFill.style.transform = 'scaleX(0)';
+				const n = Math.max(1, ap.intervalBars);
+				const pos = p * n;
+				const oneBarMs = dur > 0 ? dur / n : 0;
 				const cells = meterBars.children;
 				for (let i = 0; i < cells.length; i += 1) {
 					const cell = cells[i];
+					const fill = cell.firstElementChild;
 					const frac = Math.max(0, Math.min(1, pos - i));
 					cell.classList.toggle('is-done', frac >= 1);
 					cell.classList.toggle('is-on', on && frac > 0 && frac < 1);
-					cell.style.setProperty('--bar-p', String(frac));
+					if (!fill) continue;
+					if (!on || held) {
+						cancelScaleAnim(fill);
+						fill.style.transform = 'scaleX(' + (on ? frac : 0) + ')';
+					} else if (frac >= 1) {
+						cancelScaleAnim(fill);
+						fill.style.transform = 'scaleX(1)';
+					} else if (frac > 0) {
+						animateScaleX(fill, frac, 1, (1 - frac) * oneBarMs);
+					} else {
+						animateScaleX(fill, 0, 1, oneBarMs, (i - pos) * oneBarMs);
+					}
 				}
-				meterFill.style.transform = 'scaleX(0)';
+			} else if (on && !held) {
+				Array.prototype.forEach.call(meterBars.querySelectorAll('.synth-autoplay__meter-bar-fill'), cancelScaleAnim);
+				animateScaleX(meterFill, p, 1, remain);
 			} else {
+				Array.prototype.forEach.call(meterBars.querySelectorAll('.synth-autoplay__meter-bar-fill'), cancelScaleAnim);
+				cancelScaleAnim(meterFill);
 				meterFill.style.transform = 'scaleX(' + (on ? p : 0) + ')';
 			}
 		}
