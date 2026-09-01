@@ -137,7 +137,7 @@ On Lite, `apt install sway` often **does not** install recommends (`swaybg`, `sw
 
 ### File 1 — `/home/pi/.config/sway/config`
 
-Create the directory, then write **exactly** this file (no extra lines):
+Create the directory, then write this file. Keep it minimal. The only extra line this kiosk needs later is an optional HDMI `output … mode …` (see **HDMI output resolution** below).
 
 ```bash
 mkdir -p /home/pi/.config/sway
@@ -163,7 +163,7 @@ What each line does:
 
 Do **not** add:
 
-- `output * bg #000000 solid_color` — in Sway, `#` starts a comment, so this line is a parse error. Quoted `'#000000'` still needs `swaybg`, which Lite often lacks
+- `output * bg #000000 solid_color` — in Sway, `#` starts a comment, so this line is a parse error. Quoted `'#000000'` still needs `swaybg`, which Lite often lacks. An `output HDMI-A-1 mode …` line is different and is allowed (see below)
 - `bar { mode invisible }` — needs `swaybar`
 - `font pango:monospace …` — needs a font package
 - `titlebar_*` / `for_window` — unused on this kiosk; Chromium `--kiosk` is already fullscreen
@@ -226,7 +226,7 @@ sudo systemctl restart elo-kiosk
 
 Watch the Pi screen, not the SSH session. Logs: `journalctl -u elo-kiosk -e`.
 
-Do not run `sway --validate` over SSH to debug the config. That command tries to open the HDMI seat and fails with TTY / DRM errors even when the file is valid. If Sway shows “errors in config” on the display, the file has a parse problem (usually `#` or a `bar` / `font` / `output * bg` line). Keep the three-line config above.
+Do not run `sway --validate` over SSH to debug the config. That command tries to open the HDMI seat and fails with TTY / DRM errors even when the file is valid. If Sway shows “errors in config” on the display, the file has a parse problem (usually `#` or a `bar` / `font` / `output * bg` line). Keep the three-line config above, plus an optional `output … mode …` line if you are capping HDMI.
 
 ### One-shot test from SSH
 
@@ -246,6 +246,69 @@ sudo systemd-run --unit=elo-kiosk-test \
 ```
 
 Stop with `sudo systemctl stop elo-kiosk-test`.
+
+### HDMI output resolution
+
+The renderer canvas is the Chromium window size, and that window is the HDMI mode Sway picked from the display. There is no resolution control in the ELO UI. A projector that prefers **1920×1080** will run the chain at FHD; on a Pi that often drops to ~10 fps. Cap the HDMI mode so Chromium and WebGL see fewer pixels (1280×720 is about 2.25× fewer than 1080p). The projector then upscales.
+
+On a Pi 4/5 with KMS, **do not** set `hdmi_mode` / `hdmi_group` in `/boot/firmware/config.txt`. Sway owns the mode.
+
+**`swaymsg` from SSH**
+
+`swaymsg -t get_outputs` from an SSH login fails with `Unable to retrieve socket path`. SSH is not the kiosk session, so `SWAYSOCK` is unset. Do **not** start a second `sway` over SSH to fix that — a second compositor on the same HDMI breaks the kiosk.
+
+The running compositor is `elo-kiosk.service` on tty1. Point `swaymsg` at that socket (`uid` **1000** is user `pi` on a stock image; if `id -u pi` is not `1000`, use that uid in every `/run/user/1000` path):
+
+```bash
+systemctl is-active elo-kiosk
+ls /run/user/1000/sway-ipc.*.sock
+```
+
+No socket means Sway is not running. Check `journalctl -u elo-kiosk -e` instead of starting Sway by hand.
+
+```bash
+export XDG_RUNTIME_DIR=/run/user/1000
+export SWAYSOCK=$(ls /run/user/1000/sway-ipc.*.sock | head -n1)
+swaymsg -t get_outputs
+```
+
+If SSH is not user `pi`:
+
+```bash
+sudo -u pi XDG_RUNTIME_DIR=/run/user/1000 \
+  SWAYSOCK=$(ls /run/user/1000/sway-ipc.*.sock | head -n1) \
+  swaymsg -t get_outputs
+```
+
+That prints the output name (`HDMI-A-1`, `HDMI-A-2`, …) and the modes the display advertised. Use only a mode from that list. A mode the projector did not advertise can black-screen or fail to sync.
+
+**Modes without Sway** (read-only; does not change the signal):
+
+```bash
+for d in /sys/class/drm/card*-HDMI-A-*; do
+  echo "== $d"
+  cat "$d/status"
+  cat "$d/modes"
+done
+```
+
+**Force a mode for good**
+
+Add one line to `/home/pi/.config/sway/config`, using the output name from `get_outputs`. Example:
+
+```
+output HDMI-A-1 mode 1280x720@60Hz
+```
+
+Put it with the other Sway lines (not on the Chromium `exec` line). Then:
+
+```bash
+sudo systemctl restart elo-kiosk
+```
+
+Watch the Pi screen, not SSH. A one-shot `swaymsg output HDMI-A-1 mode 1280x720@60Hz` (with `SWAYSOCK` set as above) changes the current session only; the config line is what survives a reboot.
+
+The ELO **Out** meter on the phone should then show 1280×720, not 1920×1080.
 
 ### Other kiosk stacks (not recommended)
 
@@ -339,9 +402,11 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | Symptom | What to try |
 | --- | --- |
 | Black screen / no animation | Confirm WebGL in `chrome://gpu`. Keep `--ignore-gpu-blocklist --ozone-platform=wayland` on the Sway `exec` line. |
-| Sway “errors in config” on boot | Use the three-line `/home/pi/.config/sway/config` above. Do not use `#000000` unquoted (`#` is a comment). Do not add `bar`, `font`, or `output * bg` on Lite. |
+| Sway “errors in config” on boot | Use the three-line `/home/pi/.config/sway/config` above (plus an optional `output … mode …` line). Do not use `#000000` unquoted (`#` is a comment). Do not add `bar`, `font`, or `output * bg` on Lite. |
 | Mouse cursor stays on screen | CSS / `noCursor()` will not hide it without a mouse move. Use Sway `seat * hide_cursor 1`. `cage`, `XCURSOR_THEME`, and `~/.xinitrc` do not apply to this kiosk. |
 | HDMI never starts / TTY errors | Do not run `sway` or `chromium` from SSH. Start `elo-kiosk.service`. Disable `getty@tty1`. |
+| `swaymsg`: Unable to retrieve socket path | SSH has no `SWAYSOCK`. Export the kiosk socket under `/run/user/1000/sway-ipc.*.sock` as in **HDMI output resolution**. Do not start a second Sway from SSH. |
+| Low FPS / **Out** is 1920×1080 | The projector’s preferred HDMI mode is FHD. Cap it with `output HDMI-A-1 mode 1280x720@60Hz` in the Sway config, then `sudo systemctl restart elo-kiosk`. Use a mode from `swaymsg -t get_outputs`. |
 | `elo.local` does not open | Use `http://elo.local:8080` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
 | Port already in use | Another process is on 8080. Stop it, or start with `PORT=8081 npm start` and update the kiosk URL. |
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |

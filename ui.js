@@ -335,7 +335,8 @@
 		if (document.body.classList.contains('synth-control')) {
 			document.body.appendChild(sheetHost);
 		} else {
-			rootEl.appendChild(sheetHost);
+			const ui = document.getElementById('synth-ui');
+			(ui || rootEl).appendChild(sheetHost);
 		}
 
 		const tip = el('div', 'synth-float-tip');
@@ -1730,6 +1731,7 @@
 
 		let sheetSavedY = 0;
 		let sheetLocked = false;
+		let sheetCoverChrome = false;
 
 		function isControlPage() {
 			return document.body.classList.contains('synth-control');
@@ -1761,6 +1763,14 @@
 		}
 
 		function sheetDockTop() {
+			if (sheetCoverChrome) {
+				const chrome = document.querySelector('.synth-chrome');
+				if (chrome) {
+					const top = chrome.getBoundingClientRect().top;
+					if (isFinite(top)) return Math.max(0, top);
+				}
+				return 0;
+			}
 			if (preview && preview.offsetParent) {
 				const bottom = preview.getBoundingClientRect().bottom;
 				if (isFinite(bottom)) return bottom;
@@ -1770,36 +1780,65 @@
 			return 0;
 		}
 
+		function overlayUi() {
+			return document.getElementById('synth-ui');
+		}
+
 		function lockSheetPage() {
-			if (!isControlPage() || sheetLocked) return;
+			if (sheetLocked) return;
+			if (!isControlPage() && !sheetCoverChrome) return;
 			sheetSavedY = pageScrollY();
 			sheetLocked = true;
 			document.body.classList.add('is-sheet-open');
+			const ui = overlayUi();
+			if (ui) ui.classList.add('is-sheet-open');
 		}
 
 		function unlockSheetPage() {
 			if (!sheetLocked) return;
 			sheetLocked = false;
 			document.body.classList.remove('is-sheet-open');
+			const ui = overlayUi();
+			if (ui) ui.classList.remove('is-sheet-open');
+		}
+
+		function pinDisplaySheet() {
+			const ui = overlayUi() || rootEl;
+			const uiRect = ui.getBoundingClientRect();
+			const scrollTop = ui.scrollTop || 0;
+
+			sheetHost.style.position = 'absolute';
+			sheetHost.style.left = '0';
+			sheetHost.style.right = '0';
+			sheetHost.style.width = '100%';
+			sheetHost.style.maxWidth = '';
+			sheetHost.style.marginLeft = '';
+			sheetHost.style.marginRight = '';
+			sheetHost.style.bottom = 'auto';
+			sheetHost.style.transform = '';
+
+			if (sheetCoverChrome) {
+				sheetHost.style.top = scrollTop + 'px';
+				sheetHost.style.height = Math.max(160, ui.clientHeight || uiRect.height) + 'px';
+				sheetHost.style.zIndex = '60';
+				return;
+			}
+
+			const dock = Math.max(0, sheetDockTop());
+			sheetHost.style.top = Math.max(0, scrollTop + dock - uiRect.top) + 'px';
+			sheetHost.style.height = Math.max(160, uiRect.bottom - dock) + 'px';
+			sheetHost.style.zIndex = '';
 		}
 
 		function pinSheetHost() {
+			if (!isControlPage()) {
+				pinDisplaySheet();
+				return;
+			}
+
 			const dock = Math.max(0, sheetDockTop());
 			const viewH = viewHeight();
 			const height = Math.max(160, viewH - dock);
-
-			if (!isControlPage()) {
-				const parentRect = rootEl.getBoundingClientRect();
-				sheetHost.style.position = 'absolute';
-				sheetHost.style.top = Math.max(0, dock - parentRect.top) + 'px';
-				sheetHost.style.left = '0';
-				sheetHost.style.right = '0';
-				sheetHost.style.width = '100%';
-				sheetHost.style.height = height + 'px';
-				sheetHost.style.bottom = 'auto';
-				sheetHost.style.transform = '';
-				return;
-			}
 
 			sheetHost.style.position = 'fixed';
 			sheetHost.style.top = dock + 'px';
@@ -1833,6 +1872,8 @@
 			}
 			sheet.hidden = true;
 			sheetHost.hidden = true;
+			sheetHost.classList.remove('is-cover');
+			sheetCoverChrome = false;
 			sheetBody.innerHTML = '';
 			unlockSheetPage();
 			if (typeof paintRecChrome === 'function') paintRecChrome();
@@ -1856,9 +1897,12 @@
 			});
 		}
 
-		function openSheet(title) {
+		function openSheet(title, opts) {
+			sheetCoverChrome = !!(opts && opts.coverChrome);
+			sheetHost.classList.toggle('is-cover', sheetCoverChrome);
 			const wasHidden = sheet.hidden || sheetHost.hidden;
-			if (wasHidden) lockSheetPage();
+			if (isControlPage() || sheetCoverChrome) lockSheetPage();
+			else unlockSheetPage();
 			sheetTitle.textContent = title;
 			sheetHost.hidden = false;
 			sheet.hidden = false;
@@ -1904,7 +1948,7 @@
 		}, { passive: false });
 
 		function openTypesHelp() {
-			openSheet('ELO');
+			openSheet('ELO', { coverChrome: true });
 			sheetBody.innerHTML = '';
 			sheetBody.appendChild(el('p', 'synth-help__lead', 'ELO is a modular visual instrument. You create visuals by connecting operators. Each operator does one job. A chain is a sequence of connected operators — the consolidated visual. Order is the patch.'));
 			sheetBody.appendChild(el('p', 'synth-help__text', 'Pick a chain in the grid, then edit its operators. Each operator reads what came before, does one job, and passes a new image down. Bypass, reorder, or remove a stage and the chain recomputes.'));
