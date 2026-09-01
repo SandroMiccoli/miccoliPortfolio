@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ELO network mode switch: open AP (installation) or Wi-Fi client (development).
+# ELO network mode switch: WPA hotspot (installation) or Wi-Fi client (development).
 # Requires NetworkManager (Raspberry Pi OS Trixie Lite). Run setup once as root.
 
 set -euo pipefail
@@ -7,6 +7,8 @@ set -euo pipefail
 AP_CONN="elo-ap"
 WIFI_CONN="elo-wifi"
 MODE_FILE="/etc/elo/mode"
+AP_PSK_FILE="/etc/elo/ap-psk"
+DEFAULT_AP_PSK="eloeloelo"
 AP_IP="10.42.0.1"
 RECOVERY_IP="192.168.99.1/24"
 WLAN_IF="wlan0"
@@ -15,12 +17,12 @@ SERVICE_SRC=""
 REPO_ROOT=""
 
 usage() {
-	cat <<'EOF'
+	cat <<EOF
 Usage: elo-net <command> [options]
 
 Commands:
   setup              One-time Pi setup (AP profile, dnsmasq, recovery IP, systemd).
-  ap                 Switch wlan0 to open hotspot (SSID = hostname).
+  ap                 Switch wlan0 to WPA hotspot (SSID = hostname, PSK = ${DEFAULT_AP_PSK}).
   wifi               Switch wlan0 to saved Wi-Fi client profile.
   apply              Apply saved mode from /etc/elo/mode (boot).
   status             Show current mode, SSID, and addresses.
@@ -28,6 +30,10 @@ Commands:
 Wi-Fi options (with wifi):
   --ssid NAME        SSID to save or update (first-time setup).
   --password SECRET  WPA passphrase (8–63 chars).
+
+AP password: default "${DEFAULT_AP_PSK}". Override with /etc/elo/ap-psk or ELO_AP_PSK.
+
+Run "elo-net ap" over Ethernet when possible (Wi-Fi SSH drops when wlan0 switches).
 
 Examples:
   sudo elo-net setup
@@ -66,6 +72,19 @@ hostname_ssid() {
 	hostname -s 2>/dev/null || hostname | cut -d. -f1
 }
 
+read_ap_psk() {
+	local psk
+	if [[ -n "${ELO_AP_PSK:-}" ]]; then
+		psk="$ELO_AP_PSK"
+	elif [[ -f "$AP_PSK_FILE" ]]; then
+		psk="$(tr -d '[:space:]' < "$AP_PSK_FILE")"
+	else
+		psk="$DEFAULT_AP_PSK"
+	fi
+	[[ ${#psk} -ge 8 ]] || die "AP PSK must be at least 8 characters (set ${AP_PSK_FILE} or ELO_AP_PSK)"
+	echo "$psk"
+}
+
 read_mode() {
 	if [[ -f "$MODE_FILE" ]]; then
 		tr -d '[:space:]' < "$MODE_FILE"
@@ -94,31 +113,32 @@ ap_exists() {
 }
 
 ensure_ap_profile() {
-	local ssid
+	local ssid psk
 	ssid="$(hostname_ssid)"
+	psk="$(read_ap_psk)"
 
 	if ap_exists; then
+		nmcli connection modify "$AP_CONN" --remove 802-11-wireless-security 2>/dev/null || true
 		nmcli connection modify "$AP_CONN" \
 			802-11-wireless.ssid "$ssid" \
 			802-11-wireless.mode ap \
 			802-11-wireless.band bg \
 			802-11-wireless.channel 6 \
+			wifi-sec.key-mgmt wpa-psk \
+			wifi-sec.psk "$psk" \
 			ipv4.method shared \
 			ipv4.addresses "${AP_IP}/24" \
 			connection.interface-name "$WLAN_IF"
-		nmcli connection modify "$AP_CONN" \
-			802-11-wireless-security.key-mgmt none 2>/dev/null || \
-			nmcli connection modify "$AP_CONN" \
-			802-11-wireless-security.key-mgmt "" 2>/dev/null || true
 	else
 		nmcli connection add type wifi ifname "$WLAN_IF" con-name "$AP_CONN" ssid "$ssid"
 		nmcli connection modify "$AP_CONN" \
 			802-11-wireless.mode ap \
 			802-11-wireless.band bg \
 			802-11-wireless.channel 6 \
+			wifi-sec.key-mgmt wpa-psk \
+			wifi-sec.psk "$psk" \
 			ipv4.method shared \
-			ipv4.addresses "${AP_IP}/24" \
-			802-11-wireless-security.key-mgmt none 2>/dev/null || true
+			ipv4.addresses "${AP_IP}/24"
 	fi
 }
 
@@ -143,10 +163,12 @@ configure_recovery_ethernet() {
 		return 0
 	fi
 
+	nmcli connection modify "$conn" ipv4.may-fail yes
+
 	local addrs
 	addrs="$(nmcli -g ipv4.addresses connection show "$conn" 2>/dev/null || true)"
-	if [[ "$addrs" == *"$RECOVERY_IP"* ]]; then
-		echo "elo-net: recovery IP already on $conn"
+	if [[ "$addrs" == *"${RECOVERY_IP%/*}"* ]]; then
+		echo "elo-net: recovery IP already on $conn (may-fail enabled)"
 		return 0
 	fi
 
@@ -155,7 +177,7 @@ configure_recovery_ethernet() {
 	else
 		nmcli connection modify "$conn" ipv4.method auto ipv4.addresses "$RECOVERY_IP"
 	fi
-	echo "elo-net: recovery IP $RECOVERY_IP on $conn"
+	echo "elo-net: recovery IP $RECOVERY_IP on $conn (ipv4.may-fail yes)"
 }
 
 install_systemd_unit() {
@@ -205,7 +227,7 @@ ensure_wifi_profile() {
 		nmcli connection modify "$WIFI_CONN" \
 			802-11-wireless.ssid "$ssid" \
 			802-11-wireless.mode infrastructure \
-			802-11-wireless-security.key-mgmt wpa-psk \
+			wifi-sec.key-mgmt wpa-psk \
 			wifi-sec.psk "$password" \
 			connection.interface-name "$WLAN_IF" \
 			ipv4.method auto
@@ -213,19 +235,20 @@ ensure_wifi_profile() {
 		nmcli connection add type wifi ifname "$WLAN_IF" con-name "$WIFI_CONN" ssid "$ssid"
 		nmcli connection modify "$WIFI_CONN" \
 			802-11-wireless.mode infrastructure \
-			802-11-wireless-security.key-mgmt wpa-psk \
+			wifi-sec.key-mgmt wpa-psk \
 			wifi-sec.psk "$password" \
 			ipv4.method auto
 	fi
 }
 
 disable_other_wlan_autoconnect() {
+	local keep="$1"
 	local name type
 	while IFS= read -r line; do
 		name="${line%%:*}"
 		type="${line#*:}"
 		[[ "$type" == "802-11-wireless" ]] || continue
-		[[ "$name" == "$1" ]] && continue
+		[[ "$name" == "$keep" ]] && continue
 		nmcli connection modify "$name" connection.autoconnect no 2>/dev/null || true
 	done < <(nmcli -t -f NAME,TYPE connection show)
 }
@@ -247,36 +270,39 @@ cmd_setup() {
 	fi
 
 	echo "elo-net: setup complete"
+	echo "  AP password: $(read_ap_psk)"
 	echo "  Next: sudo elo-net wifi --ssid HOME --password SECRET"
-	echo "        sudo elo-net ap   # before an installation"
+	echo "        sudo elo-net ap   # before an installation (prefer Ethernet SSH)"
 }
 
 cmd_ap() {
 	require_root
 	require_nmcli
 
-	local ssid
+	local ssid psk
 	ssid="$(hostname_ssid)"
-	echo "elo-net: switching to AP (SSID=$ssid, open, gateway $AP_IP)…"
+	psk="$(read_ap_psk)"
+	echo "elo-net: switching to AP (SSID=$ssid, WPA-PSK, gateway $AP_IP)…"
 
 	ensure_ap_profile
 	set_autoconnect "$AP_CONN" yes
 	disable_other_wlan_autoconnect "$AP_CONN"
+	write_mode "ap"
 
-	# Bring down other wlan profiles without touching Ethernet.
+	# Bring AP up first — NM replaces the active client on wlan0.
+	nmcli connection up "$AP_CONN"
+
+	# Disable autoconnect on other wlan profiles (after AP is active).
 	local name type
 	while IFS= read -r line; do
 		name="${line%%:*}"
 		type="${line#*:}"
 		[[ "$type" == "802-11-wireless" ]] || continue
 		[[ "$name" == "$AP_CONN" ]] && continue
-		nmcli connection down "$name" 2>/dev/null || true
 		set_autoconnect "$name" no
 	done < <(nmcli -t -f NAME,TYPE connection show)
 
-	write_mode "ap"
-	nmcli connection up "$AP_CONN"
-	echo "elo-net: AP active — phones join '$ssid', portal http://${AP_IP}/control"
+	echo "elo-net: AP active — join '$ssid' (password: $psk), portal http://${AP_IP}/control"
 }
 
 cmd_wifi() {
@@ -305,9 +331,9 @@ cmd_wifi() {
 	set_autoconnect "$AP_CONN" no
 	set_autoconnect "$client" yes
 	disable_other_wlan_autoconnect "$client"
-
-	nmcli connection down "$AP_CONN" 2>/dev/null || true
 	write_mode "wifi"
+
+	# Client up first — NM drops AP on wlan0.
 	nmcli connection up "$client"
 	echo "elo-net: Wi-Fi client active"
 }
@@ -330,9 +356,10 @@ cmd_apply() {
 cmd_status() {
 	require_nmcli
 
-	local mode ssid wlan_ip eth_ip ap_up
+	local mode ssid wlan_ip eth_ip ap_up psk
 	mode="$(read_mode)"
 	ssid="$(hostname_ssid)"
+	psk="$(read_ap_psk 2>/dev/null || echo "$DEFAULT_AP_PSK")"
 	wlan_ip="$(iface_ipv4 "$WLAN_IF" || true)"
 	eth_ip="$(iface_ipv4 "eth0" || true)"
 	if has_ap_address; then ap_up="yes"; else ap_up="no"; fi
@@ -340,6 +367,7 @@ cmd_status() {
 	echo "mode:        $mode"
 	echo "hostname:    $(hostname)"
 	echo "AP SSID:     $ssid"
+	echo "AP password: $psk"
 	echo "AP gateway:  $AP_IP (active: $ap_up)"
 	echo "wlan0 IPv4:  ${wlan_ip:-—}"
 	echo "eth0 IPv4:   ${eth_ip:-—}"

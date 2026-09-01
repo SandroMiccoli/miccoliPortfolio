@@ -76,11 +76,13 @@ The Pi can run in two explicit Wi-Fi modes on `wlan0` (never both at once). **Et
 | Mode | When | Phone joins | Control URL |
 | --- | --- | --- | --- |
 | **Wi-Fi client** (`wifi`) | Development at home | Your home Wi-Fi | `http://<pi-ip>/control` |
-| **Access point** (`ap`) | Installation / venue | Open network named like the hostname (`elo-001`) | Captive portal → `/control` at `http://10.42.0.1/control` |
+| **Access point** (`ap`) | Installation / venue | WPA network named like the hostname (`elo-001`), password **`eloeloelo`** | Captive portal → `/control` at `http://10.42.0.1/control` |
 
-The hotspot is **open** (no password). WPA2 needs at least 8 characters; a short password like `elo` is rejected by NetworkManager.
+The hotspot uses WPA2-PSK. Default password is **`eloeloelo`** (override in `/etc/elo/ap-psk` or `ELO_AP_PSK`). Open networks are unreliable on NetworkManager; WPA is the supported path.
 
 Set the WLAN country once (`sudo raspi-config` → Localisation → WLAN Country). Without it the AP often fails to start.
+
+Run **`sudo elo-net ap` over Ethernet** when you can. SSH over Wi-Fi drops when `wlan0` switches modes (the AP should still come up if the script finishes).
 
 ### One-time setup
 
@@ -110,7 +112,7 @@ sudo ln -sf /home/pi/elo/scripts/elo-net /usr/local/bin/elo-net
 
 ```bash
 sudo elo-net wifi    # development: join saved Wi-Fi
-sudo elo-net ap      # installation: open hotspot, SSID = hostname -s
+sudo elo-net ap      # installation: WPA hotspot (SSID = hostname, password eloeloelo)
 sudo elo-net status  # mode, addresses, active wlan profile
 ```
 
@@ -396,7 +398,7 @@ Keep the same `PAMName` / `XDG_*` / PipeWire environment as the Sway unit. There
 
 ## 8. Phone control
 
-1. Join the same Wi-Fi as the Pi (or the Pi’s open hotspot in AP mode)
+1. Join the same Wi-Fi as the Pi (or the Pi hotspot in AP mode — password **`eloeloelo`**)
 2. Scan the boot QR, or open `http://<pi-ip>/control` (AP: `http://10.42.0.1/control`)
 3. Change chains and operators: activate, add, bypass, reorder, tweak parameters. The Pi display updates immediately
 4. On the Pi, press **U** or tap the right edge for the same panel
@@ -474,7 +476,9 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | Low FPS / **Out** is 1920×1080 | The projector’s preferred HDMI mode is FHD. Cap it with `output HDMI-A-1 mode 1280x720@60Hz` in the Sway config, then `sudo systemctl restart elo-kiosk`. Use a mode from `swaymsg -t get_outputs`. |
 | `elo.local` does not open | Use `http://elo.local/` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
 | Port already in use | Another process is on 80 (Pi) or 8080 (dev). Stop it, or set `PORT=8081` and update the kiosk URL. |
-| AP SSID does not appear | Set WLAN country in `raspi-config`. Run `sudo elo-net status`. Ensure `wlan0` is not stuck on a client profile (`sudo elo-net ap`). |
+| AP SSID does not appear | Set WLAN country in `raspi-config`. Run `sudo elo-net status`. Ensure `wlan0` is not stuck on a client profile (`sudo elo-net ap` over Ethernet). If an old open AP profile fails with `wep-key0`, run `sudo elo-net setup` to rewrite `elo-ap` as WPA. |
+| `elo-network.service` failed on boot | Usually AP activation failed. SSH over Ethernet, run `sudo journalctl -u elo-network.service -b`, then `sudo elo-net ap` or `sudo nmcli connection up elo-ap`. |
+| Ethernet SSH keeps dropping (direct cable) | Run `sudo elo-net setup` again (sets `ipv4.may-fail yes` on Ethernet). Laptop static IP `192.168.99.2/24`, Pi at `192.168.99.1`. |
 | Captive portal does not open | Ethernet may be sharing internet to phones — probes succeed and iOS/Android skip the login sheet. Unplug Ethernet or block upstream. Open `http://10.42.0.1/control` manually. |
 | Cannot SSH over Wi-Fi | Use Ethernet recovery: laptop `192.168.99.2/24`, `ssh pi@192.168.99.1`. |
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
