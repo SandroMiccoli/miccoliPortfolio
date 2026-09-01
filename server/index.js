@@ -329,6 +329,67 @@ function lanAddress() {
 	return preferred[0] || rest[0] || '';
 }
 
+const AP_GATEWAY = '10.42.0.1';
+
+const CAPTIVE_PATHS = new Set([
+	'/hotspot-detect.html',
+	'/library/test/success.html',
+	'/success.txt',
+	'/generate_204',
+	'/gen_204',
+	'/ncsi.txt',
+	'/connecttest.txt',
+	'/redirect',
+	'/canonical.html',
+	'/mobile/status.php'
+]);
+
+function isApMode() {
+	const forced = process.env.ELO_NET_MODE;
+	if (forced === 'ap') return true;
+	if (forced === 'wifi') return false;
+	const nets = os.networkInterfaces();
+	let found = false;
+	Object.keys(nets).forEach((name) => {
+		if (found) return;
+		(nets[name] || []).forEach((net) => {
+			if (found) return;
+			const ipv4 = net.family === 'IPv4' || net.family === 4;
+			if (ipv4 && net.address === AP_GATEWAY) found = true;
+		});
+	});
+	return found;
+}
+
+function isLoopbackHost(host) {
+	const h = String(host || '').split(':')[0].toLowerCase();
+	return h === '127.0.0.1' || h === 'localhost' || h === '::1';
+}
+
+function isStaticAsset(reqPath) {
+	return /\.[a-z0-9]{1,8}$/i.test(reqPath);
+}
+
+function attachCaptivePortal(app) {
+	const controlFile = path.join(ROOT, 'control.html');
+	app.use((req, res, next) => {
+		if (!isApMode()) return next();
+		if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+		if (isLoopbackHost(req.hostname)) return next();
+		if (req.path === '/control' || req.path.startsWith('/control/')) return next();
+		if (req.path.startsWith('/api')) return next();
+		if (CAPTIVE_PATHS.has(req.path) || !isStaticAsset(req.path)) {
+			if (req.method === 'HEAD') {
+				res.status(200).end();
+				return;
+			}
+			res.sendFile(controlFile);
+			return;
+		}
+		next();
+	});
+}
+
 function mdnsHost() {
 	return String(os.hostname() || 'visual-synth').split('.')[0] + '.local';
 }
@@ -351,7 +412,8 @@ function originFor(host, port, secure) {
 }
 
 function makeInfo(port, httpsPort) {
-	const ip = lanAddress();
+	const ap = isApMode();
+	const ip = ap ? AP_GATEWAY : lanAddress();
 	const mdns = originFor(mdnsHost(), port);
 	const ipOrigin = ip ? originFor(ip, port) : '';
 	const httpsOrigin = httpsPort && ip ? originFor(ip, httpsPort, true) : '';
@@ -360,7 +422,8 @@ function makeInfo(port, httpsPort) {
 		url: mdns,
 		ipOrigin: ipOrigin,
 		controlUrl: (ipOrigin || mdns) + '/control',
-		httpsControlUrl: httpsOrigin ? httpsOrigin + '/control' : ''
+		httpsControlUrl: httpsOrigin ? httpsOrigin + '/control' : '',
+		apMode: ap
 	};
 }
 
@@ -814,6 +877,7 @@ async function start() {
 		res.sendFile(path.join(ROOT, 'control.html'));
 	});
 	irCam.attach(app);
+	attachCaptivePortal(app);
 	app.use(express.static(ROOT));
 
 	const server = http.createServer(app);

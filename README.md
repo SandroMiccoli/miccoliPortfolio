@@ -82,4 +82,4 @@ Default templates are JSON files in `library/templates/`. Edit those files in th
 
 The Share button copies a link with the full chain inside it. Open that link on this machine, the Pi, or another ELO instance to load the same operators and parameters. You can also download the JSON and drop it into `library/templates/` or import it from the Share panel.
 
-To run automatically on a Raspberry Pi, follow [INSTALL.md](INSTALL.md). If the HDMI kiosk is black after a hostname change (Sway running, Chromium not), delete the three Chromium `Singleton*` files and restart the kiosk — see **Troubleshooting** in that file.
+To run automatically on a Raspberry Pi, follow [INSTALL.md](INSTALL.md) (network modes **AP ↔ Wi-Fi** with `elo-net`, Ethernet recovery, captive portal). If the HDMI kiosk is black after a hostname change (Sway running, Chromium not), delete the three Chromium `Singleton*` files and restart the kiosk — see **Troubleshooting** in that file.

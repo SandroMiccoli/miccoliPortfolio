@@ -1,0 +1,13 @@
+[Unit]
+Description=ELO network mode (AP or Wi-Fi)
+After=NetworkManager.service
+Wants=NetworkManager.service
+Before=elo.service visual-synth.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/pi/elo/scripts/elo-net apply
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

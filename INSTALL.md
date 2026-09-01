@@ -4,13 +4,14 @@ The Pi is the renderer, web server, and WebSocket server. Chromium runs `index.h
 
 These steps assume Raspberry Pi OS **Debian 13 (Trixie) Lite** (no desktop), user **pi**, and a Raspberry Pi 4 or 5.
 
-On boot the Node server should start on port 8080, then Sway should open Chromium fullscreen on the attached display.
+On boot the Node server should start on port **80** (after `elo-net setup`), then Sway should open Chromium fullscreen on the attached display.
 
 ## Hardware
 
 - Raspberry Pi 4 (2 GB+) or Pi 5
 - HDMI or official touchscreen
 - Pi and phone on the same Wi-Fi (or Ethernet + phone on that LAN)
+- **Ethernet cable** for recovery SSH when Wi-Fi or the kiosk misbehaves (see **Network** below)
 
 ## 1. Clone the project
 
@@ -49,9 +50,9 @@ npm install
 npm start
 ```
 
-The server listens on **8080** by default (no root needed). It prints the local and LAN URLs on start. Override with `PORT=...` if you need another port.
+The server listens on **8080** by default on a dev machine (no root needed). On the Pi, use **port 80** (see **systemd service**). It prints the local and LAN URLs on start. Override with `PORT=...` if you need another port.
 
-Open the renderer at `http://127.0.0.1:8080/` and the phone UI at `http://127.0.0.1:8080/control`.
+Open the renderer at `http://127.0.0.1:8080/` and the phone UI at `http://127.0.0.1:8080/control` (dev). On the Pi kiosk, Chromium uses `http://127.0.0.1/` and phones use `/control` on the LAN IP or `http://10.42.0.1/control` in AP mode.
 
 GSAP and the QR library load from a CDN, so the Pi needs internet the first time Chromium loads the page (after that the browser cache is enough). To run fully offline, download those scripts next to `index.html` and point the `<script src>` tags at the local files.
 
@@ -64,32 +65,102 @@ sudo reboot
 sudo systemctl enable --now avahi-daemon
 ```
 
-After a reboot, mDNS should answer at `http://elo.local:8080`.
+After a reboot, mDNS should answer at `http://elo.local/` (port 80 on the Pi).
 
 Windows does not always resolve `.local` without iTunes/Bonjour. Use the printed LAN IP, or scan the QR code (it encodes the IP control URL, which is more reliable on Android).
 
-## 5. systemd service
+## 5. Network (AP ↔ Wi-Fi)
+
+The Pi can run in two explicit Wi-Fi modes on `wlan0` (never both at once). **Ethernet is never switched** — use it for SSH recovery even when the hotspot is active.
+
+| Mode | When | Phone joins | Control URL |
+| --- | --- | --- | --- |
+| **Wi-Fi client** (`wifi`) | Development at home | Your home Wi-Fi | `http://<pi-ip>/control` |
+| **Access point** (`ap`) | Installation / venue | Open network named like the hostname (`elo-001`) | Captive portal → `/control` at `http://10.42.0.1/control` |
+
+The hotspot is **open** (no password). WPA2 needs at least 8 characters; a short password like `elo` is rejected by NetworkManager.
+
+Set the WLAN country once (`sudo raspi-config` → Localisation → WLAN Country). Without it the AP often fails to start.
+
+### One-time setup
+
+From the repo on the Pi:
+
+```bash
+cd /home/pi/elo
+chmod +x scripts/elo-net
+sudo scripts/elo-net setup
+```
+
+This creates the `elo-ap` NetworkManager profile, installs dnsmasq captive-DNS snippets, adds recovery IP **`192.168.99.1/24`** on Ethernet (alongside DHCP), and enables `elo-network.service` on boot. Default saved mode is **`wifi`**.
+
+Save your home Wi-Fi (first time only):
+
+```bash
+sudo scripts/elo-net wifi --ssid "YourNetwork" --password "your-wpa-password"
+```
+
+Optional symlink so `elo-net` works from anywhere:
+
+```bash
+sudo ln -sf /home/pi/elo/scripts/elo-net /usr/local/bin/elo-net
+```
+
+### Switch modes
+
+```bash
+sudo elo-net wifi    # development: join saved Wi-Fi
+sudo elo-net ap      # installation: open hotspot, SSID = hostname -s
+sudo elo-net status  # mode, addresses, active wlan profile
+```
+
+`ap` updates the SSID if you change the hostname (`elo-001`, `elo-002`, …). Reboot applies the last saved mode from `/etc/elo/mode`.
+
+### Ethernet recovery
+
+If Wi-Fi or the kiosk breaks, plug a laptop into the Pi with a cable (no router needed):
+
+1. Laptop static IP **`192.168.99.2`**, netmask **`255.255.255.0`**, gateway empty
+2. `ssh pi@192.168.99.1` (or `ssh pi@elo-001.local` if mDNS works)
+
+The Pi keeps DHCP on Ethernet when a router is present; `192.168.99.1` is an extra address for direct cable access.
+
+### Captive portal (AP mode only)
+
+When `10.42.0.1` is on `wlan0`, the Node server serves `control.html` to phones (iOS/Android network login sheet). The HDMI kiosk still loads `http://127.0.0.1/` — localhost is never redirected.
+
+**Important:** If Ethernet shares internet to phones on the AP, captive probes may succeed and the login sheet will **not** open. For a reliable portal at a venue, unplug Ethernet or use a network without upstream internet.
+
+Requires the server on **port 80** (next section).
+
+## 6. systemd service
 
 `/etc/systemd/system/elo.service`:
 
 ```ini
 [Unit]
 Description=ELO
-After=network-online.target
-Wants=network-online.target
+After=NetworkManager.service elo-network.service
+Wants=NetworkManager.service elo-network.service
 
 [Service]
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/elo/server
 ExecStart=/usr/bin/node index.js
-Environment=PORT=8080
+Environment=PORT=80
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 Restart=on-failure
 RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+Port **80** is required for the AP captive portal (phones probe HTTP without a port). The kiosk uses `http://127.0.0.1/` (no `:8080`). On a dev laptop, `npm start` still defaults to **8080**.
+
+If you have not run `elo-net setup` yet, you can temporarily use `Environment=PORT=8080` without `AmbientCapabilities` until network setup is done.
 
 Then:
 
@@ -99,14 +170,7 @@ sudo systemctl enable --now elo
 sudo systemctl status elo
 ```
 
-To use port 80 instead, set `Environment=PORT=80` and add:
-
-```ini
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-```
-
-## 6. Chromium kiosk (Lite, no desktop)
+## 7. Chromium kiosk (Lite, no desktop)
 
 Lite has no desktop session, so `~/.config/autostart/*.desktop` will not run. The HDMI session is **Sway** (Wayland) on **tty1**. Sway is the compositor; it launches Chromium. Configure this over SSH by writing the two files below, then restart the unit. **Do not** run `sway` or `chromium` from SSH: there is no seat, and you will get TTY / DRM permission errors.
 
@@ -148,7 +212,7 @@ mkdir -p /home/pi/.config/sway
 ```
 default_border none
 seat * hide_cursor 1
-exec /usr/bin/chromium --kiosk --app=http://127.0.0.1:8080/ --noerrdialogs --disable-infobars --disable-session-crashed-bubble --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --ignore-gpu-blocklist --ozone-platform=wayland --use-fake-ui-for-media-stream --enable-media-stream --disable-features=WebRtcPipeWireCamera
+exec /usr/bin/chromium --kiosk --app=http://127.0.0.1/ --noerrdialogs --disable-infobars --disable-session-crashed-bubble --check-for-update-interval=31536000 --autoplay-policy=no-user-gesture-required --ignore-gpu-blocklist --ozone-platform=wayland --use-fake-ui-for-media-stream --enable-media-stream --disable-features=WebRtcPipeWireCamera
 ```
 
 ```bash
@@ -179,8 +243,8 @@ Write the file as user `pi` when you can. `root:root` with mode `644` also works
 ```ini
 [Unit]
 Description=ELO Chromium kiosk
-After=network-online.target elo.service
-Wants=network-online.target
+After=NetworkManager.service elo-network.service elo.service
+Wants=NetworkManager.service elo-network.service
 Requires=elo.service
 
 [Service]
@@ -215,7 +279,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now elo.service elo-kiosk.service
 ```
 
-On boot the Node server starts on 8080, then Sway starts Chromium fullscreen on the attached display. The QR overlay shows for 10 seconds and fades out. The mouse cursor stays hidden. There is no side tab; press **U** or click the right edge to toggle the control panel. The QR button appears while the pointer is moving (if a mouse is plugged in).
+On boot the Node server starts on port 80, then Sway starts Chromium fullscreen on the attached display. The QR overlay shows for 10 seconds and fades out. The mouse cursor stays hidden. There is no side tab; press **U** or click the right edge to toggle the control panel. The QR button appears while the pointer is moving (if a mouse is plugged in).
 
 After any edit to either file:
 
@@ -315,7 +379,7 @@ The ELO **Out** meter on the phone should then show 1280×720, not 1920×1080.
 **cage** — single-app Wayland compositor. Same Chromium flags work, including camera. It cannot hide Chromium’s cursor (`XCURSOR_THEME`, `WLR_NO_HARDWARE_CURSORS`, and CSS `cursor: none` all fail until a mouse move). Only use this if you do not care about the pointer.
 
 ```ini
-ExecStart=/usr/bin/cage -- /usr/bin/chromium --kiosk --app=http://127.0.0.1:8080/ \
+ExecStart=/usr/bin/cage -- /usr/bin/chromium --kiosk --app=http://127.0.0.1/ \
   --noerrdialogs --disable-infobars \
   --disable-session-crashed-bubble \
   --check-for-update-interval=31536000 \
@@ -330,16 +394,16 @@ Keep the same `PAMName` / `XDG_*` / PipeWire environment as the Sway unit. There
 
 **xinit** — X11 session. `ExecStart=/usr/bin/xinit /home/pi/.xinitrc -- :0 vt1`. Chromium flags then live in `/home/pi/.xinitrc`, not in Sway. Cursor hide is `unclutter-xfixes` (X11 only). Do not mix this with the Sway unit: one compositor on tty1.
 
-## 7. Phone control
+## 8. Phone control
 
-1. Join the same Wi-Fi as the Pi
-2. Scan the boot QR, or open `http://<pi-ip>:8080/control`
+1. Join the same Wi-Fi as the Pi (or the Pi’s open hotspot in AP mode)
+2. Scan the boot QR, or open `http://<pi-ip>/control` (AP: `http://10.42.0.1/control`)
 3. Change chains and operators: activate, add, bypass, reorder, tweak parameters. The Pi display updates immediately
 4. On the Pi, press **U** or tap the right edge for the same panel
 
 The phone never receives the rendered video. It only sends patches over WebSocket, plus optional FFT and phone-camera frames. Thumbnails are generated on the display and come back in state.
 
-## 8. Camera (USB on the Pi, or the phone)
+## 9. Camera (USB on the Pi, or the phone)
 
 Camera Input has a **Source** control: **Display** (webcam on the Raspberry Pi) or **Phone** (the control phone). The picture is always composited on the Pi. The phone never shows the camera in its own UI.
 
@@ -389,7 +453,7 @@ sudo apt install -y ffmpeg v4l-utils
 
 Restart `elo.service` (not only the kiosk) so Node loads the IR helper. Plug the D435 into USB 3. **Default USB** / **UVC Camera** stay the C270. Pick **RealSense IR** for greyscale. Depth is hidden. RGB may still appear.
 
-Confirm: `curl -s http://127.0.0.1:8080/api/ir` should show `"available": true`. Then `curl -o /tmp/ir.jpg http://127.0.0.1:8080/ir.jpg`.
+Confirm: `curl -s http://127.0.0.1/api/ir` should show `"available": true`. Then `curl -o /tmp/ir.jpg http://127.0.0.1/ir.jpg`.
 
 ### Phone camera
 
@@ -408,11 +472,14 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | HDMI never starts / TTY errors | Do not run `sway` or `chromium` from SSH. Start `elo-kiosk.service`. Disable `getty@tty1`. |
 | `swaymsg`: Unable to retrieve socket path | SSH has no `SWAYSOCK`. Export the kiosk socket under `/run/user/1000/sway-ipc.*.sock` as in **HDMI output resolution**. Do not start a second Sway from SSH. |
 | Low FPS / **Out** is 1920×1080 | The projector’s preferred HDMI mode is FHD. Cap it with `output HDMI-A-1 mode 1280x720@60Hz` in the Sway config, then `sudo systemctl restart elo-kiosk`. Use a mode from `swaymsg -t get_outputs`. |
-| `elo.local` does not open | Use `http://elo.local:8080` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
-| Port already in use | Another process is on 8080. Stop it, or start with `PORT=8081 npm start` and update the kiosk URL. |
+| `elo.local` does not open | Use `http://elo.local/` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
+| Port already in use | Another process is on 80 (Pi) or 8080 (dev). Stop it, or set `PORT=8081` and update the kiosk URL. |
+| AP SSID does not appear | Set WLAN country in `raspi-config`. Run `sudo elo-net status`. Ensure `wlan0` is not stuck on a client profile (`sudo elo-net ap`). |
+| Captive portal does not open | Ethernet may be sharing internet to phones — probes succeed and iOS/Android skip the login sheet. Unplug Ethernet or block upstream. Open `http://10.42.0.1/control` manually. |
+| Cannot SSH over Wi-Fi | Use Ethernet recovery: laptop `192.168.99.2/24`, `ssh pi@192.168.99.1`. |
 | Phone UI does not connect | Same network, no guest-Wi-Fi client isolation, and the printed `control` URL. |
 | Camera Input stays black (Display) | LED on but no picture is usually Chromium failing to upload the `<video>` to WebGL. Reload after the blit fix. If the LED never turns on: USB webcam, `v4l2-ctl --list-devices`, `pi` in the `video` group, Chromium flags `--use-fake-ui-for-media-stream --enable-media-stream` on the Sway `exec` line, then restart the kiosk. |
 | USB camera times out / LED never on, `ffmpeg` works | Chromium is using PipeWire for the camera. Keep `--disable-features=WebRtcPipeWireCamera` on the Sway `exec` line, then `systemctl restart elo-kiosk`. |
-| RealSense is black-and-white noise | That was the Depth node; it is hidden now. Use **RealSense IR** (needs `ffmpeg` and `elo.service` restart). Check `curl -s http://127.0.0.1:8080/api/ir`. |
+| RealSense is black-and-white noise | That was the Depth node; it is hidden now. Use **RealSense IR** (needs `ffmpeg` and `elo.service` restart). Check `curl -s http://127.0.0.1/api/ir`. |
 | Phone camera does nothing | Open the printed **https** control URL (port 8443) and accept the certificate. HTTP blocks the phone camera. |
 | CDN scripts fail offline | Vendor GSAP / `qrcode.min.js` next to `index.html`. |
