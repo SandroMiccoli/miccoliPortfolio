@@ -61,8 +61,27 @@ require_nmcli() {
 }
 
 resolve_repo() {
-	local script_dir
-	script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	local script_path script_dir link_dir link_target
+
+	if [[ -n "${ELO_REPO:-}" ]]; then
+		REPO_ROOT="$(cd "$ELO_REPO" && pwd)"
+		DNSMAQ_SRC="$REPO_ROOT/scripts/dnsmasq-elo.conf"
+		SERVICE_SRC="$REPO_ROOT/scripts/elo-network.service"
+		return
+	fi
+
+	script_path="${BASH_SOURCE[0]}"
+	if command -v readlink >/dev/null 2>&1; then
+		script_path="$(readlink -f "$script_path" 2>/dev/null || echo "$script_path")"
+	fi
+	while [[ -L "$script_path" ]]; do
+		link_dir="$(cd "$(dirname "$script_path")" && pwd)"
+		link_target="$(readlink "$script_path")"
+		[[ "$link_target" != /* ]] && link_target="$link_dir/$link_target"
+		script_path="$link_target"
+	done
+
+	script_dir="$(cd "$(dirname "$script_path")" && pwd)"
 	REPO_ROOT="$(cd "$script_dir/.." && pwd)"
 	DNSMAQ_SRC="$script_dir/dnsmasq-elo.conf"
 	SERVICE_SRC="$script_dir/elo-network.service"

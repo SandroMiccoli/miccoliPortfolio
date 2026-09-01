@@ -102,11 +102,13 @@ Save your home Wi-Fi (first time only):
 sudo scripts/elo-net wifi --ssid "YourNetwork" --password "your-wpa-password"
 ```
 
-Optional symlink so `elo-net` works from anywhere:
+Optional symlink so `elo-net` works from anywhere (the script resolves the symlink back to the repo for `setup`):
 
 ```bash
 sudo ln -sf /home/pi/elo/scripts/elo-net /usr/local/bin/elo-net
 ```
+
+If the repo lives elsewhere, set `ELO_REPO=/path/to/elo` when running `setup`.
 
 ### Switch modes
 
@@ -477,6 +479,7 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | `elo.local` does not open | Use `http://elo.local/` or the LAN IP. On Windows, install Bonjour or skip mDNS. Android often needs the IP. |
 | Port already in use | Another process is on 80 (Pi) or 8080 (dev). Stop it, or set `PORT=8081` and update the kiosk URL. |
 | AP SSID does not appear | Set WLAN country in `raspi-config`. Run `sudo elo-net status`. Ensure `wlan0` is not stuck on a client profile (`sudo elo-net ap` over Ethernet). If an old open AP profile fails with `wep-key0`, run `sudo elo-net setup` to rewrite `elo-ap` as WPA. |
+| `elo-net setup`: missing `dnsmasq-elo.conf` under `/usr/local/bin` | Old script before symlink fix. `git pull`, or run `sudo /home/pi/elo/scripts/elo-net setup`. Symlinks in `/usr/local/bin` are supported now. |
 | `elo-network.service` failed on boot | Usually AP activation failed. SSH over Ethernet, run `sudo journalctl -u elo-network.service -b`, then `sudo elo-net ap` or `sudo nmcli connection up elo-ap`. |
 | Ethernet SSH keeps dropping (direct cable) | Run `sudo elo-net setup` again (sets `ipv4.may-fail yes` on Ethernet). Laptop static IP `192.168.99.2/24`, Pi at `192.168.99.1`. |
 | Captive portal does not open | Ethernet may be sharing internet to phones — probes succeed and iOS/Android skip the login sheet. Unplug Ethernet or block upstream. Open `http://10.42.0.1/control` manually. |
