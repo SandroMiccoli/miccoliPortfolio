@@ -402,6 +402,7 @@ Phone frames are encoded as **9:16** (270×480) before they leave the phone: the
 | Symptom | What to try |
 | --- | --- |
 | Black screen / no animation | Confirm WebGL in `chrome://gpu`. Keep `--ignore-gpu-blocklist --ozone-platform=wayland` on the Sway `exec` line. |
+| HDMI black after hostname change, Sway up, Chromium not running | Chromium locked the profile to the **old** hostname (log: `in use by another Chromium process … on another computer (visual-synth)`). Delete only `~/.config/chromium/SingletonLock`, `SingletonSocket`, and `SingletonCookie` (do not wipe the whole profile). Then `sudo systemctl restart elo-kiosk` (or `visual-synth-kiosk` if the unit was never renamed). |
 | Sway “errors in config” on boot | Use the three-line `/home/pi/.config/sway/config` above (plus an optional `output … mode …` line). Do not use `#000000` unquoted (`#` is a comment). Do not add `bar`, `font`, or `output * bg` on Lite. |
 | Mouse cursor stays on screen | CSS / `noCursor()` will not hide it without a mouse move. Use Sway `seat * hide_cursor 1`. `cage`, `XCURSOR_THEME`, and `~/.xinitrc` do not apply to this kiosk. |
 | HDMI never starts / TTY errors | Do not run `sway` or `chromium` from SSH. Start `elo-kiosk.service`. Disable `getty@tty1`. |
