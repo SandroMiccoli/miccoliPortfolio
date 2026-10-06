@@ -1,0 +1,112 @@
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+  color: #0a0c0b;
+  color-scheme: light;
+}
+
+#artwork {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+.perf {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 30;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid #dedede;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0a0c0b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.noscript {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.lil-gui.paragon-gui,
+.lil-gui.paragon-gui .lil-gui {
+  --background-color: rgba(255, 255, 255, 0.96);
+  --text-color: #0a0c0b;
+  --title-background-color: #f3f3f3;
+  --title-text-color: #0a0c0b;
+  --widget-color: #ececec;
+  --hover-color: #e3e3e3;
+  --focus-color: #d8d8d8;
+  --number-color: #0a0c0b;
+  --string-color: #444;
+  --font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-size: 11px;
+  --input-font-size: 11px;
+  --name-width: 56%;
+  --widget-border-radius: 0;
+}
+
+/* Beat lil-gui's .autoPlace rule, which is injected after this file. */
+.lil-gui.paragon-gui.autoPlace {
+  top: 24px;
+  right: 24px;
+  z-index: 40;
+  max-height: calc(100svh - 48px);
+  border: 1px solid #dedede;
+}
+
+/* The lab pins a back button and an info toggle in the top corners. */
+body.lab-body .lil-gui.paragon-gui.autoPlace {
+  top: 84px;
+  z-index: 40;
+  max-height: calc(100svh - 108px);
+}
+
+.lil-gui.paragon-gui > .title,
+.lil-gui.paragon-gui .lil-gui > .title {
+  color: #0a0c0b;
+  background: #f3f3f3;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lil-gui.paragon-gui > .title {
+  border-bottom: 1px solid #dedede;
+}
+
+@media (max-width: 600px) {
+  .perf {
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .lil-gui.paragon-gui.autoPlace {
+    top: 12px;
+    right: 12px;
+    max-height: calc(100svh - 24px);
+    --width: min(240px, calc(100vw - 24px));
+  }
+
+  body.lab-body .lil-gui.paragon-gui.autoPlace {
+    top: 64px;
+    max-height: calc(100svh - 76px);
+  }
+}
