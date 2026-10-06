@@ -1,0 +1,252 @@
+html,
+body {
+  margin: 0;
+  background: #f2f0eb;
+  color: #161513;
+}
+
+.hero {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 640px;
+}
+
+.hero-copy {
+  position: absolute;
+  z-index: 2;
+  top: 28px;
+  left: 28px;
+  max-width: 280px;
+  pointer-events: none;
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.hero-copy p {
+  margin: 0;
+}
+
+.hero-copy .eyebrow {
+  margin-bottom: 8px;
+  color: #6d6962;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-copy h1 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 2vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+}
+
+.hero-copy .lede {
+  color: #6d6962;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* The lab page pins a back button and an info toggle in the top corners. */
+.lab-experiment-demo .hero-copy {
+  top: 84px;
+  left: 84px;
+}
+
+.ascii-stack,
+.ascii-stack * {
+  box-sizing: border-box;
+}
+
+.ascii-stack {
+  --ascii-paper: #f2f0eb;
+  --ascii-ink: #161513;
+  --ascii-soft: #6d6962;
+  --ascii-font: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ascii-paper);
+  color: var(--ascii-ink);
+  font-family: var(--ascii-font);
+  cursor: default;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ascii-stack.is-hovering {
+  cursor: pointer;
+}
+
+.ascii-stack:focus-visible {
+  outline: 1px dashed rgba(22, 21, 19, 0.55);
+  outline-offset: -10px;
+}
+
+.ascii-stack-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.ascii-stack.is-ready .ascii-stack-canvas {
+  opacity: 1;
+  transition: opacity 180ms linear;
+}
+
+.ascii-stack-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ascii-card {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  z-index: 2;
+  width: clamp(260px, 28vw, 320px);
+  border: 1px dashed rgba(22, 21, 19, 0.72);
+  border-radius: 13px;
+  background: rgba(247, 245, 240, 0.94);
+  /* box-shadow: 0 18px 46px rgba(28, 26, 22, 0.08); */
+  color: var(--ascii-ink);
+  pointer-events: none;
+  opacity: 0;
+  clip-path: inset(0 0 100% 0 round 13px);
+  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ascii-card.is-visible {
+  opacity: 1;
+  clip-path: inset(-80px round 13px);
+}
+
+.ascii-card.is-visible.cycle-a,
+.ascii-card.is-visible.cycle-b {
+  animation: ascii-reveal 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ascii-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 17px;
+  border-bottom: 1px solid rgba(22, 21, 19, 0.14);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+}
+
+.ascii-card-header span:last-child {
+  color: var(--ascii-soft);
+  font-weight: 500;
+}
+
+.ascii-card-body {
+  display: grid;
+  gap: 5px;
+  padding: 15px 17px 17px;
+  font-size: clamp(9px, 0.82vw, 11px);
+  line-height: 1.35;
+}
+
+.ascii-card-line {
+  display: grid;
+  grid-template-columns: 37px minmax(0, 1fr);
+  align-items: baseline;
+}
+
+.ascii-card-line code {
+  font: inherit;
+  font-weight: 520;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ascii-card-num {
+  color: rgba(22, 21, 19, 0.32);
+  font-variant-numeric: tabular-nums;
+}
+
+.ascii-card-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.ascii-card-copy,
+.ascii-card-caption {
+  margin: 0;
+  color: var(--ascii-soft);
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+}
+
+.ascii-card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+
+.ascii-stack-fallback {
+  margin: 0;
+  padding: 24px;
+  color: var(--ascii-soft);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 700px) {
+  .hero-copy {
+    top: 18px;
+    left: 18px;
+    max-width: 200px;
+  }
+
+  .lab-experiment-demo .hero-copy {
+    top: 72px;
+    left: 72px;
+  }
+
+  .ascii-card {
+    width: min(240px, calc(100% - 24px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ascii-stack.is-ready .ascii-stack-canvas,
+  .ascii-card,
+  .ascii-card.is-visible.cycle-a,
+  .ascii-card.is-visible.cycle-b {
+    animation: none !important;
+    transition: none;
+  }
+}
+
+@keyframes ascii-reveal {
+  0% {
+    opacity: 1;
+    clip-path: inset(0 0 100% 0 round 13px);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(-80px round 13px);
+  }
+}
