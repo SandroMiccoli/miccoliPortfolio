@@ -114,21 +114,38 @@ body {
   left: 18px;
   top: 18px;
   z-index: 2;
-  width: clamp(260px, 28vw, 320px);
-  border: 1px dashed rgba(22, 21, 19, 0.72);
-  border-radius: 13px;
-  background: rgba(247, 245, 240, 0.94);
-  /* box-shadow: 0 18px 46px rgba(28, 26, 22, 0.08); */
-  color: var(--ascii-ink);
+  width: min(260px, calc(100% - 36px));
+  border: 1px dotted rgba(22, 21, 19, 0.58);
+  border-radius: 4px;
+  background: #f5f3ee;
+  box-shadow: 0 6px 18px rgba(22, 21, 19, 0.04);
+  color: #161513;
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
   pointer-events: none;
   opacity: 0;
-  clip-path: inset(0 0 100% 0 round 13px);
+  clip-path: inset(0 0 100% 0 round 4px);
   transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ascii-card,
+.ascii-card * {
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.ascii-card::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  right: 100%;
+  width: 16px;
+  border-top: 1px dotted rgba(22, 21, 19, 0.42);
 }
 
 .ascii-card.is-visible {
   opacity: 1;
-  clip-path: inset(-80px round 13px);
+  clip-path: inset(-160px -36px -16px -36px round 4px);
 }
 
 .ascii-card.is-visible.cycle-a,
@@ -141,25 +158,35 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 48px;
-  padding: 0 17px;
-  border-bottom: 1px solid rgba(22, 21, 19, 0.14);
+  min-height: 42px;
+  padding: 0 18px;
+  border-bottom: 0;
+  color: #161513;
   font-size: 8px;
   font-weight: 650;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
 }
 
-.ascii-card-header span:last-child {
-  color: var(--ascii-soft);
-  font-weight: 500;
+.ascii-status {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: #55d99b;
+}
+
+.ascii-card:has(.floating-ai) .ascii-card-header {
+  padding-right: 98px;
 }
 
 .ascii-card-body {
   display: grid;
-  gap: 5px;
-  padding: 15px 17px 17px;
-  font-size: clamp(9px, 0.82vw, 11px);
-  line-height: 1.35;
+  gap: 0;
+  padding: 4px 18px 18px;
+  color: #161513;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.42;
 }
 
 .ascii-card-line {
@@ -226,7 +253,7 @@ body {
   }
 
   .ascii-card {
-    width: min(240px, calc(100% - 24px));
+    width: min(240px, calc(100% - 36px));
   }
 }
 
@@ -234,19 +261,226 @@ body {
   .ascii-stack.is-ready .ascii-stack-canvas,
   .ascii-card,
   .ascii-card.is-visible.cycle-a,
-  .ascii-card.is-visible.cycle-b {
+  .ascii-card.is-visible.cycle-b,
+  .contour-stars,
+  .contour-shield,
+  .contour-connectors {
     animation: none !important;
     transition: none;
+  }
+}
+
+.ascii-card:has(.agent-view) .ascii-card-header {
+  padding-left: 16px;
+}
+
+.ascii-card:has(.agent-view) .ascii-card-body {
+  padding: 28px 16px 16px;
+}
+
+.ascii-card:has(.tools-view) .ascii-card-body,
+.ascii-card:has(.permissions-view) .ascii-card-body {
+  padding: 55px 18px 20px;
+}
+
+.agent-view,
+.tools-view {
+  display: grid;
+  gap: 16px;
+}
+
+.agent-response {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+
+.agent-response p {
+  margin: 0;
+  color: #161513;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.agent-signature {
+  display: grid;
+  justify-items: center;
+  color: #299969;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.agent-references {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.agent-references span {
+  padding: 6px 9px;
+  border: 1px solid rgba(22, 21, 19, 0.16);
+  border-radius: 999px;
+  color: #6d6962;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.minimal-call {
+  display: flex;
+  align-items: center;
+  color: #161513;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.minimal-call > span {
+  margin-right: 6px;
+  color: #368863;
+}
+
+.minimal-call code {
+  color: inherit;
+  font: inherit;
+}
+
+.minimal-meta,
+.minimal-permission-copy > span {
+  padding-top: 12px;
+  border-top: 1px solid rgba(22, 21, 19, 0.18);
+  color: #6d6962;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+.permissions-view {
+  display: grid;
+}
+
+.minimal-permission-copy {
+  display: grid;
+  gap: 16px;
+}
+
+.minimal-permission-copy strong {
+  color: #161513;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.minimal-permission-copy > span {
+  letter-spacing: 0.08em;
+}
+
+/* Contour icons use the study artwork. Their boxes match the second layout pass. */
+.floating-ai {
+  position: absolute;
+  top: -15px;
+  right: -17px;
+  z-index: 1;
+  width: 105px;
+  height: 71px;
+  transform-origin: top right;
+  scale: 1.4;
+  perspective: 600px;
+  pointer-events: none;
+}
+
+.floating-connectors {
+  top: -23px;
+  right: -19px;
+  width: 102px;
+  height: 96px;
+}
+
+.floating-shield {
+  top: -19px;
+  right: -12px;
+  width: 80px;
+  height: 86px;
+}
+
+.contour-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.contour-stars {
+  transform: translateY(0) rotateX(12deg) rotateY(-29deg) rotateZ(-9deg);
+  animation: contour-stars-float 5s ease-in-out infinite;
+}
+
+.contour-shield {
+  transform: translateY(0) rotateX(10deg) rotateY(-25deg) rotateZ(8deg);
+  animation: contour-shield-float 5s ease-in-out infinite;
+}
+
+.contour-connectors {
+  display: grid;
+  grid-template-columns: 44px 44px;
+  gap: 7px;
+  transform-style: preserve-3d;
+  animation: contour-connectors-float 5s ease-in-out infinite;
+}
+
+.contour-connectors img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  transform: rotateX(12deg) rotateY(-24deg) rotateZ(-8deg);
+}
+
+.contour-connectors img:nth-child(even) {
+  transform: translateY(7px) rotateX(12deg) rotateY(-24deg) rotateZ(7deg);
+}
+
+@keyframes contour-stars-float {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(12deg) rotateY(-29deg) rotateZ(-9deg);
+  }
+  50% {
+    transform: translateY(-7px) rotateX(12deg) rotateY(-15deg) rotateZ(-9deg);
+  }
+}
+
+@keyframes contour-shield-float {
+  0%,
+  100% {
+    transform: translateY(0) rotateX(10deg) rotateY(-25deg) rotateZ(8deg);
+  }
+  50% {
+    transform: translateY(-5px) rotateX(15deg) rotateY(-12deg) rotateZ(4deg);
+  }
+}
+
+@keyframes contour-connectors-float {
+  0%,
+  100% {
+    transform: translateY(0) rotateY(-5deg);
+  }
+  50% {
+    transform: translateY(-7px) rotateY(9deg);
   }
 }
 
 @keyframes ascii-reveal {
   0% {
     opacity: 1;
-    clip-path: inset(0 0 100% 0 round 13px);
+    clip-path: inset(-160px -36px 100% -36px round 4px);
   }
   100% {
     opacity: 1;
-    clip-path: inset(-80px round 13px);
+    clip-path: inset(-160px -36px -16px -36px round 4px);
   }
 }

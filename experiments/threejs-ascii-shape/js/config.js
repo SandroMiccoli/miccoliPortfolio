@@ -7,7 +7,13 @@
  * @typedef {Object} AsciiLayer
  * @property {number} id
  * @property {string} label
- * @property {'json' | 'text' | 'image'} type
+ * @property {'agent' | 'tools' | 'permissions' | 'json' | 'text' | 'image'} [kind]
+ * @property {'json' | 'text' | 'image'} [type]
+ * @property {string} [message]
+ * @property {string[]} [references]
+ * @property {string} [call]
+ * @property {string} [meta]
+ * @property {string} [action]
  * @property {Record<string, string | number | boolean>} [json]
  * @property {string} [title]
  * @property {string} [body]
@@ -30,6 +36,7 @@
  * @property {number} spacingPullPx
  * @property {number} yaw
  * @property {number} pitch
+ * @property {number} spin Yaw added per 60fps frame. Automatic only — the stack cannot be dragged.
  * @property {number} dprCap
  * @property {{ widthDiv: number, heightDiv: number, centerShift: number, centerShiftMax: number }} frame
  * @property {{ linear: number, perimeter: number }} flow
@@ -57,6 +64,7 @@ export const defaultConfig = {
   spacingPullPx: 30,
   yaw: -0.78,
   pitch: -0.38,
+  spin: 0.0017,
   dprCap: 1.5,
   frame: {
     widthDiv: 8.5,
@@ -98,29 +106,24 @@ export const defaultConfig = {
   layers: [
     {
       id: 0,
-      label: 'LAYER / 01',
-      type: 'json',
-      json: {
-        position: 'upper',
-        geometry: 'rounded-square',
-        flow: 'alternating',
-        state: 'hovered',
-      },
+      kind: 'agent',
+      label: '01 / AGENT',
+      message: 'I found two open decisions and one security dependency.',
+      references: ['↗ launch-notes.md', '↗ decision-log'],
     },
     {
       id: 1,
-      label: 'LAYER / 02',
-      type: 'text',
-      title: 'Middle plate',
-      body: 'Replace this with a short line about the layer. The card stays anchored to the stack.',
+      kind: 'tools',
+      label: '02 / CONTEXT',
+      call: 'search_context()',
+      meta: '04 SOURCES · CONNECTED',
     },
     {
       id: 2,
-      label: 'LAYER / 03',
-      type: 'image',
-      src: 'assets/placeholder.svg',
-      alt: 'Placeholder thumbnail for the lower layer',
-      caption: 'Swap this for a product image.',
+      kind: 'permissions',
+      label: '03 / PERMISSIONS',
+      title: 'Scoped access.',
+      action: 'ASK BEFORE ACTING ↗',
     },
   ],
 };

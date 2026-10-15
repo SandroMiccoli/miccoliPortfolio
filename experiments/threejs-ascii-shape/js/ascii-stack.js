@@ -155,10 +155,11 @@ function start(element, config) {
   card.setAttribute('aria-hidden', 'true');
   const header = document.createElement('div');
   header.className = 'ascii-card-header';
-  const kicker = document.createElement('span');
-  kicker.textContent = 'INSPECT';
   const labelEl = document.createElement('span');
-  header.append(kicker, labelEl);
+  const statusEl = document.createElement('i');
+  statusEl.className = 'ascii-status';
+  statusEl.setAttribute('aria-hidden', 'true');
+  header.append(labelEl, statusEl);
   const bodyEl = document.createElement('div');
   bodyEl.className = 'ascii-card-body';
   card.append(header, bodyEl);
@@ -190,13 +191,6 @@ function start(element, config) {
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 80);
   const spin = new THREE.Group();
   spin.matrixAutoUpdate = false;
-  // Same yaw/pitch as the glyphs, with Z flipped so depth matches the camera.
-  spin.matrix.set(
-    rotation.cosY, 0, -rotation.sinY, 0,
-    -rotation.sinP * rotation.sinY, rotation.cosP, -rotation.sinP * rotation.cosY, 0,
-    -rotation.cosP * rotation.sinY, -rotation.sinP, -rotation.cosP * rotation.cosY, 0,
-    0, 0, 0, 1,
-  );
   scene.add(spin);
 
   const hitGeometry = new THREE.BoxGeometry(config.side * 1.06, config.thickness * 1.35, config.side * 1.06);
@@ -395,14 +389,17 @@ function start(element, config) {
 
   function showCard(layer, changed) {
     if (layer < 0) {
+      card.querySelector('.floating-ai')?.remove();
       card.classList.remove('is-visible', 'cycle-a', 'cycle-b');
       card.setAttribute('aria-hidden', 'true');
       live.textContent = '';
       return;
     }
     if (changed) {
-      labelEl.textContent = config.layers[layer]?.label || `LAYER / 0${layer + 1}`;
-      renderBody(config.layers[layer]);
+      const spec = config.layers[layer];
+      labelEl.textContent = spec?.label || `LAYER / 0${layer + 1}`;
+      mountIcon(spec);
+      renderBody(spec);
       measureCard();
       placeCardNearPointer();
       card.classList.remove('is-visible', 'cycle-a', 'cycle-b');
@@ -417,9 +414,19 @@ function start(element, config) {
     card.setAttribute('aria-hidden', 'false');
   }
 
+  function mountIcon(layer) {
+    card.querySelector('.floating-ai')?.remove();
+    const icon = createLayerIcon(layer);
+    if (icon) card.prepend(icon);
+  }
+
   function renderBody(layer) {
     bodyEl.replaceChildren();
     if (!layer) return;
+    if (layer.kind === 'agent' || layer.kind === 'tools' || layer.kind === 'permissions') {
+      bodyEl.append(renderKind(layer));
+      return;
+    }
     if (layer.type === 'json') {
       formatJson(layer.json).forEach((line, index) => {
         const row = document.createElement('div');
@@ -474,14 +481,16 @@ function start(element, config) {
     if (cardWidth < 2) measureCard();
     const gap = 22;
     const edge = 12;
+    const bleedX = 28;
+    const bleedY = 40;
     const x = pointerLocal.valid ? pointerLocal.x : viewWidth * 0.62;
     const y = pointerLocal.valid ? pointerLocal.y : viewHeight * 0.42;
     let left = x + gap;
-    if (left + cardWidth > viewWidth - edge) left = x - cardWidth - gap;
-    left = Math.max(edge, Math.min(viewWidth - cardWidth - edge, left));
+    if (left + cardWidth > viewWidth - edge - bleedX) left = x - cardWidth - gap;
+    left = Math.max(edge, Math.min(viewWidth - cardWidth - edge - bleedX, left));
     let top = y + 16;
     if (top + cardHeight > viewHeight - edge) top = y - cardHeight - 12;
-    top = Math.max(edge, Math.min(viewHeight - cardHeight - edge, top));
+    top = Math.max(bleedY, Math.min(viewHeight - cardHeight - edge, top));
     card.style.left = `${left}px`;
     card.style.top = `${top}px`;
   }
@@ -528,7 +537,23 @@ function start(element, config) {
     return pixels / unit;
   }
 
+  function applyRotation(timeMs) {
+    const yaw = config.yaw + timeMs * (config.spin / 16.667);
+    rotation.cosY = Math.cos(yaw);
+    rotation.sinY = Math.sin(yaw);
+    const { cosY, sinY, cosP, sinP } = rotation;
+    // Same yaw/pitch as the glyphs, with Z flipped so depth matches the camera.
+    spin.matrix.set(
+      cosY, 0, -sinY, 0,
+      -sinP * sinY, cosP, -sinP * cosY, 0,
+      -cosP * sinY, -sinP, -cosP * cosY, 0,
+      0, 0, 0, 1,
+    );
+    spin.matrixWorldNeedsUpdate = true;
+  }
+
   function writeInstances(timeMs) {
+    applyRotation(timeMs);
     for (let layer = 0; layer < meshes.length; layer += 1) {
       const points = layerPoints[layer];
       const array = meshes[layer].instanceMatrix.array;
@@ -693,6 +718,118 @@ function createPlateGeometry(side, thickness, radius) {
 function srgbVector(hex) {
   const value = Number.parseInt(hex.slice(1), 16);
   return new THREE.Vector3(((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255);
+}
+
+/**
+ * @param {import('./config.js').AsciiLayer | undefined} layer
+ */
+function renderKind(layer) {
+  if (layer.kind === 'agent') {
+    const view = document.createElement('div');
+    view.className = 'agent-view';
+    const response = document.createElement('div');
+    response.className = 'agent-response';
+    const signature = document.createElement('span');
+    signature.className = 'agent-signature';
+    signature.setAttribute('aria-label', 'AI response');
+    const mark = document.createElement('span');
+    mark.textContent = 'AI';
+    signature.append(mark);
+    const message = document.createElement('p');
+    message.textContent = layer.message || '';
+    response.append(signature, message);
+    const refs = document.createElement('div');
+    refs.className = 'reference-list agent-references';
+    (layer.references || []).forEach((item) => {
+      const chip = document.createElement('span');
+      chip.textContent = item;
+      refs.append(chip);
+    });
+    view.append(response, refs);
+    return view;
+  }
+
+  if (layer.kind === 'tools') {
+    const view = document.createElement('div');
+    view.className = 'tools-view';
+    const call = document.createElement('div');
+    call.className = 'minimal-call';
+    const arrow = document.createElement('span');
+    arrow.textContent = '↳';
+    const code = document.createElement('code');
+    code.textContent = layer.call || '';
+    call.append(arrow, code);
+    const meta = document.createElement('div');
+    meta.className = 'minimal-meta';
+    meta.textContent = layer.meta || '';
+    view.append(call, meta);
+    return view;
+  }
+
+  const view = document.createElement('div');
+  view.className = 'permissions-view';
+  const copy = document.createElement('div');
+  copy.className = 'minimal-permission-copy';
+  const title = document.createElement('strong');
+  title.textContent = layer.title || '';
+  const action = document.createElement('span');
+  action.textContent = layer.action || '';
+  copy.append(title, action);
+  view.append(copy);
+  return view;
+}
+
+/**
+ * Contour artwork from the reference study. Placement is styled in CSS.
+ * @param {import('./config.js').AsciiLayer | undefined} layer
+ */
+function createLayerIcon(layer) {
+  if (!layer) return null;
+  if (layer.kind === 'agent') {
+    const wrap = document.createElement('div');
+    wrap.className = 'floating-ai';
+    wrap.setAttribute('role', 'img');
+    wrap.setAttribute('aria-label', 'Two floating three-dimensional ASCII stars');
+    wrap.append(contourImage('assets/contour/ai-stars.svg', '', 'contour-icon contour-stars'));
+    return wrap;
+  }
+  if (layer.kind === 'tools') {
+    const wrap = document.createElement('div');
+    wrap.className = 'floating-ai floating-connectors';
+    const grid = document.createElement('div');
+    grid.className = 'contour-connectors';
+    [
+      ['assets/contour/github.svg', 'GitHub'],
+      ['assets/contour/slack.svg', 'Slack'],
+      ['assets/contour/google-drive.svg', 'Google Drive'],
+      ['assets/contour/notion.svg', 'Notion'],
+    ].forEach(([src, name]) => grid.append(contourImage(src, name, '')));
+    wrap.append(grid);
+    return wrap;
+  }
+  if (layer.kind === 'permissions') {
+    const wrap = document.createElement('div');
+    wrap.className = 'floating-ai floating-shield';
+    wrap.setAttribute('role', 'img');
+    wrap.setAttribute('aria-label', 'Floating three-dimensional ASCII shield');
+    wrap.append(contourImage('assets/contour/shield.svg', '', 'contour-icon contour-shield'));
+    return wrap;
+  }
+  return null;
+}
+
+/**
+ * @param {string} src
+ * @param {string} alt
+ * @param {string} className
+ */
+function contourImage(src, alt, className) {
+  const image = document.createElement('img');
+  if (className) image.className = className;
+  image.src = resolveAssetUrl(src);
+  image.alt = alt;
+  image.draggable = false;
+  return image;
 }
 
 /**
