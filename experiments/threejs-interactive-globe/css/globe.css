@@ -1,0 +1,62 @@
+.interactive-globe {
+  --ig-bg: #f8faff;
+  --ig-focus: #1f4fbf;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ig-bg);
+  color: #172033;
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.interactive-globe.is-dragging {
+  cursor: grabbing;
+}
+
+.interactive-globe.is-error {
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+
+.interactive-globe:focus-visible {
+  outline: 2px solid var(--ig-focus);
+  outline-offset: -2px;
+}
+
+.interactive-globe canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.interactive-globe__fallback {
+  position: relative;
+  z-index: 1;
+  max-width: 28rem;
+  margin: 0;
+  padding: 1.5rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.lab-experiment-demo > .interactive-globe {
+  height: 100%;
+  min-height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactive-globe {
+    cursor: grab;
+  }
+}
