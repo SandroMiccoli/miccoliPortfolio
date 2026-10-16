@@ -24,11 +24,11 @@ export const defaultConfig = {
 
   /** Sphere radius in world units. The camera frames this, so it does not change the on-screen size. */
   radius: 1.4,
-  bands: 5,
+  bands: 4,
   /** How far the cards reach toward each pole, in degrees. The caps past this are the holes. */
   latLimit: 68,
   /** Empty share of each cell. Higher opens the white gaps. */
-  gap: 0.17,
+  gap: 0.15,
   /** Card width / height. 1.12 is a little taller than a wide 4:3 card. */
   aspect: 0.85,
   /** 0 is a perfect grid. Keep this under 0.6 so neighbors do not collide. */
