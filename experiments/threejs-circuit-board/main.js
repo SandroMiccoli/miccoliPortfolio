@@ -4,15 +4,15 @@ import Stats from 'three/addons/libs/stats.module.js';
 import { createBoard } from './js/board.js';
 import { createIntelligence } from './js/intelligence.js';
 import { createArm } from './js/arm.js';
-import { createBlueprint } from './js/blueprint.js';
+import { createDataCenter } from './js/datacenter.js';
 import { createPlane } from './js/plane.js';
 import { createSatellite } from './js/satellite.js';
 import { createBloom } from './js/bloom.js';
 
 const HOME_PITCH = -0.96;
 const HOME_ROLL = 0.02;
-const MOUSE_PITCH = 0.36;
-const MOUSE_ROLL = 0.49;
+const MOUSE_PITCH = 0.12;
+const MOUSE_ROLL = 0.16;
 const FOV = 38;
 const FRAME_PADDING = 1.28;
 
@@ -56,26 +56,26 @@ scene.add(board);
 const armStudy = new THREE.Group();
 const planeStudy = new THREE.Group();
 const satelliteStudy = new THREE.Group();
-const blueprintStudy = new THREE.Group();
-const studyGroups = [armStudy, planeStudy, satelliteStudy, blueprintStudy];
+const dataCenterStudy = new THREE.Group();
+const studyGroups = [armStudy, planeStudy, satelliteStudy, dataCenterStudy];
 armStudy.name = 'study-arm';
 planeStudy.name = 'study-plane';
 satelliteStudy.name = 'study-satellite';
-blueprintStudy.name = 'study-blueprint';
+dataCenterStudy.name = 'study-datacenter';
 armStudy.add(createIntelligence().group, createArm());
 planeStudy.add(createIntelligence().group, createPlane());
 satelliteStudy.add(createIntelligence().group, createSatellite());
-blueprintStudy.add(createIntelligence().group, createBlueprint());
+dataCenterStudy.add(createIntelligence().group, createDataCenter());
 planeStudy.visible = false;
 satelliteStudy.visible = false;
-blueprintStudy.visible = false;
-board.add(armStudy, planeStudy, satelliteStudy, blueprintStudy);
+dataCenterStudy.visible = false;
+board.add(armStudy, planeStudy, satelliteStudy, dataCenterStudy);
 
 const studies = {
 	arm: { group: armStudy, label: '3D ROBOTIC ARM', layer: 'Industrial arm · hologram' },
 	plane: { group: planeStudy, label: '3D PLANE', layer: 'Airframe · hologram' },
 	satellite: { group: satelliteStudy, label: '3D SATELLITE', layer: 'Spacecraft · hologram' },
-	blueprint: { group: blueprintStudy, label: '2D PLANE', layer: 'Aircraft · blueprint' },
+	datacenter: { group: dataCenterStudy, label: '3D DATA CENTER', layer: 'Compute cluster · hologram' },
 };
 
 const bloom = createBloom(renderer);

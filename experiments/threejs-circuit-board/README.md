@@ -1,6 +1,6 @@
 # Circuit board
 
-A PCB study in three layers: the physical board, an intelligence plane, and a technology hologram. Four studies share the same board. **3D Robotic Arm** is the industrial arm. **3D Plane** is the volumetric airframe. **3D Satellite** is the communications spacecraft. **2D Plane** is the flat aircraft plan.
+A PCB study in three layers: the physical board, an intelligence plane, and a technology hologram. Four studies share the same board. **3D Robotic Arm** is the industrial arm. **3D Plane** is the volumetric airframe. **3D Satellite** is the communications spacecraft. **3D Data Center** is the six-rack compute cluster.
 
 The reference files in `tmp/` are not loaded.
 
@@ -16,7 +16,7 @@ Open `/experiments/threejs-circuit-board/`.
 
 The pointer tilts the board a little around its rest angle, and it eases back when the pointer leaves. Scroll zooms. `R` or Reset zoom returns to 1×. The performance panels stay on screen: FPS, frame time, memory, triangles, line segments, draw calls, and the UnrealBloomPass controls.
 
-The arm, the 3D airframe, and the satellite are holograms and take the bloom. The PCB, the faint grid, and the flat aircraft plan do not. On the arm, the plinth stays faint and the gripper stays solid.
+The four holograms take the bloom. The PCB and the faint grid do not. On the arm, the plinth stays faint and the gripper stays solid.
 
 Geometry matches the reference studies. Triangles below are the visible study, counted once. Draw calls include the UnrealBloomPass.
 
@@ -25,7 +25,7 @@ Geometry matches the reference studies. Triangles below are the visible study, c
 | 3D Robotic Arm | 64,602 | 48,392 | 33 | 348 |
 | 3D Plane | 55,276 | 55,285 | 42 | — |
 | 3D Satellite | 56,282 | 45,705 | 40 | — |
-| 2D Plane | 55,272 | 44,740 | 37 | 194 |
+| 3D Data Center | 61,906 | 51,713 | 49 | — |
 
 FPS depends on the machine. The panel is there to watch it.
 
@@ -100,7 +100,7 @@ The header, study buttons, layer list, footer, performance panel, and Stats mete
 
 ### 4. Choose the opening study
 
-The page opens on the arm. `window.boardStudy.setMode` accepts `arm`, `plane`, `satellite`, or `blueprint`. A same-origin parent can switch after load:
+The page opens on the arm. `window.boardStudy.setMode` accepts `arm`, `plane`, `satellite`, or `datacenter`. A same-origin parent can switch after load:
 
 ```javascript
 const frame = document.querySelector('.hero iframe');
