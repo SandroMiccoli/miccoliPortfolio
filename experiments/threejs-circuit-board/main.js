@@ -292,7 +292,7 @@ function tick(now) {
 		targetPitch = HOME_PITCH;
 		targetRoll = HOME_ROLL;
 	} else {
-		targetPitch = HOME_PITCH - pointerY * MOUSE_PITCH;
+		targetPitch = HOME_PITCH + pointerY * MOUSE_PITCH;
 		targetRoll = HOME_ROLL + pointerX * MOUSE_ROLL;
 	}
 
