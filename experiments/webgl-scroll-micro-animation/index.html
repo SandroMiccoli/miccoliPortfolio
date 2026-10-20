@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+	<link rel="manifest" href="/images/favicon/site.webmanifest">
+	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
+	<title>WebGL Scroll Micro-Animation</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<main class="page">
+		<header class="band hero">
+			<div class="band__inner hero__layout">
+				<div class="hero__copy">
+					<h1>Lorem ipsum dolor sit amet</h1>
+					<p>Consectetur adipiscing elit, sed do eiusmod tempor.</p>
+				</div>
+				<canvas class="mark hero__mark" data-eyebrow aria-hidden="true"></canvas>
+			</div>
+		</header>
+
+		<div class="seam" aria-hidden="true">
+			<canvas class="mark mark--seam" data-eyebrow></canvas>
+		</div>
+
+		<section class="band band--sunk">
+			<div class="band__inner prose">
+				<h2>Sed ut perspiciatis</h2>
+				<p>Unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis.</p>
+				<p>Et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</p>
+				<p>Sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.</p>
+			</div>
+		</section>
+
+		<section class="band specimen">
+			<div class="band__inner specimen__inner">
+				<canvas class="mark mark--lg" data-eyebrow aria-hidden="true"></canvas>
+				<h2>Nemo enim ipsam</h2>
+				<p>Voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.</p>
+			</div>
+		</section>
+
+		<section class="band band--sunk corner-section">
+			<div class="band__inner corner-layout">
+				<div class="prose">
+					<h2>Neque porro quisquam</h2>
+					<p>Est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt.</p>
+					<p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur.</p>
+				</div>
+				<canvas class="mark corner-layout__mark" data-eyebrow aria-hidden="true"></canvas>
+			</div>
+		</section>
+
+		<div class="seam" aria-hidden="true">
+			<canvas class="mark mark--seam" data-eyebrow></canvas>
+		</div>
+
+		<section class="band">
+			<div class="band__inner prose">
+				<h2>Quis autem vel eum</h2>
+				<p>Iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur.</p>
+				<p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores.</p>
+			</div>
+		</section>
+	</main>
+	<script type="module" src="main.js"></script>
+</body>
+</html>

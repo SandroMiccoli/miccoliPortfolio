@@ -1,0 +1,203 @@
+:root {
+	--paper: #eef1ec;
+	--paper-sunk: #e3e7e0;
+	--ink: #1c1f1a;
+	--muted: #3e443c;
+	--gutter: clamp(1.25rem, 4vw, 3rem);
+	--page: min(68rem, 100%);
+	--mark: 6rem;
+	--mark-aspect: 2.45;
+	color-scheme: light;
+}
+
+body {
+	margin: 0;
+}
+
+body:has(.page),
+.lab-experiment-demo:has(.page) {
+	background: var(--paper);
+}
+
+.page,
+.page * {
+	box-sizing: border-box;
+}
+
+.page {
+	background: var(--paper);
+	color: var(--ink);
+	font-family: Outfit, "Segoe UI", sans-serif;
+	font-weight: 400;
+	font-size: 1.0625rem;
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+.page ::selection {
+	background: #d5dbd0;
+	color: var(--ink);
+}
+
+.band {
+	position: relative;
+	z-index: 0;
+	padding-block: clamp(4.25rem, 10vh, 6.5rem);
+}
+
+.band--sunk {
+	background: var(--paper-sunk);
+}
+
+.band__inner {
+	width: var(--page);
+	margin-inline: auto;
+	padding-inline: var(--gutter);
+}
+
+.hero {
+	padding-top: 2.5rem;
+}
+
+.hero__layout {
+	display: grid;
+	grid-template-columns: minmax(0, 36rem) minmax(6rem, 1fr);
+	align-items: start;
+	column-gap: 2rem;
+}
+
+.hero__copy h1 {
+	margin: 0;
+	max-width: 12.2ch;
+	font-size: clamp(2.15rem, 4.6vw, 3.25rem);
+	font-weight: 600;
+	letter-spacing: -0.035em;
+	line-height: 1.08;
+}
+
+.hero__copy p {
+	margin: 1.1rem 0 0;
+	max-width: 34rem;
+	color: var(--muted);
+	font-size: 1.125rem;
+}
+
+.prose {
+	max-width: 38rem;
+}
+
+.prose h2,
+.specimen h2 {
+	margin: 0 0 1rem;
+	font-size: clamp(1.75rem, 3vw, 2.35rem);
+	font-weight: 600;
+	letter-spacing: -0.03em;
+	line-height: 1.15;
+	text-wrap: balance;
+}
+
+.prose p,
+.specimen p {
+	margin: 0;
+	max-width: 62ch;
+	color: var(--muted);
+}
+
+.prose p + p {
+	margin-top: 1rem;
+}
+
+.specimen__inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 1.35rem;
+}
+
+.specimen__inner h2,
+.specimen__inner p {
+	margin: 0;
+}
+
+.specimen__inner p {
+	max-width: 34rem;
+}
+
+.corner-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 38rem) 1fr;
+	grid-template-rows: auto 1fr;
+	min-height: 20rem;
+	row-gap: 2.5rem;
+}
+
+.corner-layout .prose {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+.corner-layout__mark {
+	grid-column: 2;
+	grid-row: 2;
+	align-self: end;
+	justify-self: end;
+}
+
+/* Sits on the boundary between two bands. z-index keeps the mark above both backgrounds. */
+.seam {
+	position: relative;
+	z-index: 2;
+	height: 0;
+}
+
+.seam .mark {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	transform: translate(-50%, -50%);
+}
+
+.mark {
+	display: block;
+	width: var(--mark);
+	height: auto;
+	aspect-ratio: var(--mark-aspect);
+	background: transparent;
+	pointer-events: none;
+}
+
+.mark--seam {
+	width: 8rem;
+}
+
+.mark--lg {
+	width: min(13rem, 72vw);
+}
+
+@media (max-width: 720px) {
+	.hero__layout,
+	.corner-layout {
+		grid-template-columns: 1fr;
+		min-height: 0;
+	}
+
+	.hero__mark {
+		order: -1;
+		justify-self: end;
+		margin-bottom: 0.25rem;
+	}
+
+	.corner-layout__mark {
+		grid-column: 1;
+		grid-row: 2;
+		justify-self: end;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.page {
+		scroll-behavior: auto;
+	}
+}
