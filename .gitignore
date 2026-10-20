@@ -10,3 +10,4 @@ Gemfile.lock
 /experiments/p5js-visual-synth/server/data/
 /server
 /experiments/threejs-ascii-shape/_tmp
+/experiments/threejs-circuit-board/tmp
