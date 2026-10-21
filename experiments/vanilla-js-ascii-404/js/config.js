@@ -12,11 +12,11 @@ export const SYMBOLS = [
 /** @type {Readonly<Record<string, number | string | boolean>>} */
 export const DEFAULTS = {
   "elementDensity": 1.05,
-  "elementSize": 5,
+  "elementSize": 7,
   "symbolVariety": 19,
   "glyphCycle": false,
   "contourWidth": 0.024,
-  "fillDensity": 0.05,
+  "fillDensity": 1,
   "logoScale": 1.05,
   "contrast": 1,
   "motionAmount": 1.5,
@@ -24,7 +24,7 @@ export const DEFAULTS = {
   "pointerRadius": 0.22,
   "hoverLift": 40,
   "pointerFalloff": 1.75,
-  "pointerSwell": 0.5,
+  "pointerSwell": 0.7,
   "backgroundDensity": 1.5,
   "backgroundOpacity": 0.8,
   "ink": "#0a0c0b",
