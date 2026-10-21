@@ -1,6 +1,7 @@
 /**
- * Visual defaults for the ASCII 404.
- * Sliders, colors, and the glyph set live here.
+ * Defaults for the ASCII 404.
+ * `mountAscii404(element, { ... })` overrides any of these per embed.
+ * Colors are 6-digit hex.
  */
 
 export const FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
@@ -28,7 +29,8 @@ export const DEFAULTS = {
   "backgroundDensity": 1.5,
   "backgroundOpacity": 0.8,
   "ink": "#0a0c0b",
-  "accent": "#55d99b"
+  "accent": "#55d99b",
+  "background": "#ffffff"
 };
 
 /**
@@ -66,7 +68,8 @@ export const POINTER_SLIDERS = [
 
 const SYMBOL_CACHE = SYMBOLS.map((_, index) => SYMBOLS.slice(0, index + 1));
 
-const STORAGE_KEY = 'paragon-404-settings';
+const STORAGE_KEY = 'ascii-404-settings';
+const LEGACY_STORAGE_KEY = 'paragon-404-settings';
 
 /**
  * @param {number} variety
@@ -95,7 +98,7 @@ export function sanitizeSettings(input) {
 
   if (typeof source.glyphCycle === 'boolean') next.glyphCycle = source.glyphCycle;
 
-  for (const key of ['ink', 'accent']) {
+  for (const key of ['ink', 'accent', 'background']) {
     const value = source[key];
     if (typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)) {
       next[key] = value.toLowerCase();
@@ -110,7 +113,7 @@ export function sanitizeSettings(input) {
  */
 export function loadSettings() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return { ...DEFAULTS };
     return sanitizeSettings(JSON.parse(raw));
   } catch {

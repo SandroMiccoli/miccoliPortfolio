@@ -12,8 +12,10 @@ function refresh(gui) {
  * @param {Record<string, number | string | boolean>} settings
  */
 export function mountGui(settings) {
-  const gui = new GUI({ title: 'ASCII 404', width: 270 });
-  gui.domElement.classList.add('paragon-gui');
+  const narrow = window.matchMedia('(max-width: 600px)').matches;
+  const gui = new GUI({ title: 'ASCII 404', width: narrow ? 240 : 270 });
+  gui.domElement.classList.add('ascii-404-gui');
+  if (narrow) gui.close();
 
   const persist = () => saveSettings(settings);
   gui.onFinishChange(persist);
@@ -35,6 +37,7 @@ export function mountGui(settings) {
     for (const extra of POINTER_SLIDERS) addSlider(pointer, extra);
   }
 
+  gui.addColor(settings, 'background').name('Background');
   gui.addColor(settings, 'ink').name('Ink');
   gui.addColor(settings, 'accent').name('Hover accent');
 
@@ -57,7 +60,7 @@ export function mountGui(settings) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'paragon-404-settings.json';
+      link.download = 'ascii-404-settings.json';
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     },

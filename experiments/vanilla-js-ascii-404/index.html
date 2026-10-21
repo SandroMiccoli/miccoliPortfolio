@@ -10,12 +10,31 @@
 	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
 	<title>Vanilla JS — ASCII 404</title>
 	<meta name="description" content="A field of programming symbols forming a 404. Hover to lift the glyphs under the pointer.">
-	<link rel="stylesheet" href="css/paragon-404.css">
+	<link rel="stylesheet" href="css/ascii-404.css">
+	<link rel="stylesheet" href="css/demo.css">
+	<style>
+		html,
+		body {
+			margin: 0;
+			height: 100%;
+			background: #fff;
+			color: #0a0c0b;
+		}
+
+		body {
+			min-height: 100dvh;
+		}
+
+		#ascii-404 {
+			height: 100%;
+			min-height: 100dvh;
+		}
+	</style>
 </head>
 <body>
-	<canvas id="artwork" role="img" aria-label="Interactive 404 made from programming symbols"></canvas>
-	<p class="perf" id="perf" aria-hidden="true">— fps</p>
-	<noscript><p class="noscript">This page needs JavaScript.</p></noscript>
+	<div id="ascii-404" class="ascii-404"></div>
+	<p class="ascii-404-perf" id="perf" aria-hidden="true">0 fps</p>
+	<noscript><p class="ascii-404-noscript">This page needs JavaScript.</p></noscript>
 	<script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -1,10 +1,11 @@
-import { FONT_FAMILY, POINTER_SLIDERS, SLIDERS, symbolsFor } from './config.js';
+import { DEFAULTS, FONT_FAMILY, sanitizeSettings, symbolsFor } from './config.js';
 import { buildBackground, buildCells, buildConnectors, measure } from './field.js';
 import { mixHex, noise } from './glyph.js';
 
 const FRAME_MS = 70;
 const POINTER_FRAME_MS = 16;
 const SYMBOL_MS = 1350;
+const SETTING_KEYS = Object.keys(DEFAULTS);
 
 /**
  * @param {CanvasRenderingContext2D} target
@@ -46,14 +47,27 @@ function createPainter(target, family) {
 }
 
 /**
+ * @param {HTMLCanvasElement} target
+ * @returns {CanvasRenderingContext2D | null}
+ */
+function context2d(target) {
+  try {
+    return target.getContext('2d', { alpha: false });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * @param {Record<string, number | string | boolean>} settings
  */
 function snapshot(settings) {
-  const parts = [];
-  for (const control of SLIDERS) parts.push(settings[control.key]);
-  for (const control of POINTER_SLIDERS) parts.push(settings[control.key]);
-  parts.push(settings.glyphCycle, settings.ink, settings.accent);
-  return parts.join('|');
+  let parts = '';
+  for (let index = 0; index < SETTING_KEYS.length; index += 1) {
+    parts += settings[SETTING_KEYS[index]];
+    parts += '|';
+  }
+  return parts;
 }
 
 /**
@@ -70,18 +84,44 @@ function followFactor(follow, dt) {
 }
 
 /**
- * Mount the ASCII 404 into a canvas. `settings` is mutated live by the GUI.
+ * Mount the 404 field into `root`. The element needs a real width and height.
+ * The canvas fills it.
  *
- * @param {HTMLCanvasElement} canvas
- * @param {Record<string, number | string | boolean>} settings
+ * Options use the same keys as `DEFAULTS` in `config.js`. Any other key is ignored,
+ * except `onPaint`, which receives `{ fps, ms }` about twice a second.
+ * The returned `settings` object is live: assign a key and the next frame uses it.
+ * Call `destroy()` when the page removes the element.
+ *
+ * @param {HTMLElement} root
+ * @param {Record<string, unknown>} [options]
  */
-export function mountArtwork(canvas, settings) {
-  const context = canvas.getContext('2d', { alpha: false });
-  if (!context) throw new Error('Canvas 2D is unavailable');
+export function mountAscii404(root, options = {}) {
+  if (!(root instanceof HTMLElement)) {
+    throw new Error('mountAscii404 needs an element');
+  }
+
+  const onPaint = typeof options.onPaint === 'function' ? options.onPaint : null;
+  const settings = sanitizeSettings(options);
+
+  root.classList.add('ascii-404');
+  if (!root.hasAttribute('role')) root.setAttribute('role', 'img');
+  if (!root.hasAttribute('aria-label')) {
+    root.setAttribute('aria-label', 'Interactive 404 made from programming symbols');
+  }
+  root.style.setProperty('--ascii-404-bg', String(settings.background));
+
+  const canvas = document.createElement('canvas');
+  canvas.draggable = false;
+  canvas.setAttribute('aria-hidden', 'true');
+  const context = context2d(canvas);
 
   const cache = document.createElement('canvas');
-  const cacheContext = cache.getContext('2d', { alpha: false });
-  if (!cacheContext) throw new Error('Canvas 2D is unavailable');
+  const cacheContext = context2d(cache);
+  if (!context || !cacheContext) {
+    return showFallback(root, settings);
+  }
+
+  root.append(canvas);
 
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let reducedMotion = motionQuery.matches;
@@ -91,6 +131,9 @@ export function mountArtwork(canvas, settings) {
   let raf = 0;
   let lastDraw = 0;
   let onScreen = true;
+  let fontFamily = FONT_FAMILY;
+  let appliedPaper = String(settings.background);
+  let alive = true;
 
   const pointer = {
     x: -1000,
@@ -130,8 +173,13 @@ export function mountArtwork(canvas, settings) {
     ].join('|');
   }
 
+  function readFont() {
+    const value = getComputedStyle(root).getPropertyValue('--ascii-404-font').trim();
+    fontFamily = value || FONT_FAMILY;
+  }
+
   function resize() {
-    const bounds = canvas.getBoundingClientRect();
+    const bounds = root.getBoundingClientRect();
     width = Math.max(1, bounds.width);
     height = Math.max(1, bounds.height);
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -139,6 +187,8 @@ export function mountArtwork(canvas, settings) {
     const bitmapHeight = Math.round(height * dpr);
     if (canvas.width !== bitmapWidth) canvas.width = bitmapWidth;
     if (canvas.height !== bitmapHeight) canvas.height = bitmapHeight;
+    readFont();
+    built.cacheSig = '';
   }
 
   function ensureField() {
@@ -167,9 +217,10 @@ export function mountArtwork(canvas, settings) {
       cache.height = canvas.height;
     }
 
+    const paper = String(settings.background);
     cacheContext.setTransform(dpr, 0, 0, dpr, 0, 0);
     cacheContext.globalAlpha = 1;
-    cacheContext.fillStyle = '#ffffff';
+    cacheContext.fillStyle = paper;
     cacheContext.fillRect(0, 0, width, height);
     cacheContext.textAlign = 'center';
     cacheContext.textBaseline = 'middle';
@@ -179,7 +230,7 @@ export function mountArtwork(canvas, settings) {
 
     const symbols = symbolsFor(Number(settings.symbolVariety));
     const count = symbols.length;
-    const painter = createPainter(cacheContext, FONT_FAMILY);
+    const painter = createPainter(cacheContext, fontFamily);
     const ink = String(settings.ink);
     const glyphSize = Number(settings.elementSize);
 
@@ -229,7 +280,7 @@ export function mountArtwork(canvas, settings) {
     const hoverLift = Number(settings.hoverLift);
     const falloff = Number(settings.pointerFalloff);
     const swell = Number(settings.pointerSwell);
-    const painter = createPainter(context, FONT_FAMILY);
+    const painter = createPainter(context, fontFamily);
 
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.textAlign = 'center';
@@ -294,6 +345,12 @@ export function mountArtwork(canvas, settings) {
     ensureField();
     ensureBackground();
 
+    const paper = String(settings.background);
+    if (paper !== appliedPaper) {
+      appliedPaper = paper;
+      root.style.setProperty('--ascii-404-bg', paper);
+    }
+
     const cacheSig = [
       built.layoutSig,
       built.backgroundSig,
@@ -304,6 +361,8 @@ export function mountArtwork(canvas, settings) {
       settings.symbolVariety,
       settings.ink,
       settings.elementSize,
+      settings.background,
+      fontFamily,
       tick,
     ].join('|');
 
@@ -326,20 +385,19 @@ export function mountArtwork(canvas, settings) {
     return true;
   }
 
-  const perf = document.querySelector('#perf');
   let paintCount = 0;
   let paintMs = 0;
   let sampleStart = 0;
 
   /**
-   * Painted frames, not rAF ticks. Idle draws are capped at ~14fps.
+   * Painted frames, not rAF ticks. Idle draws are capped at about 14fps.
    *
    * @param {number} time
    * @param {number} cost
    * @param {boolean} painted
    */
   function notePaint(time, cost, painted) {
-    if (!(perf instanceof HTMLElement)) return;
+    if (!onPaint) return;
     if (sampleStart === 0) sampleStart = time;
     if (painted) {
       paintCount += 1;
@@ -348,16 +406,15 @@ export function mountArtwork(canvas, settings) {
     const elapsed = time - sampleStart;
     if (elapsed < 500) return;
     const fps = Math.round((paintCount * 1000) / elapsed);
-    const next = paintCount === 0
-      ? '0 fps'
-      : `${fps} fps · ${(paintMs / paintCount).toFixed(1)} ms`;
-    if (perf.textContent !== next) perf.textContent = next;
+    const ms = paintCount === 0 ? 0 : paintMs / paintCount;
     paintCount = 0;
     paintMs = 0;
     sampleStart = time;
+    onPaint({ fps, ms });
   }
 
   function frame(time) {
+    if (!alive) return;
     raf = 0;
     if (document.hidden || !onScreen) return;
     raf = requestAnimationFrame(frame);
@@ -371,8 +428,20 @@ export function mountArtwork(canvas, settings) {
     notePaint(time, performance.now() - started, painted);
   }
 
+  function paintNow() {
+    if (!alive || !onScreen) return;
+    const time = performance.now();
+    const cycle = settings.glyphCycle !== false && !reducedMotion;
+    render(time, cycle ? Math.floor(time / SYMBOL_MS) : 0, 16.67);
+  }
+
   function start() {
-    if (raf || document.hidden || !onScreen) return;
+    if (!alive || raf || !onScreen) return;
+    // rAF does not run while the tab is hidden. Draw once so the field is not blank.
+    if (document.hidden) {
+      paintNow();
+      return;
+    }
     lastDraw = 0;
     raf = requestAnimationFrame(frame);
   }
@@ -387,7 +456,7 @@ export function mountArtwork(canvas, settings) {
    * @param {PointerEvent} event
    */
   function onMove(event) {
-    const bounds = canvas.getBoundingClientRect();
+    const bounds = root.getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
     if (!pointer.active) {
@@ -397,11 +466,13 @@ export function mountArtwork(canvas, settings) {
     pointer.x = x;
     pointer.y = y;
     pointer.active = true;
+    if (!raf) paintNow();
   }
 
   function onLeave() {
     pointer.active = false;
     lastDraw = 0;
+    if (!raf) paintNow();
   }
 
   function onMotionChange() {
@@ -418,33 +489,62 @@ export function mountArtwork(canvas, settings) {
   const resizeObserver = new ResizeObserver(() => {
     resize();
     drawn.snap = '\0';
+    // Setting the bitmap size clears it. Draw now, or the field flashes blank
+    // until the next throttled frame.
+    paintNow();
   });
   const visibilityObserver = new IntersectionObserver(([entry]) => {
     onScreen = entry.isIntersecting;
     onVisibility();
   });
 
-  resizeObserver.observe(canvas);
-  visibilityObserver.observe(canvas);
-  canvas.addEventListener('pointermove', onMove, { passive: true });
-  canvas.addEventListener('pointerleave', onLeave);
-  canvas.addEventListener('pointercancel', onLeave);
+  resizeObserver.observe(root);
+  visibilityObserver.observe(root);
+  root.addEventListener('pointermove', onMove, { passive: true });
+  root.addEventListener('pointerleave', onLeave);
+  root.addEventListener('pointercancel', onLeave);
   motionQuery.addEventListener('change', onMotionChange);
   document.addEventListener('visibilitychange', onVisibility);
 
   resize();
+  paintNow();
   start();
 
+  function destroy() {
+    if (!alive) return;
+    alive = false;
+    stop();
+    resizeObserver.disconnect();
+    visibilityObserver.disconnect();
+    root.removeEventListener('pointermove', onMove);
+    root.removeEventListener('pointerleave', onLeave);
+    root.removeEventListener('pointercancel', onLeave);
+    motionQuery.removeEventListener('change', onMotionChange);
+    document.removeEventListener('visibilitychange', onVisibility);
+    canvas.remove();
+    root.style.removeProperty('--ascii-404-bg');
+  }
+
+  return { settings, element: root, destroy };
+}
+
+/**
+ * @param {HTMLElement} root
+ * @param {Record<string, number | string | boolean>} settings
+ */
+function showFallback(root, settings) {
+  root.classList.add('ascii-404', 'is-error');
+  const note = document.createElement('p');
+  note.className = 'ascii-404__fallback';
+  note.textContent = 'Canvas drawing is unavailable in this browser.';
+  root.append(note);
   return {
+    settings,
+    element: root,
     destroy() {
-      stop();
-      resizeObserver.disconnect();
-      visibilityObserver.disconnect();
-      canvas.removeEventListener('pointermove', onMove);
-      canvas.removeEventListener('pointerleave', onLeave);
-      canvas.removeEventListener('pointercancel', onLeave);
-      motionQuery.removeEventListener('change', onMotionChange);
-      document.removeEventListener('visibilitychange', onVisibility);
+      note.remove();
+      root.classList.remove('is-error');
+      root.style.removeProperty('--ascii-404-bg');
     },
   };
 }
