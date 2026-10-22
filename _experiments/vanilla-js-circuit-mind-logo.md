@@ -10,7 +10,7 @@ featured: false
 show_on_home: false
 tile_size: "1x1"
 thumbnail: "thumb.png"
-description: "The Circuit Mind mark redrawn as SVG strokes that match the reference, with a packet running along each trace."
+description: "The Circuit Mind mark and an Orbitron 404 drawn as open circuit traces, with a light traveling each path."
 stack:
   - GSAP
   - SVG

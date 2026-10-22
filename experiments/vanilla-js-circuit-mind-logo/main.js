@@ -1,38 +1,35 @@
 import GUI from './vendor/lil-gui.esm.min.js';
 
-const STORAGE_KEY = 'vanilla-js-circuit-mind-logo-v3';
+const NS = 'http://www.w3.org/2000/svg';
+const STORAGE_KEY = 'vanilla-js-circuit-mind-logo-v5';
+const DOTS = 28;
+
+const LOGO_VIEW = { w: 327, h: 310 };
+const FOUR_VIEW = { w: 2442, h: 1014 };
 
 const DEFAULT_STATE = {
   showRef: false,
-  refOpacity: 0.5,
+  refOpacity: 0.45,
   refScale: 1,
   refX: 0,
   refY: 0,
-  topWidth: 24,
-  botWidth: 24,
-  traceWidth: 24,
-  baseExtra: 0,
-  baseOpacity: 1,
-  showBase: true,
-  showBeams: true,
-  showNodes: true,
-  nodeFill: true,
-  nodeRadius: 15,
-  nodeStroke: 14,
-  glow: 3,
-  speed: 160,
-  packet: 80,
+  trace: 1.25,
+  node: 6.2,
+  glow: 3.3,
+  packet: 62,
+  speed: 96,
   playing: true,
+  showTraces: true,
+  showNodes: true,
+  showComets: true,
   showTop: true,
   showBot: true,
   showTrace: true,
-  variant: 'v1',
   scene: 'logo',
-  white: '#ffffff',
-  gray: '#b5b5b5',
-  cyan: '#1cb5df',
-  blue: '#1e5a9d',
-  background: '#202020',
+  traceColor: '#A9BCCE',
+  mint: '#3DFFC2',
+  cyan: '#5CC8FF',
+  background: '#041122',
 };
 
 const DEFAULT_POINTS = {
@@ -49,72 +46,54 @@ const DEFAULT_POINTS = {
   mB: { x: 262, y: 229 },
 };
 
-// Outward tangents of the isometric end cuts on the bottom trace.
-const BOT_CAP = {
-  startOut: { x: 0.504, y: -0.863 },
-  endOut: { x: 1, y: 0 },
+const COLOR_KEYS = new Set(['traceColor', 'mint', 'cyan', 'background']);
+
+const NUMBER_RANGE = {
+  refOpacity: [0, 1],
+  refScale: [0.2, 1.8],
+  refX: [-40, 40],
+  refY: [-40, 40],
+  trace: [0.6, 3.2],
+  node: [3, 14],
+  glow: [0, 10],
+  packet: [16, 180],
+  speed: [24, 280],
 };
 
-const OUTLINE_WIDTH = 2;
-const DIGIT_STROKE = 58;
-const FOUR_VIEW = { w: 1120, h: 500 };
-const ZERO_BOX = { x: 420, y: 70, w: 280, h: 360, r: 140 };
-const DEFAULT_TOP_OUTLINE = 'M 86 95 L 155.9 54.8 L 221.8 94.3 L 234.2 73.7 L 156.9 27.4 L 65 81.3 Z';
-
 const reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-
 const state = structuredClone(DEFAULT_STATE);
 const points = structuredClone(DEFAULT_POINTS);
 let allowReducedMotion = false;
+let elapsed = 0;
+let lastStamp = 0;
+let mm = null;
+let gui = null;
 
 const logoRoot = document.querySelector('.logo');
+const board = document.getElementById('cm-board');
 const stage = document.getElementById('cm-stage-logo');
 const stage404 = document.getElementById('cm-stage-404');
 const sceneLogo = document.getElementById('cm-scene-logo');
 const sceneFour = document.getElementById('cm-scene-404');
-const fourBase = document.getElementById('cm-404-base');
-const fourStreams = document.getElementById('cm-404-streams');
-const glowFilter404 = document.getElementById('cm-glow-404');
-const glowWide404 = document.getElementById('cm-glow-wide-404');
-const glowAlpha404 = document.getElementById('cm-glow-alpha-404');
-const glowPad404 = document.getElementById('cm-glow-pad-404');
-const refEl = document.getElementById('cm-ref');
-const versionV1 = document.getElementById('cm-version-v1');
-const versionV2 = document.getElementById('cm-version-v2');
-const base = document.getElementById('cm-base');
-const streams = document.getElementById('cm-streams');
-const nodes = document.getElementById('cm-nodes');
-const baseTop = document.getElementById('cm-base-top');
-const baseBot = document.getElementById('cm-base-bot');
-const baseM = document.getElementById('cm-base-m');
-const streamTop = document.getElementById('cm-stream-top');
-const streamBot = document.getElementById('cm-stream-bot');
-const streamM = document.getElementById('cm-stream-m');
-const nodeCyan = document.getElementById('cm-node-cyan');
-const nodeGray = document.getElementById('cm-node-gray');
-const nodeBlue = document.getElementById('cm-node-blue');
-const holeCyan = document.getElementById('cm-hole-cyan');
-const holeGray = document.getElementById('cm-hole-gray');
-const holeBlue = document.getElementById('cm-hole-blue');
-const pulseGray = document.getElementById('cm-pulse-gray');
-const pulseBlue = document.getElementById('cm-pulse-blue');
-const glowFilter = document.getElementById('cm-glow');
-const glowWide = document.getElementById('cm-glow-wide');
-const glowAlpha = document.getElementById('cm-glow-alpha');
-const glowPad = document.getElementById('cm-glow-pad');
-const stopTopA = document.getElementById('cm-top-a');
-const stopTopB = document.getElementById('cm-top-b');
-const stopBotA = document.getElementById('cm-bot-a');
-const stopBotB = document.getElementById('cm-bot-b');
-const stopMA = document.getElementById('cm-m-a');
-const stopMB = document.getElementById('cm-m-b');
 
-let mm = null;
-let gui = null;
-let active = [];
-const fourSegments = [];
-let zeroBase = null;
-let zeroStream = null;
+const logoLayer = bindLayer('cm-traces', 'cm-nodes', 'cm-comets', 'cm-heads', 'cm-glow-wide', 'cm-glow');
+const fourLayer = bindLayer('cm-404-traces', 'cm-404-nodes', 'cm-404-comets', 'cm-404-heads', 'cm-glow-wide-404', 'cm-glow-404');
+
+function bindLayer(tracesId, nodesId, cometsId, headsId, blurId, filterId) {
+  return {
+    traces: document.getElementById(tracesId),
+    nodes: document.getElementById(nodesId),
+    comets: document.getElementById(cometsId),
+    heads: document.getElementById(headsId),
+    blur: document.getElementById(blurId),
+    filterId,
+    nodeList: [],
+    items: [],
+    unit: 1,
+    stroke: 1.25,
+    radius: 6,
+  };
+}
 
 function num(value, fallback, min, max) {
   const n = Number(value);
@@ -129,23 +108,6 @@ function hex(value, fallback) {
 function bool(value, fallback) {
   return typeof value === 'boolean' ? value : fallback;
 }
-
-const NUMBER_RANGE = {
-  refOpacity: [0, 1],
-  refScale: [0.2, 1.8],
-  refX: [-40, 40],
-  refY: [-40, 40],
-  topWidth: [1, 48],
-  botWidth: [1, 48],
-  traceWidth: [1, 48],
-  baseExtra: [0, 30],
-  baseOpacity: [0, 1],
-  nodeRadius: [4, 40],
-  nodeStroke: [1, 16],
-  glow: [0, 20],
-  speed: [40, 800],
-  packet: [8, 500],
-};
 
 function loadInto(target, targetPoints) {
   try {
@@ -162,11 +124,9 @@ function loadInto(target, targetPoints) {
         target[key] = num(value, fallback, range[0], range[1]);
       } else if (typeof fallback === 'boolean') {
         target[key] = bool(value, fallback);
-      } else if (key === 'variant') {
-        target[key] = value === 'v2' ? 'v2' : 'v1';
       } else if (key === 'scene') {
         target[key] = value === '404' ? '404' : 'logo';
-      } else {
+      } else if (COLOR_KEYS.has(key)) {
         target[key] = hex(value, fallback);
       }
     }
@@ -186,493 +146,341 @@ if (reduceQuery.matches && state.playing) allowReducedMotion = hadSave;
 if (!hadSave && reduceQuery.matches) state.playing = false;
 
 function save() {
-  const snapshot = {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
     state: { ...state },
     points: structuredClone(points),
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  }));
 }
 
-function coord(value) {
-  return Math.round(value * 10) / 10;
+function round(value) {
+  return Math.round(value * 100) / 100;
 }
 
-function line(parts) {
-  return parts
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${coord(point.x)} ${coord(point.y)}`)
+function mod(value, span) {
+  if (span <= 0) return 0;
+  return ((value % span) + span) % span;
+}
+
+function svgEl(name) {
+  return document.createElementNS(NS, name);
+}
+
+function linePath(pts) {
+  return pts
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${round(point.x)} ${round(point.y)}`)
     .join(' ');
 }
 
-function unit(vector) {
-  const length = Math.hypot(vector.x, vector.y) || 1;
-  return { x: vector.x / length, y: vector.y / length };
+function rgb(hexColor) {
+  const n = Number.parseInt(hexColor.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function add(point, vector, scale) {
-  return { x: point.x + vector.x * scale, y: point.y + vector.y * scale };
+function mix(from, to, t) {
+  const a = rgb(from);
+  const b = rgb(to);
+  const amount = Math.min(1, Math.max(0, t));
+  const channels = a.map((channel, index) => Math.round(channel + (b[index] - channel) * amount));
+  return `rgb(${channels[0]} ${channels[1]} ${channels[2]})`;
 }
 
-function sub(a, b) {
-  return { x: a.x - b.x, y: a.y - b.y };
-}
+function addTrace(layer, spec) {
+  const path = svgEl('path');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('vector-effect', 'non-scaling-stroke');
+  layer.traces.append(path);
 
-function leftNormal(direction) {
-  return { x: direction.y, y: -direction.x };
-}
-
-function lineIntersect(originA, dirA, originB, dirB) {
-  const det = dirA.x * dirB.y - dirA.y * dirB.x;
-  if (Math.abs(det) < 1e-8) return { x: originA.x, y: originA.y };
-  const t = ((originB.x - originA.x) * dirB.y - (originB.y - originA.y) * dirB.x) / det;
-  return add(originA, dirA, t);
-}
-
-function outlineStroke(pts, width, startOut, endOut) {
-  const half = width / 2;
-  const dirs = [];
-  for (let i = 0; i < pts.length - 1; i += 1) dirs.push(unit(sub(pts[i + 1], pts[i])));
-  const outwardStart = startOut ? unit(startOut) : { x: -dirs[0].x, y: -dirs[0].y };
-  const outwardEnd = endOut ? unit(endOut) : dirs[dirs.length - 1];
-
-  function capCorner(point, outward, segment, side) {
-    const capDir = leftNormal(unit(outward));
-    const normal = leftNormal(segment);
-    const sideNormal = side === 'left' ? normal : { x: -normal.x, y: -normal.y };
-    return lineIntersect(point, capDir, add(point, sideNormal, half), segment);
+  const nodes = [];
+  for (const specNode of spec.nodes || []) {
+    const el = svgEl('circle');
+    el.setAttribute('vector-effect', 'non-scaling-stroke');
+    const halo = svgEl('circle');
+    halo.setAttribute('opacity', '0');
+    layer.nodes.append(el);
+    layer.comets.append(halo);
+    const node = {
+      el,
+      halo,
+      point: specNode.point || null,
+      x: specNode.x || 0,
+      y: specNode.y || 0,
+      hot: 0,
+      hotDist: Infinity,
+      hotColor: state.traceColor,
+    };
+    layer.nodeList.push(node);
+    nodes.push(node);
   }
 
-  function join(index, side) {
-    const d0 = dirs[index - 1];
-    const d1 = dirs[index];
-    const sign = side === 'left' ? 1 : -1;
-    const n0 = leftNormal(d0);
-    const n1 = leftNormal(d1);
-    const originA = add(pts[index], n0, sign * half);
-    const originB = add(pts[index], n1, sign * half);
-    const hit = lineIntersect(originA, d0, originB, d1);
-    if (Math.hypot(hit.x - pts[index].x, hit.y - pts[index].y) > half * 3) return [originA, originB];
-    return [hit];
-  }
-
-  const left = [capCorner(pts[0], outwardStart, dirs[0], 'left')];
-  const right = [capCorner(pts[0], outwardStart, dirs[0], 'right')];
-  for (let i = 1; i < pts.length - 1; i += 1) {
-    left.push(...join(i, 'left'));
-    right.push(...join(i, 'right'));
-  }
-  const last = pts.length - 1;
-  left.push(capCorner(pts[last], outwardEnd, dirs[dirs.length - 1], 'left'));
-  right.push(capCorner(pts[last], outwardEnd, dirs[dirs.length - 1], 'right'));
-  return `${line([...right, ...left.reverse()])} Z`;
-}
-
-function insetEnd(end, toward, distance) {
-  return add(end, unit(sub(toward, end)), distance);
-}
-
-function setSplit(stopA, stopB, splitX) {
-  const value = String(Math.min(1, Math.max(0, splitX / 327)));
-  stopA.setAttribute('offset', value);
-  stopB.setAttribute('offset', value);
-}
-
-function setShown(el, on) {
-  el.style.display = on ? '' : 'none';
-}
-
-function isOutline() {
-  return state.variant === 'v2';
-}
-
-function nodeOuter() {
-  return state.nodeRadius + state.nodeStroke / 2;
-}
-
-function nodeInner() {
-  return Math.max(0.8, state.nodeRadius - state.nodeStroke / 2);
-}
-
-function placeCircle(el, point, radius) {
-  el.setAttribute('cx', coord(point.x));
-  el.setAttribute('cy', coord(point.y));
-  el.setAttribute('r', coord(radius));
-}
-
-function samePoint(a, b) {
-  return a.x === b.x && a.y === b.y;
-}
-
-function topUsesDrawnOutline() {
-  return state.topWidth === DEFAULT_STATE.topWidth
-    && state.baseExtra === DEFAULT_STATE.baseExtra
-    && samePoint(points.topA, DEFAULT_POINTS.topA)
-    && samePoint(points.topPeak, DEFAULT_POINTS.topPeak)
-    && samePoint(points.topB, DEFAULT_POINTS.topB);
-}
-
-function applyShape() {
-  const outline = isOutline();
-  const topPts = [points.topA, points.topPeak, points.topB];
-  const botPts = [points.botA, points.botB, points.botPeak, points.botC];
-  const tracePts = [points.mA, points.mMid, points.mElbow, points.mB];
-  const topOutline = topUsesDrawnOutline()
-    ? DEFAULT_TOP_OUTLINE
-    : outlineStroke(topPts, state.topWidth + state.baseExtra);
-  const botOutline = outlineStroke(
-    botPts,
-    state.botWidth + state.baseExtra,
-    BOT_CAP.startOut,
-    BOT_CAP.endOut,
-  );
-  const traceOutline = outlineStroke(tracePts, state.traceWidth + state.baseExtra);
-
-  baseTop.setAttribute('d', topOutline);
-  baseBot.setAttribute('d', botOutline);
-  baseM.setAttribute('d', traceOutline);
-
-  if (outline) {
-    streamTop.setAttribute('d', topOutline);
-    streamBot.setAttribute('d', botOutline);
-    streamM.setAttribute('d', traceOutline);
-    for (const [path, gradient] of [
-      [baseTop, 'url(#cm-grad-top)'],
-      [baseBot, 'url(#cm-grad-bot)'],
-      [baseM, 'url(#cm-grad-m)'],
-    ]) {
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', gradient);
-      path.setAttribute('stroke-width', OUTLINE_WIDTH);
+  const dots = [];
+  let head = null;
+  if (spec.hue) {
+    for (let i = 0; i < DOTS; i += 1) {
+      const dot = svgEl('circle');
+      dot.setAttribute('opacity', '0');
+      layer.comets.append(dot);
+      dots.push(dot);
     }
-  } else {
-    streamTop.setAttribute('d', line([
-      insetEnd(points.topA, points.topPeak, state.topWidth * 0.45),
-      points.topPeak,
-      points.topB,
-    ]));
-    streamBot.setAttribute('d', line([
-      insetEnd(points.botA, points.botB, state.botWidth * 0.55),
-      points.botB,
-      points.botPeak,
-      insetEnd(points.botC, points.botPeak, state.botWidth * 0.55),
-    ]));
-    streamM.setAttribute('d', line(tracePts));
-    for (const [path, gradient] of [
-      [baseTop, 'url(#cm-grad-top)'],
-      [baseBot, 'url(#cm-grad-bot)'],
-      [baseM, 'url(#cm-grad-m)'],
-    ]) {
-      path.setAttribute('fill', gradient);
-      path.setAttribute('stroke', 'none');
-    }
+    head = svgEl('circle');
+    head.setAttribute('opacity', '0');
+    layer.heads.append(head);
   }
 
-  setSplit(stopTopA, stopTopB, points.topPeak.x);
-  setSplit(stopBotA, stopBotB, points.botPeak.x);
-  setSplit(stopMA, stopMB, points.mMid.x);
-
-  const ringRadius = outline ? nodeOuter() : state.nodeRadius;
-  placeCircle(nodeCyan, points.mA, ringRadius);
-  placeCircle(nodeGray, points.topB, ringRadius);
-  placeCircle(nodeBlue, points.mB, ringRadius);
-  placeCircle(holeCyan, points.mA, nodeInner());
-  placeCircle(holeGray, points.topB, nodeInner());
-  placeCircle(holeBlue, points.mB, nodeInner());
-  placeCircle(pulseGray, points.topB, ringRadius);
-  placeCircle(pulseBlue, points.mB, ringRadius);
+  const item = {
+    path,
+    nodes,
+    dots,
+    head,
+    hue: spec.hue || null,
+    phase: spec.phase || 0,
+    closed: Boolean(spec.closed),
+    gate: spec.gate || null,
+    points: spec.points || null,
+    d: spec.d || '',
+    length: 0,
+  };
+  layer.items.push(item);
+  return item;
 }
 
-function makePath(parent) {
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  parent.append(path);
-  return path;
+function itemOn(item) {
+  if (item.gate === 'top') return state.showTop;
+  if (item.gate === 'bot') return state.showBot;
+  if (item.gate === 'trace') return state.showTrace;
+  return true;
 }
 
-function fourParts(x, y, w, h) {
-  const stemX = x + w * 0.68;
-  const barY = y + h * 0.58;
-  const apex = y + h * 0.08;
-  const left = x + w * 0.02;
-  return [
-    [{ x: stemX, y }, { x: stemX, y: y + h }],
-    [{ x: left, y: barY }, { x: stemX + w * 0.18, y: barY }],
-    [{ x: left, y: barY }, { x: stemX, y: apex }],
-  ];
+function writeItem(item) {
+  const d = item.points ? linePath(item.points()) : item.d;
+  item.path.setAttribute('d', d);
+  for (const node of item.nodes) {
+    if (node.point) {
+      node.x = node.point.x;
+      node.y = node.point.y;
+    }
+    node.el.setAttribute('cx', round(node.x));
+    node.el.setAttribute('cy', round(node.y));
+    node.halo.setAttribute('cx', round(node.x));
+    node.halo.setAttribute('cy', round(node.y));
+  }
+  item.length = item.path.getTotalLength();
 }
 
-function roundedLoop(x, y, w, h, r) {
-  const right = x + w;
-  const bottom = y + h;
-  return [
-    `M ${coord(x + r)} ${coord(y)}`,
-    `H ${coord(right - r)}`,
-    `Q ${coord(right)} ${coord(y)} ${coord(right)} ${coord(y + r)}`,
-    `V ${coord(bottom - r)}`,
-    `Q ${coord(right)} ${coord(bottom)} ${coord(right - r)} ${coord(bottom)}`,
-    `H ${coord(x + r)}`,
-    `Q ${coord(x)} ${coord(bottom)} ${coord(x)} ${coord(bottom - r)}`,
-    `V ${coord(y + r)}`,
-    `Q ${coord(x)} ${coord(y)} ${coord(x + r)} ${coord(y)}`,
-    'Z',
-  ].join(' ');
+function buildLogo() {
+  addTrace(logoLayer, {
+    gate: 'top',
+    hue: 'mint',
+    phase: 0.22,
+    points: () => [points.topA, points.topPeak, points.topB],
+    nodes: [{ point: points.topB }],
+  });
+  addTrace(logoLayer, {
+    gate: 'bot',
+    hue: 'mint',
+    phase: 0.58,
+    points: () => [points.botA, points.botB, points.botPeak, points.botC],
+  });
+  addTrace(logoLayer, {
+    gate: 'trace',
+    hue: 'cyan',
+    phase: 0.08,
+    points: () => [points.mA, points.mMid, points.mElbow, points.mB],
+    nodes: [{ point: points.mA }, { point: points.mB }],
+  });
 }
 
-function insetLine(pts, distance) {
-  if (pts.length < 2 || distance <= 0) return pts;
-  const next = pts.map((point) => ({ x: point.x, y: point.y }));
-  next[0] = insetEnd(next[0], next[1], distance);
-  const last = next.length - 1;
-  next[last] = insetEnd(next[last], next[last - 1], distance);
-  return next;
-}
+// Traces measured from the reference 404, so the digits keep its tall proportion.
+const FOUR_GLYPHS = [
+  { hue: 'cyan', phase: 0.08, d: 'M 104.1 601.3 L 430.5 195.9', nodes: [{ x: 104.1, y: 601.3 }] },
+  { hue: 'mint', phase: 0.74, d: 'M 535 328.5 L 535 897.1', nodes: [{ x: 535, y: 897.1 }] },
+  { d: 'M 285.1 647.2 L 499.3 647.2' },
+  { d: 'M 201 813 L 535 813' },
+  { hue: 'cyan', phase: 0.42, d: 'M 700.8 83.7 L 700.8 866.5', nodes: [{ x: 700.8, y: 83.7 }] },
+  { d: 'M 731.4 647.2 L 833.4 647.2' },
+  { d: 'M 700.8 813 L 813 813' },
+  { hue: 'mint', phase: 0.18, d: 'M 904.8 86.2 L 1463.2 86.2', nodes: [{ x: 904.8, y: 86.2 }] },
+  { hue: 'cyan', phase: 0.58, d: 'M 904.8 86.2 L 904.8 966 L 1588.2 966 L 1588.2 226.5' },
+  { d: 'M 1070.5 249.4 L 1361.2 249.4' },
+  { d: 'M 1070.5 249.4 L 1070.5 843.6' },
+  { hue: 'cyan', phase: 0.36, d: 'M 1422.4 843.6 L 1422.4 249.4', nodes: [{ x: 1422.4, y: 843.6 }] },
+  { d: 'M 1070.5 843.6 L 1422.4 843.6' },
+  { hue: 'cyan', phase: 0.22, d: 'M 1672.3 601.3 L 1993.6 193.3' },
+  { hue: 'mint', phase: 0.86, d: 'M 2095.6 310.6 L 2095.6 963.4', nodes: [{ x: 2095.6, y: 310.6 }, { x: 2095.6, y: 963.4 }] },
+  { d: 'M 1845.7 647.2 L 2062.5 647.2' },
+  { d: 'M 1702.9 813 L 2095.6 813' },
+  { hue: 'cyan', phase: 0.5, d: 'M 2261.4 83.7 L 2261.4 886.9', nodes: [{ x: 2261.4, y: 83.7 }] },
+  { d: 'M 2292 647.2 L 2394 647.2' },
+  { d: 'M 2261.4 813 L 2381.2 813' },
+];
 
-function init404() {
-  const specs = [
-    { x: 80, y: 70, w: 250, h: 360, color: 'white', phase: 0 },
-    { x: 790, y: 70, w: 250, h: 360, color: 'blue', phase: 0.5 },
-  ];
-  for (const spec of specs) {
-    fourParts(spec.x, spec.y, spec.w, spec.h).forEach((pts, index) => {
-      fourSegments.push({
-        pts,
-        color: spec.color,
-        phase: (spec.phase + index * 0.28) % 1,
-        base: makePath(fourBase),
-        stream: makePath(fourStreams),
-      });
+function build404() {
+  for (const glyph of FOUR_GLYPHS) {
+    addTrace(fourLayer, {
+      hue: glyph.hue,
+      phase: glyph.phase,
+      closed: false,
+      d: glyph.d,
+      nodes: glyph.nodes,
     });
   }
-  zeroBase = makePath(fourBase);
-  zeroStream = makePath(fourStreams);
-  zeroBase.setAttribute('stroke-linejoin', 'round');
-  zeroStream.setAttribute('stroke-linejoin', 'round');
 }
 
-function digitStreams() {
-  return [...fourSegments.map((segment) => segment.stream), zeroStream];
+function activeLayer() {
+  return state.scene === '404' ? fourLayer : logoLayer;
 }
 
-function paintGlow(filter, blur, alpha, padRect, viewWidth, viewHeight, wide, slope) {
-  const pad = Math.ceil(wide * 4 + 48);
-  const region = [-pad, -pad, viewWidth + pad * 2, viewHeight + pad * 2];
-  filter.setAttribute('x', String(region[0]));
-  filter.setAttribute('y', String(region[1]));
-  filter.setAttribute('width', String(region[2]));
-  filter.setAttribute('height', String(region[3]));
-  blur.setAttribute('x', String(region[0]));
-  blur.setAttribute('y', String(region[1]));
-  blur.setAttribute('width', String(region[2]));
-  blur.setAttribute('height', String(region[3]));
-  blur.setAttribute('stdDeviation', wide);
-  alpha.setAttribute('slope', slope);
-  padRect.setAttribute('x', String(region[0]));
-  padRect.setAttribute('y', String(region[1]));
-  padRect.setAttribute('width', String(region[2]));
-  padRect.setAttribute('height', String(region[3]));
+function stageWidth(el, view) {
+  const measured = el.clientWidth;
+  if (measured > 8) return measured;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (view === FOUR_VIEW) return Math.min(vw - 32, 1080, vh * 0.68 * (FOUR_VIEW.w / FOUR_VIEW.h));
+  if (vw >= 900) return Math.min(vh * 0.72, 560);
+  return Math.min(vw * 0.86, vh * 0.72, 560);
 }
 
-function apply404() {
-  const outline = isOutline();
-  const beam = outline ? OUTLINE_WIDTH : Math.max(10, DIGIT_STROKE * 0.55);
-  for (const segment of fourSegments) {
-    const color = state[segment.color];
-    segment.stream.setAttribute('fill', 'none');
-    segment.stream.setAttribute('stroke', color);
-    segment.stream.setAttribute('stroke-width', beam);
-    if (outline) {
-      const spine = line(segment.pts);
-      segment.base.setAttribute('d', spine);
-      segment.base.setAttribute('fill', 'none');
-      segment.base.setAttribute('stroke', color);
-      segment.base.setAttribute('stroke-width', OUTLINE_WIDTH);
-      segment.stream.setAttribute('d', spine);
-    } else {
-      segment.base.setAttribute('d', outlineStroke(segment.pts, DIGIT_STROKE));
-      segment.base.setAttribute('fill', color);
-      segment.base.setAttribute('stroke', 'none');
-      segment.stream.setAttribute('d', line(insetLine(segment.pts, beam / 2)));
+function applyLayer(layer, el, view) {
+  const unit = view.w / Math.max(1, stageWidth(el, view));
+  layer.unit = unit;
+  layer.stroke = state.trace;
+  layer.radius = state.node * unit;
+  layer.blur.setAttribute('stdDeviation', String(state.glow * unit));
+  layer.traces.setAttribute('stroke', state.traceColor);
+  layer.traces.setAttribute('stroke-width', String(state.trace));
+  layer.traces.style.display = state.showTraces ? '' : 'none';
+  layer.nodes.style.display = state.showNodes ? '' : 'none';
+  layer.comets.setAttribute('filter', state.glow > 0 ? `url(#${layer.filterId})` : 'none');
+  layer.comets.style.display = state.showComets ? '' : 'none';
+  layer.heads.style.display = state.showComets ? '' : 'none';
+
+  for (const item of layer.items) {
+    writeItem(item);
+    const on = itemOn(item);
+    item.path.style.display = on ? '' : 'none';
+    for (const node of item.nodes) {
+      node.el.style.display = on ? '' : 'none';
     }
   }
+}
 
-  const loop = roundedLoop(ZERO_BOX.x, ZERO_BOX.y, ZERO_BOX.w, ZERO_BOX.h, ZERO_BOX.r);
-  const zeroWidth = outline ? OUTLINE_WIDTH : DIGIT_STROKE;
-  zeroBase.setAttribute('d', loop);
-  zeroBase.setAttribute('fill', 'none');
-  zeroBase.setAttribute('stroke', state.cyan);
-  zeroBase.setAttribute('stroke-width', zeroWidth);
-  zeroStream.setAttribute('d', loop);
-  zeroStream.setAttribute('fill', 'none');
-  zeroStream.setAttribute('stroke', state.cyan);
-  zeroStream.setAttribute('stroke-width', beam);
+function styleNodes(layer) {
+  for (const node of layer.nodeList) {
+    const hidden = node.el.style.display === 'none' || !state.showNodes;
+    node.el.setAttribute('r', round(layer.radius));
+    node.el.setAttribute('fill', state.background);
+    node.el.setAttribute('stroke-width', String(node.hot ? state.trace * (1 + node.hot * 0.4) : state.trace));
+    node.el.setAttribute('stroke', node.hot ? mix(state.traceColor, node.hotColor, 0.3 + node.hot * 0.7) : state.traceColor);
+    node.halo.setAttribute('r', round(layer.radius * 2.15));
+    node.halo.setAttribute('fill', node.hotColor || state.mint);
+    node.halo.setAttribute('opacity', !hidden && node.hot && state.showComets ? String(0.28 + node.hot * 0.6) : '0');
+  }
+}
 
-  fourBase.setAttribute('opacity', state.baseOpacity);
-  fourStreams.setAttribute('filter', state.glow > 0 ? 'url(#cm-glow-404)' : 'none');
-  setShown(fourBase, state.showBase);
-  setShown(fourStreams, state.showBeams);
+function sample(item, distance) {
+  const { length } = item;
+  if (length < 1) return null;
+  let at = distance;
+  if (item.closed) at = mod(distance, length);
+  else if (distance < 0 || distance > length) return null;
+  const point = item.path.getPointAtLength(Math.min(length - 0.01, Math.max(0, at)));
+  return { x: point.x, y: point.y };
+}
 
-  const wide = state.glow * (outline ? 3.4 : 13);
-  paintGlow(
-    glowFilter404,
-    glowWide404,
-    glowAlpha404,
-    glowPad404,
-    FOUR_VIEW.w,
-    FOUR_VIEW.h,
-    wide,
-    outline ? '0.7' : '0.55',
-  );
+function paint(time) {
+  const layer = activeLayer();
+  for (const node of layer.nodeList) {
+    node.hot = 0;
+    node.hotDist = Infinity;
+    node.hotColor = state.traceColor;
+  }
+
+  const tail = state.packet * layer.unit;
+  const speed = state.speed * layer.unit;
+  const reach = layer.radius * 2.5;
+
+  for (const item of layer.items) {
+    const draw = state.showComets && item.hue && itemOn(item) && item.length > 1 && item.dots.length;
+    if (!draw) {
+      for (const dot of item.dots) dot.setAttribute('opacity', '0');
+      if (item.head) item.head.setAttribute('opacity', '0');
+      continue;
+    }
+    const span = item.closed ? item.length : item.length + tail;
+    const head = mod(time * speed + item.phase * item.length, span);
+    const hue = state[item.hue];
+    const spacing = tail / (DOTS - 1);
+    let headPoint = null;
+    for (let i = 0; i < DOTS; i += 1) {
+      const point = sample(item, head - i * spacing);
+      const dot = item.dots[i];
+      if (!point) {
+        dot.setAttribute('opacity', '0');
+        continue;
+      }
+      const t = i / (DOTS - 1);
+      const radiusPx = 2.35 - t * 1.15;
+      dot.setAttribute('cx', round(point.x));
+      dot.setAttribute('cy', round(point.y));
+      dot.setAttribute('r', round(Math.max(0.8, radiusPx) * layer.unit));
+      dot.setAttribute('fill', mix(hue, '#f7fffd', (1 - t) ** 2 * 0.7));
+      dot.setAttribute('opacity', String(0.92 * (1 - t * 0.78)));
+      if (i === 0) headPoint = point;
+    }
+    if (item.head) {
+      if (headPoint) {
+        item.head.setAttribute('cx', round(headPoint.x));
+        item.head.setAttribute('cy', round(headPoint.y));
+        item.head.setAttribute('r', round(1.15 * layer.unit));
+        item.head.setAttribute('fill', mix(hue, '#f7fffd', 0.82));
+        item.head.setAttribute('opacity', '0.95');
+      } else {
+        item.head.setAttribute('opacity', '0');
+      }
+    }
+    if (headPoint && state.showNodes) {
+      for (const node of layer.nodeList) {
+        if (node.el.style.display === 'none') continue;
+        const dist = Math.hypot(node.x - headPoint.x, node.y - headPoint.y);
+        if (dist < reach && dist < node.hotDist) {
+          node.hot = 1 - dist / reach;
+          node.hotDist = dist;
+          node.hotColor = hue;
+        }
+      }
+    }
+  }
+  styleNodes(layer);
 }
 
 function applyLook() {
-  stage.style.setProperty('--logo-bg', state.background);
-  document.documentElement.style.background = state.background;
-  document.body.style.background = state.background;
-  logoRoot.style.background = state.background;
-  logoRoot.style.setProperty('--accent', state.cyan);
-  stage.style.setProperty('--accent', state.cyan);
   stage.style.setProperty('--ref-opacity', state.showRef ? String(state.refOpacity) : '0');
   stage.style.setProperty('--ref-x', `${state.refX}%`);
   stage.style.setProperty('--ref-y', `${state.refY}%`);
   stage.style.setProperty('--ref-scale', String(state.refScale));
 
-  applyShape();
-  const beamWidth = (width) => (isOutline() ? OUTLINE_WIDTH : Math.max(8, width * 0.55));
-  streamTop.setAttribute('stroke-width', beamWidth(state.topWidth));
-  streamBot.setAttribute('stroke-width', beamWidth(state.botWidth));
-  streamM.setAttribute('stroke-width', beamWidth(state.traceWidth));
-  base.setAttribute('opacity', state.baseOpacity);
-  streams.setAttribute('filter', state.glow > 0 ? 'url(#cm-glow)' : 'none');
+  document.documentElement.style.background = state.background;
+  document.body.style.background = state.background;
+  logoRoot.style.background = state.background;
 
-  stopTopA.setAttribute('stop-color', state.white);
-  stopBotA.setAttribute('stop-color', state.white);
-  stopTopB.setAttribute('stop-color', state.gray);
-  stopBotB.setAttribute('stop-color', state.gray);
-  stopMA.setAttribute('stop-color', state.cyan);
-  stopMB.setAttribute('stop-color', state.blue);
-  nodeCyan.setAttribute('stroke', state.cyan);
-  nodeGray.setAttribute('stroke', state.gray);
-  nodeBlue.setAttribute('stroke', state.blue);
-  pulseGray.setAttribute('stroke', state.gray);
-  pulseBlue.setAttribute('stroke', state.blue);
-  nodes.setAttribute('fill', isOutline() || state.nodeFill ? state.background : 'none');
-  nodes.setAttribute('stroke-width', isOutline() ? OUTLINE_WIDTH : state.nodeStroke);
-
-  const wide = state.glow * (isOutline() ? 1.6 : 6);
-  paintGlow(
-    glowFilter,
-    glowWide,
-    glowAlpha,
-    glowPad,
-    327,
-    310,
-    wide,
-    isOutline() ? '0.7' : '0.55',
-  );
-  apply404();
-
-  setShown(base, state.showBase);
-  setShown(streams, state.showBeams);
-  setShown(nodes, state.showNodes);
-  setShown(baseTop, state.showTop);
-  setShown(streamTop, state.showTop);
-  setShown(baseBot, state.showBot);
-  setShown(streamBot, state.showBot);
-  setShown(baseM, state.showTrace);
-  setShown(streamM, state.showTrace);
-  setShown(nodeGray, state.showTop && state.showNodes);
-  setShown(holeGray, isOutline() && state.showTop && state.showNodes);
-  setShown(pulseGray, state.showTop && state.showNodes && !isOutline());
-  setShown(nodeCyan, state.showTrace && state.showNodes);
-  setShown(holeCyan, isOutline() && state.showTrace && state.showNodes);
-  setShown(nodeBlue, state.showTrace && state.showNodes);
-  setShown(holeBlue, isOutline() && state.showTrace && state.showNodes);
-  setShown(pulseBlue, state.showTrace && state.showNodes && !isOutline());
-  holeCyan.setAttribute('stroke', state.cyan);
-  holeGray.setAttribute('stroke', state.gray);
-  holeBlue.setAttribute('stroke', state.blue);
-  syncVersions();
+  applyLayer(logoLayer, stage, LOGO_VIEW);
+  applyLayer(fourLayer, stage404, FOUR_VIEW);
+  paint(elapsed);
   syncScenes();
 }
 
-function clearDashes() {
-  gsap.set([streamTop, streamBot, streamM, ...digitStreams()], {
-    clearProps: 'strokeDasharray,strokeDashoffset',
-  });
-}
-
-function hidePulses() {
-  const radius = isOutline() ? nodeOuter() : state.nodeRadius;
-  gsap.set([pulseGray, pulseBlue], {
-    opacity: 0,
-    strokeWidth: isOutline() ? OUTLINE_WIDTH : state.nodeStroke,
-  });
-  pulseGray.setAttribute('r', radius);
-  pulseBlue.setAttribute('r', radius);
-}
-
-function beam(path, pulse, phase = 0) {
-  const length = path.getTotalLength();
-  if (length < 1 || state.speed < 1) return null;
-  const span = length + state.packet;
-  const duration = span / state.speed;
-  const hitTime = length / state.speed;
-  const start = state.packet - phase * span;
-  gsap.set(path, {
-    strokeDasharray: `${state.packet} ${span + 100}`,
-    strokeDashoffset: start,
-  });
-  const tl = gsap.timeline({ repeat: -1 });
-  tl.to(path, {
-    strokeDashoffset: start - span,
-    duration,
-    ease: 'none',
-  }, 0);
-  if (pulse && !isOutline()) {
-    const radius = state.nodeRadius;
-    tl.fromTo(pulse, {
-      attr: { r: radius },
-      opacity: 1,
-      strokeWidth: state.nodeStroke + 2,
-    }, {
-      attr: { r: radius + 21 },
-      opacity: 0,
-      strokeWidth: 0,
-      duration: 0.6,
-      ease: 'power2.out',
-    }, hitTime);
+function tick() {
+  const now = performance.now();
+  if (lastStamp) {
+    const dt = Math.min(0.05, (now - lastStamp) / 1000);
+    if (!document.hidden) elapsed += dt;
   }
-  return tl;
-}
-
-function startBeams() {
-  const jobs = [
-    [streamTop, state.showTop && state.showNodes ? pulseGray : null, state.showTop],
-    [streamBot, null, state.showBot],
-    [streamM, state.showTrace && state.showNodes ? pulseBlue : null, state.showTrace],
-  ];
-  const timelines = [];
-  for (const [path, pulse, on] of jobs) {
-    if (!on) continue;
-    const tl = beam(path, pulse);
-    if (tl) timelines.push(tl);
-  }
-  return timelines;
-}
-
-function start404Beams() {
-  if (!state.showBeams) return [];
-  const timelines = [];
-  for (const segment of fourSegments) {
-    const tl = beam(segment.stream, null, segment.phase);
-    if (tl) timelines.push(tl);
-  }
-  const zeroTl = beam(zeroStream, null, 0.18);
-  if (zeroTl) timelines.push(zeroTl);
-  return timelines;
+  lastStamp = now;
+  paint(elapsed);
 }
 
 function armMotion() {
   if (mm) mm.revert();
-  active = [];
+  lastStamp = 0;
   mm = gsap.matchMedia();
   mm.add(
     {
@@ -680,16 +488,14 @@ function armMotion() {
       ok: '(prefers-reduced-motion: no-preference)',
     },
     (context) => {
-      clearDashes();
-      hidePulses();
       const reduced = Boolean(context.conditions && context.conditions.reduce);
-      const allow = state.playing && state.showBeams && (!reduced || allowReducedMotion);
-      if (!allow) return undefined;
-      active = state.scene === '404' ? start404Beams() : startBeams();
-      if (document.hidden) active.forEach((tl) => tl.pause());
+      paint(elapsed);
+      if (reduced && !allowReducedMotion) return undefined;
+      if (!state.playing || !state.showComets) return undefined;
+      gsap.ticker.add(tick);
       return () => {
-        active.forEach((tl) => tl.kill());
-        active = [];
+        gsap.ticker.remove(tick);
+        lastStamp = 0;
       };
     },
   );
@@ -709,17 +515,35 @@ function applyDefaults() {
     points[key].y = nextPoints[key].y;
   }
   allowReducedMotion = false;
+  elapsed = 0;
   if (reduceQuery.matches) state.playing = false;
 }
 
-function onShapeEnd() {
+function syncScenes() {
+  const on404 = state.scene === '404';
+  stage.classList.toggle('is-off', on404);
+  stage404.classList.toggle('is-off', !on404);
+  stage.setAttribute('aria-hidden', on404 ? 'true' : 'false');
+  stage404.setAttribute('aria-hidden', on404 ? 'false' : 'true');
+  stage.inert = on404;
+  stage404.inert = !on404;
+  sceneLogo.setAttribute('aria-selected', on404 ? 'false' : 'true');
+  sceneFour.setAttribute('aria-selected', on404 ? 'true' : 'false');
+  sceneLogo.tabIndex = on404 ? -1 : 0;
+  sceneFour.tabIndex = on404 ? 0 : -1;
+}
+
+function setScene(scene) {
+  state.scene = scene === '404' ? '404' : 'logo';
+  syncScenes();
+  applyLook();
   armMotion();
   save();
 }
 
-function onLookEnd() {
-  armMotion();
-  save();
+function focusScene(scene) {
+  setScene(scene);
+  (scene === '404' ? sceneFour : sceneLogo).focus();
 }
 
 function mountGui() {
@@ -736,49 +560,30 @@ function mountGui() {
   reference.add(state, 'refY', -40, 40, 0.1).name('Offset Y %').onChange(applyLook).onFinishChange(save);
 
   const stroke = gui.addFolder('Stroke');
-  stroke.add(state, 'topWidth', 1, 48, 0.5).name('Top').onChange(applyLook).onFinishChange(onLookEnd);
-  stroke.add(state, 'botWidth', 1, 48, 0.5).name('Bottom').onChange(applyLook).onFinishChange(onLookEnd);
-  stroke.add(state, 'traceWidth', 1, 48, 0.5).name('Trace').onChange(applyLook).onFinishChange(onLookEnd);
-  stroke.add(state, 'baseExtra', 0, 30, 0.5).name('Underlay +').onChange(applyLook).onFinishChange(onLookEnd);
-  stroke.add(state, 'baseOpacity', 0, 1, 0.01).name('Underlay opacity').onChange(applyLook).onFinishChange(save);
-  stroke.add(state, 'nodeRadius', 4, 40, 0.5).name('Node radius').onChange(applyLook).onFinishChange(onLookEnd);
-  stroke.add(state, 'nodeStroke', 1, 16, 0.5).name('Node stroke').onChange(applyLook).onFinishChange(onLookEnd);
-  stroke.add(state, 'glow', 0, 20, 0.5).name('Glow').onChange(applyLook).onFinishChange(save);
+  stroke.add(state, 'trace', 0.6, 3.2, 0.05).name('Trace px').onChange(applyLook).onFinishChange(save);
+  stroke.add(state, 'node', 3, 14, 0.1).name('Node px').onChange(applyLook).onFinishChange(save);
+  stroke.add(state, 'glow', 0, 10, 0.1).name('Glow px').onChange(applyLook).onFinishChange(save);
+  stroke.add(state, 'packet', 16, 180, 1).name('Comet px').onChange(applyLook).onFinishChange(save);
 
   const motion = gui.addFolder('Motion');
-  motion.add(state, 'speed', 40, 800, 1).name('Speed').onFinishChange(onShapeEnd);
-  motion.add(state, 'packet', 8, 500, 1).name('Packet').onFinishChange(onShapeEnd);
+  motion.add(state, 'speed', 24, 280, 1).name('Speed').onChange(applyLook).onFinishChange(save);
   motion.add(state, 'playing').name('Animate').onChange(() => {
     if (state.playing && reduceQuery.matches) allowReducedMotion = true;
     if (!state.playing) allowReducedMotion = false;
     armMotion();
     save();
   });
-  motion.close();
 
   const layers = gui.addFolder('Layers');
-  layers.add(state, 'showBase').name('Underlay').onChange(applyLook).onFinishChange(save);
-  layers.add(state, 'showBeams').name('Beams').onChange(() => {
+  layers.add(state, 'showTraces').name('Traces').onChange(applyLook).onFinishChange(save);
+  layers.add(state, 'showNodes').name('Nodes').onChange(applyLook).onFinishChange(save);
+  layers.add(state, 'showComets').name('Comets').onChange(() => {
     applyLook();
     armMotion();
   }).onFinishChange(save);
-  layers.add(state, 'showNodes').name('Nodes').onChange(() => {
-    applyLook();
-    armMotion();
-  }).onFinishChange(save);
-  layers.add(state, 'nodeFill').name('Solid nodes').onChange(applyLook).onFinishChange(save);
-  layers.add(state, 'showTop').name('Top trace').onChange(() => {
-    applyLook();
-    armMotion();
-  }).onFinishChange(save);
-  layers.add(state, 'showBot').name('Bottom trace').onChange(() => {
-    applyLook();
-    armMotion();
-  }).onFinishChange(save);
-  layers.add(state, 'showTrace').name('Color trace').onChange(() => {
-    applyLook();
-    armMotion();
-  }).onFinishChange(save);
+  layers.add(state, 'showTop').name('Top trace').onChange(applyLook).onFinishChange(save);
+  layers.add(state, 'showBot').name('Bottom trace').onChange(applyLook).onFinishChange(save);
+  layers.add(state, 'showTrace').name('Color trace').onChange(applyLook).onFinishChange(save);
   layers.close();
 
   const geometry = gui.addFolder('Geometry');
@@ -799,10 +604,9 @@ function mountGui() {
   geometry.close();
 
   const colors = gui.addFolder('Colors');
-  colors.addColor(state, 'white').name('White').onChange(applyLook).onFinishChange(save);
-  colors.addColor(state, 'gray').name('Gray').onChange(applyLook).onFinishChange(save);
+  colors.addColor(state, 'traceColor').name('Trace').onChange(applyLook).onFinishChange(save);
+  colors.addColor(state, 'mint').name('Mint').onChange(applyLook).onFinishChange(save);
   colors.addColor(state, 'cyan').name('Cyan').onChange(applyLook).onFinishChange(save);
-  colors.addColor(state, 'blue').name('Blue').onChange(applyLook).onFinishChange(save);
   colors.addColor(state, 'background').name('Background').onChange(applyLook).onFinishChange(save);
   colors.close();
 
@@ -811,7 +615,6 @@ function mountGui() {
       applyDefaults();
       localStorage.removeItem(STORAGE_KEY);
       refreshGui();
-      applyShape();
       applyLook();
       armMotion();
     },
@@ -830,60 +633,36 @@ function mountGui() {
   const copyCtrl = gui.add(actions, 'copyValues').name('Copy values');
 }
 
-function syncVersions() {
-  const outline = isOutline();
-  versionV1.setAttribute('aria-pressed', outline ? 'false' : 'true');
-  versionV2.setAttribute('aria-pressed', outline ? 'true' : 'false');
-}
-
-function setVariant(variant) {
-  state.variant = variant === 'v2' ? 'v2' : 'v1';
-  applyLook();
-  armMotion();
-  save();
-}
-
-function syncScenes() {
-  const on404 = state.scene === '404';
-  stage.hidden = on404;
-  stage404.hidden = !on404;
-  sceneLogo.setAttribute('aria-selected', on404 ? 'false' : 'true');
-  sceneFour.setAttribute('aria-selected', on404 ? 'true' : 'false');
-}
-
-function setScene(scene) {
-  state.scene = scene === '404' ? '404' : 'logo';
-  applyLook();
-  armMotion();
-  save();
-}
-
 function bindPoint(folder, point, label) {
-  folder.add(point, 'x', 0, 327, 0.5).name(`${label} X`).onChange(applyShape).onFinishChange(onShapeEnd);
-  folder.add(point, 'y', 0, 310, 0.5).name(`${label} Y`).onChange(applyShape).onFinishChange(onShapeEnd);
+  folder.add(point, 'x', 0, 327, 0.5).name(`${label} X`).onChange(applyLook).onFinishChange(save);
+  folder.add(point, 'y', 0, 310, 0.5).name(`${label} Y`).onChange(applyLook).onFinishChange(save);
 }
+
+buildLogo();
+build404();
+applyLook();
 
 if (!window.gsap) {
   const note = document.createElement('p');
   note.className = 'logo-error';
   note.textContent = 'GSAP did not load. Check the network and reload.';
-  document.querySelector('.logo').append(note);
+  logoRoot.append(note);
 } else {
-  init404();
-  applyShape();
-  applyLook();
   mountGui();
   armMotion();
-  versionV1.addEventListener('click', () => setVariant('v1'));
-  versionV2.addEventListener('click', () => setVariant('v2'));
   sceneLogo.addEventListener('click', () => setScene('logo'));
   sceneFour.addEventListener('click', () => setScene('404'));
-
-  document.addEventListener('visibilitychange', () => {
-    active.forEach((tl) => {
-      if (document.hidden) tl.pause();
-      else if (state.playing) tl.resume();
-    });
+  sceneLogo.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      focusScene('404');
+    }
+  });
+  sceneFour.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      focusScene('logo');
+    }
   });
 
   reduceQuery.addEventListener('change', () => {
@@ -895,4 +674,11 @@ if (!window.gsap) {
     armMotion();
     save();
   });
+
+  let resizeRaf = 0;
+  const observer = new ResizeObserver(() => {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(applyLook);
+  });
+  observer.observe(board);
 }

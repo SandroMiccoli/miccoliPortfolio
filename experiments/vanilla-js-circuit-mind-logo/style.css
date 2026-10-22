@@ -8,12 +8,11 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #202020;
+  background: #041122;
 }
 
 .logo {
-  --logo-bg: #202020;
-  --accent: #1cb5df;
+  --logo-bg: #041122;
   --stage: min(86vw, 72dvh, 560px);
   min-height: 100dvh;
   display: flex;
@@ -22,8 +21,15 @@ body {
   justify-content: center;
   padding: 24px 16px 32px;
   background: var(--logo-bg);
-  color: #f4f7fb;
+  color: #e7eef6;
   font-family: Poppins, "Segoe UI", system-ui, sans-serif;
+}
+
+.board {
+  position: relative;
+  display: grid;
+  width: 100%;
+  place-items: center;
 }
 
 .stage {
@@ -34,6 +40,12 @@ body {
   position: relative;
   width: var(--stage);
   aspect-ratio: 327 / 310;
+}
+
+.stage.is-off {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media (min-width: 900px) {
@@ -67,15 +79,13 @@ body {
 }
 
 .stage-404 {
-  width: min(100%, 1080px, calc(58dvh * 1120 / 500));
-  aspect-ratio: 1120 / 500;
+  width: min(100%, 1080px, calc(68dvh * 2442 / 1014));
+  aspect-ratio: 2442 / 1014;
 }
 
 .switchers {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.65rem;
+  justify-content: center;
   margin-top: 1.35rem;
 }
 
@@ -83,11 +93,10 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-top: 0;
   padding: 4px;
-  border: 1px solid rgb(255 255 255 / 0.16);
+  border: 1px solid rgb(198 220 240 / 0.18);
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.28);
+  background: rgb(2 8 18 / 0.45);
 }
 
 .versions button {
@@ -98,20 +107,19 @@ body {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #d5dde6;
+  color: #c5d4e4;
   font: 600 0.78rem/1 "Segoe UI", system-ui, sans-serif;
   letter-spacing: 0.14em;
   cursor: pointer;
 }
 
-.versions button[aria-pressed="true"],
 .versions button[aria-selected="true"] {
-  background: var(--accent);
-  color: #071016;
+  background: #6ef3c5;
+  color: #041122;
 }
 
 .versions button:focus-visible {
-  outline: 2px solid #f4f7fb;
+  outline: 2px solid #e8eef6;
   outline-offset: 3px;
 }
 
