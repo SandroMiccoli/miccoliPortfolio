@@ -11,3 +11,4 @@ Gemfile.lock
 /server
 /experiments/threejs-ascii-shape/_tmp
 /experiments/threejs-circuit-board/tmp
+experiments/threejs-circuit-board/assets/ComfyUI_00002.glb

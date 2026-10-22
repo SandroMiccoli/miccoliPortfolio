@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16.png">
+  <link rel="manifest" href="/images/favicon/site.webmanifest">
+  <link rel="shortcut icon" href="/images/favicon/favicon.ico">
+  <title>Vanilla JS — Circuit Mind Logo</title>
+  <meta name="description" content="The Circuit Mind mark redrawn as animated SVG strokes that match the reference logo.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="logo">
+    <div class="stage stage-logo" id="cm-stage-logo" aria-hidden="true">
+      <img
+        class="stage-ref"
+        id="cm-ref"
+        src="assets/logo-reference.png"
+        alt=""
+        width="327"
+        height="310"
+        draggable="false"
+      >
+      <svg viewBox="0 0 327 310" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cm-grad-top" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="327" y2="0">
+            <stop id="cm-top-a" offset="62%" stop-color="#ffffff" />
+            <stop id="cm-top-b" offset="62%" stop-color="#b5b5b5" />
+          </linearGradient>
+          <linearGradient id="cm-grad-bot" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="327" y2="0">
+            <stop id="cm-bot-a" offset="60%" stop-color="#ffffff" />
+            <stop id="cm-bot-b" offset="60%" stop-color="#b5b5b5" />
+          </linearGradient>
+          <linearGradient id="cm-grad-m" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="327" y2="0">
+            <stop id="cm-m-a" offset="52%" stop-color="#1cb5df" />
+            <stop id="cm-m-b" offset="52%" stop-color="#1e5a9d" />
+          </linearGradient>
+          <filter id="cm-glow" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="-180" y="-180" width="687" height="670" color-interpolation-filters="sRGB">
+            <feGaussianBlur id="cm-glow-wide" in="SourceGraphic" stdDeviation="8" result="blur" x="-180" y="-180" width="687" height="670" />
+            <feComponentTransfer in="blur" result="bloom">
+              <feFuncA id="cm-glow-alpha" type="linear" slope="0.45" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode in="bloom" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <g id="cm-base" fill="none" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt">
+          <path id="cm-base-top" d="M 86 95 L 155.9 54.8 L 221.8 94.3 L 234.2 73.7 L 156.9 27.4 L 65 81.3 Z" fill="url(#cm-grad-top)" />
+          <path id="cm-base-bot" d="M 51 157 L 50 158.7 L 51 222.8 L 156.4 284.3 L 226 243 L 228 243" stroke="url(#cm-grad-bot)" stroke-width="24" />
+          <path id="cm-base-m" d="M 39 107 L 156 177.2 L 262 116 L 262 229" stroke="url(#cm-grad-m)" stroke-width="24" />
+        </g>
+
+        <g id="cm-streams" fill="none" stroke-linejoin="round" stroke-linecap="round" filter="url(#cm-glow)">
+          <rect id="cm-glow-pad" x="-180" y="-180" width="687" height="670" fill="#000" opacity="0" pointer-events="none" />
+          <path id="cm-stream-top" d="M 75.5 88.2 L 156.4 41.1 L 228 84" stroke="url(#cm-grad-top)" stroke-width="24" />
+          <path id="cm-stream-bot" d="M 51 157 L 50 158.7 L 51 222.8 L 156.4 284.3 L 226 243 L 228 243" stroke="url(#cm-grad-bot)" stroke-width="24" />
+          <path id="cm-stream-m" d="M 39 107 L 156 177.2 L 262 116 L 262 229" stroke="url(#cm-grad-m)" stroke-width="24" />
+        </g>
+
+        <g id="cm-nodes" fill="#202020" stroke-width="14">
+          <circle id="cm-node-cyan" cx="39" cy="107" r="15" stroke="#1cb5df" />
+          <circle id="cm-node-gray" cx="228" cy="84" r="15" stroke="#b5b5b5" />
+          <circle id="cm-node-blue" cx="262" cy="229" r="15" stroke="#1e5a9d" />
+          <circle id="cm-hole-cyan" cx="39" cy="107" r="8" fill="none" stroke="#1cb5df" style="display: none" />
+          <circle id="cm-hole-gray" cx="228" cy="84" r="8" fill="none" stroke="#b5b5b5" style="display: none" />
+          <circle id="cm-hole-blue" cx="262" cy="229" r="8" fill="none" stroke="#1e5a9d" style="display: none" />
+        </g>
+
+        <circle id="cm-pulse-gray" cx="228" cy="84" r="15" fill="none" stroke="#b5b5b5" opacity="0" />
+        <circle id="cm-pulse-blue" cx="262" cy="229" r="15" fill="none" stroke="#1e5a9d" opacity="0" />
+      </svg>
+    </div>
+    <div class="stage stage-404" id="cm-stage-404" role="img" aria-label="404" hidden>
+      <svg viewBox="0 0 1120 500" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="cm-glow-404" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="-220" y="-220" width="1560" height="940" color-interpolation-filters="sRGB">
+            <feGaussianBlur id="cm-glow-wide-404" in="SourceGraphic" stdDeviation="18" result="blur" x="-220" y="-220" width="1560" height="940" />
+            <feComponentTransfer in="blur" result="bloom">
+              <feFuncA id="cm-glow-alpha-404" type="linear" slope="0.55" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode in="bloom" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <g id="cm-404-base" fill="none" stroke-linejoin="round" stroke-linecap="round"></g>
+        <g id="cm-404-streams" fill="none" stroke-linejoin="round" stroke-linecap="round" filter="url(#cm-glow-404)">
+          <rect id="cm-glow-pad-404" x="-220" y="-220" width="1560" height="940" fill="#000" opacity="0" pointer-events="none" />
+        </g>
+      </svg>
+    </div>
+    <div class="switchers">
+      <div class="versions" role="group" aria-label="Versão da logo">
+        <button type="button" id="cm-version-v1" aria-pressed="true" aria-label="V1, marca preenchida">V1</button>
+        <button type="button" id="cm-version-v2" aria-pressed="false" aria-label="V2, só o contorno">V2</button>
+      </div>
+      <div class="versions" role="tablist" aria-label="Cena">
+        <button type="button" id="cm-scene-logo" role="tab" aria-selected="true" aria-controls="cm-stage-logo">logo</button>
+        <button type="button" id="cm-scene-404" role="tab" aria-selected="false" aria-controls="cm-stage-404">404</button>
+      </div>
+    </div>
+  </div>
+  <noscript><p class="logo-error">This page needs JavaScript.</p></noscript>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
