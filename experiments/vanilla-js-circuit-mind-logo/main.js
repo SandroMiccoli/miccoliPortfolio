@@ -1,7 +1,7 @@
 import GUI from './vendor/lil-gui.esm.min.js';
 
 const NS = 'http://www.w3.org/2000/svg';
-const STORAGE_KEY = 'vanilla-js-circuit-mind-logo-v5';
+const STORAGE_KEY = 'vanilla-js-circuit-mind-logo-v6';
 const DOTS = 28;
 
 const LOGO_VIEW = { w: 327, h: 310 };
@@ -16,8 +16,8 @@ const DEFAULT_STATE = {
   trace: 1.25,
   node: 5.6,
   glow: 3.3,
-  packet: 62,
-  speed: 96,
+  packet: 40,
+  speed: 154,
   playing: true,
   showTraces: true,
   showNodes: true,
@@ -41,9 +41,11 @@ const DEFAULT_POINTS = {
   botPeak: { x: 156.4, y: 284.3 },
   botC: { x: 228, y: 243 },
   mA: { x: 39, y: 107 },
-  mMid: { x: 156, y: 177.2 },
+  mMid: { x: 156.4, y: 177.2 },
   mElbow: { x: 262, y: 116 },
   mB: { x: 262, y: 229 },
+  nodeLeft: { x: 47, y: 97 },
+  nodeRight: { x: 250, y: 229 },
 };
 
 const COLOR_KEYS = new Set(['traceColor', 'mint', 'cyan', 'background']);
@@ -148,6 +150,13 @@ function loadInto(target, targetPoints) {
 
 const hadSave = loadInto(state, points);
 if (hadSave && state.node === 6.2) state.node = DEFAULT_STATE.node;
+if (hadSave && state.speed === 96) state.speed = DEFAULT_STATE.speed;
+if (hadSave && state.packet === 62) state.packet = DEFAULT_STATE.packet;
+if (hadSave && Math.abs(points.topPeak.x - 151.75) < 0.02) points.topPeak.x = DEFAULT_POINTS.topPeak.x;
+if (hadSave && Math.abs(points.topB.y - 88.15) < 0.02 && Math.abs(points.topB.x - 228) < 0.02) {
+  points.topB.y = DEFAULT_POINTS.topB.y;
+}
+if (hadSave && Math.abs(points.mMid.x - 156) < 0.02) points.mMid.x = DEFAULT_POINTS.mMid.x;
 if (reduceQuery.matches && state.playing) allowReducedMotion = hadSave;
 if (!hadSave && reduceQuery.matches) state.playing = false;
 
@@ -210,6 +219,10 @@ function addTrace(layer, spec) {
       point: specNode.point || null,
       x: specNode.x || 0,
       y: specNode.y || 0,
+      r: specNode.r || 0,
+      join: specNode.join || 0,
+      haloScale: specNode.haloScale || 0,
+      glowReach: specNode.glowReach || 0,
       hot: 0,
       hotDist: Infinity,
       hotColor: state.traceColor,
@@ -258,7 +271,7 @@ function itemOn(item) {
 }
 
 function writeItem(item) {
-  const d = item.points ? linePath(item.points()) : item.d;
+  const d = item.points ? linePath(item.points()) : (typeof item.d === 'function' ? item.d() : item.d);
   item.path.setAttribute('d', d);
   for (const node of item.nodes) {
     if (node.point) {
@@ -299,16 +312,44 @@ function closestOnItem(item, x, y) {
   return { at: bestAt, gap: bestGap };
 }
 
-function slicePath(path, length, from, to) {
-  const span = Math.max(0.01, to - from);
-  const steps = Math.max(2, Math.ceil(span / 8));
-  let d = '';
-  for (let i = 0; i <= steps; i += 1) {
-    const at = Math.min(length - 0.01, Math.max(0, from + (span * i) / steps));
-    const point = path.getPointAtLength(at);
-    d += `${i === 0 ? 'M' : 'L'} ${round(point.x)} ${round(point.y)} `;
+function pathVertices(path) {
+  const nums = (path.getAttribute('d').match(/-?\d+\.?\d*/g) || []).map(Number);
+  const pts = [];
+  for (let i = 0; i < nums.length; i += 2) {
+    const point = { x: nums[i], y: nums[i + 1] };
+    const prev = pts[pts.length - 1];
+    if (!prev || Math.hypot(point.x - prev.x, point.y - prev.y) > 0.01) pts.push(point);
   }
-  return d.trim();
+  return pts;
+}
+
+function pointAlong(pts, cum, dist) {
+  let index = 1;
+  while (index < cum.length - 1 && cum[index] < dist) index += 1;
+  const span = cum[index] - cum[index - 1] || 1;
+  const t = Math.min(1, Math.max(0, (dist - cum[index - 1]) / span));
+  return {
+    x: pts[index - 1].x + (pts[index].x - pts[index - 1].x) * t,
+    y: pts[index - 1].y + (pts[index].y - pts[index - 1].y) * t,
+  };
+}
+
+function slicePath(path, length, from, to) {
+  const pts = pathVertices(path);
+  if (pts.length < 2) return path.getAttribute('d');
+  const cum = [0];
+  for (let i = 1; i < pts.length; i += 1) {
+    cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+  }
+  const total = cum[cum.length - 1] || length;
+  const start = Math.max(0, Math.min(total, from));
+  const end = Math.max(start + 0.01, Math.min(total, to));
+  const out = [pointAlong(pts, cum, start)];
+  for (let i = 1; i < pts.length - 1; i += 1) {
+    if (cum[i] > start + 0.05 && cum[i] < end - 0.05) out.push(pts[i]);
+  }
+  out.push(pointAlong(pts, cum, end));
+  return linePath(out);
 }
 
 function makeFadeGradient(defs) {
@@ -369,7 +410,8 @@ function endpointFree(item, at, layer) {
   }
   for (const node of layer.nodeList) {
     if (node.el.style.display === 'none') continue;
-    if (Math.hypot(node.x - point.x, node.y - point.y) < limit) return false;
+    const reach = Math.max(limit, (node.r || 0) + (node.join || 0));
+    if (Math.hypot(node.x - point.x, node.y - point.y) < reach) return false;
   }
   return true;
 }
@@ -383,7 +425,7 @@ function hideFade(item) {
 }
 
 function updateFade(item, layer, on) {
-  if (!on || item.length < 8) {
+  if (!on || item.closed || item.length < 8) {
     hideFade(item);
     return;
   }
@@ -421,26 +463,123 @@ function updateFade(item, layer, on) {
   }
 }
 
+const LOGO_HALF = 12.6;
+
+function vsub(a, b) {
+  return { x: a.x - b.x, y: a.y - b.y };
+}
+
+function vadd(a, b) {
+  return { x: a.x + b.x, y: a.y + b.y };
+}
+
+function vmul(a, s) {
+  return { x: a.x * s, y: a.y * s };
+}
+
+function vlen(a) {
+  return Math.hypot(a.x, a.y);
+}
+
+function vnorm(a) {
+  const len = vlen(a) || 1;
+  return { x: a.x / len, y: a.y / len };
+}
+
+function vleft(a) {
+  return vnorm({ x: a.y, y: -a.x });
+}
+
+function vintersect(p, r, q, s) {
+  const den = r.x * s.y - r.y * s.x;
+  if (Math.abs(den) < 1e-6) return null;
+  const t = ((q.x - p.x) * s.y - (q.y - p.y) * s.x) / den;
+  return vadd(p, vmul(r, t));
+}
+
+function offsetPoints(pts, dist) {
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const dir = vnorm(vsub(pts[i + 1], pts[i]));
+    const n = vmul(vleft(dir), dist);
+    segs.push({ a: vadd(pts[i], n), b: vadd(pts[i + 1], n), dir });
+  }
+  const out = [segs[0].a];
+  for (let i = 0; i < segs.length - 1; i += 1) {
+    const hit = vintersect(segs[i].a, segs[i].dir, segs[i + 1].a, segs[i + 1].dir);
+    out.push(hit || segs[i].b);
+  }
+  out.push(segs[segs.length - 1].b);
+  return out;
+}
+
+function trimRibbonEnd(sideL, sideR, pts, atEnd, cap) {
+  if (!cap || cap.type !== 'bevel') return;
+  const indexL = atEnd ? sideL.length - 1 : 0;
+  const indexR = atEnd ? sideR.length - 1 : 0;
+  const origin = atEnd ? pts[pts.length - 1] : pts[0];
+  const dir = atEnd
+    ? vnorm(vsub(pts[pts.length - 1], pts[pts.length - 2]))
+    : vnorm(vsub(pts[1], pts[0]));
+  const cut = vnorm(cap.dir);
+  const leftHit = vintersect(sideL[indexL], dir, origin, cut);
+  const rightHit = vintersect(sideR[indexR], dir, origin, cut);
+  if (leftHit) sideL[indexL] = leftHit;
+  if (rightHit) sideR[indexR] = rightHit;
+}
+
+function ribbonSides(pts, startCap, endCap) {
+  const sideL = offsetPoints(pts, LOGO_HALF);
+  const sideR = offsetPoints(pts, -LOGO_HALF);
+  trimRibbonEnd(sideL, sideR, pts, false, startCap);
+  trimRibbonEnd(sideL, sideR, pts, true, endCap);
+  return [sideL, sideR];
+}
+
+function addRibbon(spec) {
+  const sides = () => ribbonSides(spec.pts(), spec.start, spec.end);
+  [0, 1].forEach((index) => {
+    addTrace(logoLayer, {
+      gate: spec.gate,
+      hue: spec.hue,
+      phase: spec.phase + index * 0.41,
+      closed: false,
+      d: () => linePath(sides()[index]),
+      nodes: index === 0 ? spec.nodes : [],
+    });
+  });
+}
+
 function buildLogo() {
-  addTrace(logoLayer, {
+  const alongTrace = () => vsub(points.mMid, points.mA);
+  const downTrace = () => vsub(points.mB, points.mElbow);
+  addRibbon({
     gate: 'top',
     hue: 'mint',
     phase: 0.22,
-    points: () => [points.topA, points.topPeak, points.topB],
-    nodes: [{ point: points.topB }],
+    pts: () => [points.topA, points.topPeak, points.topB],
+    start: { type: 'butt' },
+    end: { type: 'butt' },
   });
-  addTrace(logoLayer, {
+  addRibbon({
     gate: 'bot',
     hue: 'mint',
     phase: 0.58,
-    points: () => [points.botA, points.botB, points.botPeak, points.botC],
+    pts: () => [points.botA, points.botB, points.botPeak, points.botC],
+    start: { type: 'bevel', get dir() { return alongTrace(); } },
+    end: { type: 'bevel', get dir() { return downTrace(); } },
   });
-  addTrace(logoLayer, {
+  addRibbon({
     gate: 'trace',
     hue: 'cyan',
     phase: 0.08,
-    points: () => [points.mA, points.mMid, points.mElbow, points.mB],
-    nodes: [{ point: points.mA }, { point: points.mB }],
+    pts: () => [points.mA, points.mMid, points.mElbow, points.mB],
+    start: { type: 'butt' },
+    end: { type: 'butt' },
+    nodes: [
+      { point: points.nodeLeft, r: 7, join: LOGO_HALF * 1.35, haloScale: 1.65, glowReach: 12 },
+      { point: points.nodeRight, r: 7, join: LOGO_HALF * 1.35, haloScale: 1.65, glowReach: 12 },
+    ],
   });
 }
 
@@ -524,11 +663,12 @@ function applyLayer(layer, el, view) {
 function styleNodes(layer) {
   for (const node of layer.nodeList) {
     const hidden = node.el.style.display === 'none' || !state.showNodes;
-    node.el.setAttribute('r', round(layer.radius));
+    const radius = node.r || layer.radius;
+    node.el.setAttribute('r', round(radius));
     node.el.setAttribute('fill', state.background);
     node.el.setAttribute('stroke-width', String(node.hot ? state.trace * (1 + node.hot * 0.4) : state.trace));
     node.el.setAttribute('stroke', node.hot ? mix(state.traceColor, node.hotColor, 0.3 + node.hot * 0.7) : state.traceColor);
-    node.halo.setAttribute('r', round(layer.radius * 2.15));
+    node.halo.setAttribute('r', round(radius * (node.haloScale || 2.15)));
     node.halo.setAttribute('fill', node.hotColor || state.mint);
     node.halo.setAttribute('opacity', !hidden && node.hot && state.showComets ? String(0.28 + node.hot * 0.6) : '0');
   }
@@ -563,8 +703,9 @@ function heatNodes(layer, point, hue, reach) {
   for (const node of layer.nodeList) {
     if (node.el.style.display === 'none') continue;
     const dist = Math.hypot(node.x - point.x, node.y - point.y);
-    if (dist < reach && dist < node.hotDist) {
-      node.hot = 1 - dist / reach;
+    const nodeReach = node.glowReach || Math.max(reach, (node.r || 0) * 1.2, node.join || 0);
+    if (dist < nodeReach && dist < node.hotDist) {
+      node.hot = 1 - dist / nodeReach;
       node.hotDist = dist;
       node.hotColor = hue;
     }
@@ -893,6 +1034,9 @@ function mountGui() {
   layers.close();
 
   const geometry = gui.addFolder('Geometry');
+  const circles = geometry.addFolder('Circles');
+  bindPoint(circles, points.nodeLeft, 'Left');
+  bindPoint(circles, points.nodeRight, 'Right');
   const top = geometry.addFolder('Top');
   bindPoint(top, points.topA, 'Left');
   bindPoint(top, points.topPeak, 'Peak');
