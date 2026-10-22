@@ -40,6 +40,17 @@ body {
 	z-index: 2;
 }
 
+.circuit-board:not(.show-ui) header,
+.circuit-board:not(.show-ui) footer,
+.circuit-board:not(.show-ui) nav,
+.circuit-board:not(.show-ui) .layers,
+.circuit-board:not(.show-ui) .perf-gui,
+.circuit-board:not(.show-ui) .perf-stats {
+	opacity: 0 !important;
+	visibility: hidden !important;
+	pointer-events: none !important;
+}
+
 .circuit-board header {
 	top: 26px;
 }
@@ -99,12 +110,20 @@ body {
 	font: inherit;
 	padding: 10px 13px;
 	cursor: pointer;
+	white-space: nowrap;
 }
 
 .tools button:hover,
 .circuit-board nav button:hover {
 	border-color: #1fc283;
 	color: #e0fff2;
+}
+
+.tools button[aria-pressed='true'],
+.circuit-board nav button[aria-pressed='true'] {
+	border-color: #49a9ed;
+	color: #d1f0ff;
+	background: #102438;
 }
 
 .tools button:focus-visible,
@@ -182,12 +201,6 @@ body {
 	white-space: nowrap;
 }
 
-.circuit-board nav button[aria-pressed='true'] {
-	border-color: #49a9ed;
-	color: #d1f0ff;
-	background: #102438;
-}
-
 .layers {
 	position: fixed;
 	left: 32px;
@@ -223,13 +236,24 @@ body {
 
 @media (max-width: 650px) {
 	.circuit-board header {
-		left: 64px;
-		right: 72px;
+		left: 16px;
+		right: 16px;
+		top: 14px;
+	}
+
+	.tools {
+		gap: 6px;
+	}
+
+	.tools button {
+		padding: 8px 9px;
+		font-size: 10px;
 	}
 
 	.circuit-board footer {
 		left: 18px;
 		right: 18px;
+		justify-content: center;
 	}
 
 	.brand span,
@@ -238,16 +262,8 @@ body {
 		display: none;
 	}
 
-	.circuit-board footer {
-		justify-content: center;
-	}
-
 	.circuit-board footer p {
 		font-size: 10px;
-	}
-
-	.circuit-board header {
-		top: 18px;
 	}
 
 	.brand {

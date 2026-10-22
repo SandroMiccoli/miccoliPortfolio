@@ -1,13 +1,19 @@
 import * as THREE from 'three';
+import gsap from 'gsap';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import Stats from 'three/addons/libs/stats.module.js';
 import { createBoard } from './js/board.js';
+import { createNxpBoard } from './js/board-nxp.js';
+import { createVersalBoard } from './js/board-versal.js';
 import { createIntelligence } from './js/intelligence.js';
 import { createArm } from './js/arm.js';
 import { createDataCenter } from './js/datacenter.js';
 import { createPlane } from './js/plane.js';
 import { createSatellite } from './js/satellite.js';
 import { createBloom } from './js/bloom.js';
+import { applyPartLifts } from './js/batch.js';
+import { createPcbBase, PROFILES, mixProfile, cloneProfile } from './js/pcb-base.js';
+import { createPartHover } from './js/hover.js';
 
 const HOME_PITCH = -0.96;
 const HOME_ROLL = 0.02;
@@ -50,7 +56,20 @@ const lookTarget = new THREE.Vector3();
 const viewOffset = new THREE.Vector3(2.4, 0.6, 14);
 let baseDistance = 28;
 
-const board = createBoard(renderer);
+const board = new THREE.Group();
+board.name = 'stage';
+const pcbReference = createBoard(renderer);
+const pcbNxp = createNxpBoard(renderer);
+const pcbVersal = createVersalBoard(renderer);
+pcbNxp.visible = false;
+pcbVersal.visible = false;
+board.add(pcbReference, pcbNxp, pcbVersal);
+const partHover = createPartHover([pcbReference, pcbNxp, pcbVersal], renderer);
+const pcbBase = createPcbBase();
+pcbBase.group.position.y = -2.4;
+board.add(pcbBase.group);
+let liveProfile = cloneProfile(PROFILES.reference);
+pcbBase.apply(liveProfile);
 scene.add(board);
 
 const armStudy = new THREE.Group();
@@ -62,14 +81,18 @@ armStudy.name = 'study-arm';
 planeStudy.name = 'study-plane';
 satelliteStudy.name = 'study-satellite';
 dataCenterStudy.name = 'study-datacenter';
-armStudy.add(createIntelligence().group, createArm());
-planeStudy.add(createIntelligence().group, createPlane());
-satelliteStudy.add(createIntelligence().group, createSatellite());
-dataCenterStudy.add(createIntelligence().group, createDataCenter());
+armStudy.add(createArm());
+planeStudy.add(createPlane());
+satelliteStudy.add(createSatellite());
+dataCenterStudy.add(createDataCenter());
+armStudy.visible = false;
 planeStudy.visible = false;
-satelliteStudy.visible = false;
 dataCenterStudy.visible = false;
-board.add(armStudy, planeStudy, satelliteStudy, dataCenterStudy);
+const overlay = new THREE.Group();
+overlay.name = 'studies';
+overlay.position.y = -2.4;
+overlay.add(createIntelligence().group, armStudy, planeStudy, satelliteStudy, dataCenterStudy);
+board.add(overlay);
 
 const studies = {
 	arm: { group: armStudy, label: '3D ROBOTIC ARM', layer: 'Industrial arm · hologram' },
@@ -78,10 +101,43 @@ const studies = {
 	datacenter: { group: dataCenterStudy, label: '3D DATA CENTER', layer: 'Compute cluster · hologram' },
 };
 
+const MODEL_FOR = { reference: 'satellite', nxp: 'plane', versal: 'datacenter' };
+
+function bindStudy(entry) {
+	const tech = entry.group.children[0];
+	const lines = [];
+	const fades = [];
+	tech.traverse((obj) => {
+		if (obj.isLineSegments && obj.geometry?.attributes?.position) {
+			const count = obj.geometry.attributes.position.count;
+			obj.userData.count = count;
+			obj.userData.grow = { p: 1 };
+			obj.userData.shown = count;
+			lines.push(obj);
+		} else if (obj.isMesh && obj.material && !Array.isArray(obj.material) && obj.material.transparent) {
+			obj.material.userData.baseOpacity = obj.material.opacity;
+			fades.push(obj.material);
+		}
+	});
+	entry.tech = tech;
+	entry.lines = lines;
+	entry.fades = fades;
+	entry.reveal = { v: 1 };
+}
+
+for (const entry of Object.values(studies)) bindStudy(entry);
+for (const key of Object.keys(studies)) {
+	if (key === 'satellite') continue;
+	studies[key].reveal.v = 0;
+	for (const line of studies[key].lines) line.userData.grow.p = 0;
+}
+
 const bloom = createBloom(renderer);
 const background = scene.background;
 
-let mode = 'arm';
+let mode = 'satellite';
+let shownMode = 'satellite';
+let holoTween = null;
 let pitch = HOME_PITCH;
 let roll = HOME_ROLL;
 let targetPitch = HOME_PITCH;
@@ -90,6 +146,7 @@ let zoom = 1;
 let targetZoom = 1;
 let pointerX = 0;
 let pointerY = 0;
+let pointerInside = false;
 let last = 0;
 let viewW = 0;
 let viewH = 0;
@@ -100,21 +157,439 @@ board.rotation.set(HOME_PITCH, 0, HOME_ROLL);
 
 const studyLabel = document.querySelector('#study-label');
 const layerTech = document.querySelector('#layer-tech');
+const layerBoard = document.querySelector('#layer-board');
 const modeButtons = document.querySelectorAll('[data-mode]');
+const pcbButtons = document.querySelectorAll('[data-pcb]');
+
+const pcbs = {
+	reference: { group: pcbReference, label: 'Reference board' },
+	nxp: { group: pcbNxp, label: 'NXP EVK board' },
+	versal: { group: pcbVersal, label: 'Versal VEK board' },
+};
+
+let pcb = 'reference';
+let shownPcb = 'reference';
+let pcbTween = null;
+
+const FLAT = 0.02;
+
+for (const entry of Object.values(pcbs)) {
+	entry.parts = entry.group.userData.parts;
+	entry.lifts = entry.group.userData.lifts;
+	entry.traces = entry.group.userData.traces;
+}
+
+function applyTraces(entry) {
+	const lines = entry.traces;
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		const count = line.userData.count;
+		const shown = Math.max(0, Math.min(count, Math.round(line.userData.grow.p * count)));
+		if (line.userData.shown === shown) continue;
+		line.geometry.setDrawRange(0, shown);
+		line.userData.shown = shown;
+	}
+}
+
+function setTraces(entry, value) {
+	for (const line of entry.traces) line.userData.grow.p = value;
+	applyTraces(entry);
+}
+
+function wave(lifts) {
+	return lifts.slice().sort((a, b) => (a.x * a.x + a.y * a.y) - (b.x * b.x + b.y * b.y));
+}
+
+function traceWave(lines) {
+	return lines.slice().sort((a, b) => a.userData.d - b.userData.d).map((line) => line.userData.grow);
+}
+
+function staggerEach(list) {
+	return 0.34 / Math.max(list.length - 1, 1);
+}
+
+function snapBase(name) {
+	liveProfile = cloneProfile(PROFILES[name]);
+	pcbBase.apply(liveProfile);
+	pcbBase.setLogoOpacity(1);
+}
+
+function profilesDiffer(a, b) {
+	if (Math.abs(a.w - b.w) > 0.02 || Math.abs(a.h - b.h) > 0.02) return true;
+	if (Math.abs(a.r - b.r) > 0.02 || Math.abs(a.bow - b.bow) > 0.02) return true;
+	for (let i = 0; i < a.holes.length; i++) {
+		const hole = a.holes[i];
+		const other = b.holes[i];
+		if (Math.abs(hole.x - other.x) > 0.02 || Math.abs(hole.y - other.y) > 0.02) return true;
+		if (Math.abs(hole.r - other.r) > 0.02) return true;
+	}
+	return false;
+}
+
+function parkBoard(name) {
+	const entry = pcbs[name];
+	entry.group.visible = false;
+	entry.parts.visible = true;
+	for (const part of entry.lifts) part.lift = 1;
+	applyPartLifts(entry.group);
+	setTraces(entry, 1);
+}
+
+function layFlat(name) {
+	const entry = pcbs[name];
+	for (const part of entry.lifts) part.lift = FLAT;
+	applyPartLifts(entry.group);
+	entry.parts.visible = false;
+	setTraces(entry, 0);
+	entry.group.visible = true;
+}
+
+function syncPcbUi(name) {
+	for (const button of pcbButtons) {
+		button.setAttribute('aria-pressed', button.dataset.pcb === name ? 'true' : 'false');
+	}
+	layerBoard.textContent = pcbs[name].label;
+}
+
+function applyHolo(name) {
+	const study = studies[name];
+	if (!study?.tech) return;
+	const v = study.reveal.v;
+	study.tech.scale.setScalar(0.04 + 0.96 * v);
+	for (let i = 0; i < study.fades.length; i++) {
+		const mat = study.fades[i];
+		mat.opacity = mat.userData.baseOpacity * Math.min(1, v * 1.35);
+	}
+	for (let i = 0; i < study.lines.length; i++) {
+		const line = study.lines[i];
+		const count = line.userData.count;
+		let shown = Math.round(line.userData.grow.p * count);
+		if (shown % 2) shown -= 1;
+		if (shown < 0) shown = 0;
+		if (line.userData.shown === shown) continue;
+		line.geometry.setDrawRange(0, shown);
+		line.userData.shown = shown;
+	}
+}
+
+function syncModeUi(name) {
+	for (const button of modeButtons) {
+		button.setAttribute('aria-pressed', button.dataset.mode === name ? 'true' : 'false');
+	}
+	studyLabel.textContent = studies[name].label;
+	layerTech.textContent = studies[name].layer;
+}
+
+function snapHolo(name) {
+	if (holoTween) {
+		holoTween.kill();
+		holoTween = null;
+	}
+	for (const key of Object.keys(studies)) {
+		const study = studies[key];
+		const on = key === name;
+		study.group.visible = on;
+		study.reveal.v = on ? 1 : 0;
+		for (const line of study.lines) line.userData.grow.p = on ? 1 : 0;
+		applyHolo(key);
+	}
+	mode = name;
+	shownMode = name;
+	syncModeUi(name);
+}
+
+function holoOut(tl, name, position) {
+	const study = studies[name];
+	if (!study.lines.length) return;
+	tl.to(study.lines.map((line) => line.userData.grow), {
+		p: 0,
+		duration: 0.42,
+		ease: 'power2.in',
+		stagger: { each: 0.02, from: 'end' },
+	}, position);
+	tl.to(study.reveal, { v: 0, duration: 0.5, ease: 'power2.in' }, position);
+}
+
+function holoIn(tl, name, position) {
+	const study = studies[name];
+	tl.add(() => {
+		study.group.visible = true;
+		study.reveal.v = 0;
+		for (const line of study.lines) line.userData.grow.p = 0;
+		applyHolo(name);
+	}, position);
+	tl.fromTo(study.reveal, { v: 0 }, {
+		v: 1,
+		duration: 0.55,
+		ease: 'power2.out',
+		immediateRender: false,
+	}, position);
+	if (study.lines.length) {
+		tl.fromTo(study.lines.map((line) => line.userData.grow), { p: 0 }, {
+			p: 1,
+			duration: 0.72,
+			ease: 'power2.out',
+			immediateRender: false,
+			stagger: { each: 0.025, from: 'start' },
+		}, position);
+	}
+}
+
+function showPcbImmediate(name) {
+	if (pcbTween) {
+		pcbTween.kill();
+		pcbTween = null;
+	}
+	for (const key of Object.keys(pcbs)) parkBoard(key);
+	const entry = pcbs[name];
+	entry.group.visible = true;
+	shownPcb = name;
+	pcb = name;
+	snapBase(name);
+	snapHolo(MODEL_FOR[name]);
+	measureFrame();
+	placeCamera();
+}
+
+function sinkVars(order) {
+	return {
+		lift: FLAT,
+		duration: 0.36,
+		ease: 'power2.in',
+		stagger: { each: staggerEach(order), from: 'start' },
+	};
+}
+
+function riseVars(order) {
+	return {
+		lift: 1,
+		duration: 0.42,
+		ease: 'power2.out',
+		stagger: { each: staggerEach(order), from: 'start' },
+	};
+}
+
+function traceVars(order, to) {
+	const span = to === 1 ? 0.45 : 0.28;
+	return {
+		p: to,
+		duration: to === 1 ? 0.55 : 0.34,
+		ease: to === 1 ? 'power2.out' : 'power2.in',
+		stagger: { each: span / Math.max(order.length - 1, 1), from: 'start' },
+	};
+}
+
+function addTraceTween(tl, order, to, position) {
+	if (!order.length) return;
+	tl.to(order, traceVars(order, to), position);
+}
+
+function addWarp(tl, targetName, position) {
+	const origin = liveProfile;
+	if (!profilesDiffer(origin, PROFILES[targetName])) return;
+	const warp = { u: 0 };
+	const fromLogo = origin.logo;
+	const toLogo = PROFILES[targetName].logo;
+	const logoMoves = Math.hypot(fromLogo.x - toLogo.x, fromLogo.y - toLogo.y) > 0.05;
+	tl.to(warp, {
+		u: 1,
+		duration: position === 0 ? 0.5 : 0.66,
+		ease: 'power2.inOut',
+		onUpdate: () => {
+			liveProfile = mixProfile(origin, PROFILES[targetName], warp.u);
+			pcbBase.apply(liveProfile);
+			if (!logoMoves) {
+				pcbBase.setLogoOpacity(1);
+				return;
+			}
+			const u = warp.u;
+			let fade = 1;
+			if (u < 0.28) fade = 1 - u / 0.28;
+			else if (u > 0.72) fade = (u - 0.72) / 0.28;
+			else fade = 0;
+			pcbBase.setLogoOpacity(fade);
+		},
+		onComplete: () => pcbBase.setLogoOpacity(1),
+	}, position);
+}
+
+function startTransition(to) {
+	if (pcbTween) {
+		pcbTween.kill();
+		pcbTween = null;
+	}
+	const from = shownPcb;
+	const holoTo = MODEL_FOR[to];
+	if (reduced.matches || from === to) {
+		if (from === to && !reduced.matches) {
+			for (const key of Object.keys(pcbs)) {
+				if (key !== from) parkBoard(key);
+			}
+			const entry = pcbs[from];
+			entry.group.visible = true;
+			entry.parts.visible = true;
+			const order = wave(entry.lifts);
+			const traces = traceWave(entry.traces);
+			const holoFrom = shownMode;
+			const tl = gsap.timeline({
+				onUpdate: () => {
+					applyPartLifts(entry.group);
+					applyTraces(entry);
+					applyHolo(holoFrom);
+					if (holoTo !== holoFrom) applyHolo(holoTo);
+				},
+				onComplete: () => {
+					snapBase(from);
+					snapHolo(holoTo);
+					pcbTween = null;
+				},
+			});
+			pcbTween = tl;
+			tl.to(order, riseVars(order), 0);
+			addTraceTween(tl, traces, 1, 0);
+			addWarp(tl, from, 0);
+			if (holoFrom !== holoTo) {
+				holoOut(tl, holoFrom, 0);
+				tl.add(() => {
+					studies[holoFrom].group.visible = false;
+					shownMode = holoTo;
+					mode = holoTo;
+					syncModeUi(holoTo);
+				});
+				holoIn(tl, holoTo);
+			} else {
+				tl.to(studies[holoFrom].reveal, { v: 1, duration: 0.4, ease: 'power2.out' }, 0);
+				if (studies[holoFrom].lines.length) {
+					tl.to(studies[holoFrom].lines.map((line) => line.userData.grow), {
+						p: 1,
+						duration: 0.45,
+						ease: 'power2.out',
+					}, 0);
+				}
+			}
+			return;
+		}
+		showPcbImmediate(to);
+		return;
+	}
+
+	for (const key of Object.keys(pcbs)) {
+		if (key !== from) parkBoard(key);
+	}
+	layFlat(to);
+
+	const outgoing = pcbs[from];
+	const incoming = pcbs[to];
+	const outOrder = wave(outgoing.lifts);
+	const inOrder = wave(incoming.lifts);
+	const outTraces = traceWave(outgoing.traces);
+	const inTraces = traceWave(incoming.traces);
+	const holoFrom = shownMode;
+	const tl = gsap.timeline({
+		onUpdate: () => {
+			applyPartLifts(outgoing.group);
+			applyPartLifts(incoming.group);
+			applyTraces(outgoing);
+			applyTraces(incoming);
+			applyHolo(holoFrom);
+			if (holoTo !== holoFrom) applyHolo(holoTo);
+		},
+		onComplete: () => {
+			parkBoard(from);
+			snapBase(to);
+			if (holoFrom !== holoTo) studies[holoFrom].group.visible = false;
+			snapHolo(holoTo);
+			shownPcb = to;
+			pcbTween = null;
+			if (pcb !== shownPcb) startTransition(pcb);
+		},
+	});
+	pcbTween = tl;
+	tl.to(outOrder, sinkVars(outOrder), 0);
+	addTraceTween(tl, outTraces, 0, 0);
+	if (holoFrom !== holoTo) holoOut(tl, holoFrom, 0);
+	tl.add(() => {
+		outgoing.parts.visible = false;
+		setTraces(outgoing, 0);
+		if (holoFrom !== holoTo) {
+			studies[holoFrom].group.visible = false;
+			shownMode = holoTo;
+			mode = holoTo;
+			syncModeUi(holoTo);
+		}
+	});
+	addWarp(tl, to);
+	tl.add(() => {
+		incoming.parts.visible = true;
+	});
+	tl.to(inOrder, riseVars(inOrder));
+	addTraceTween(tl, inTraces, 1, '<');
+	if (holoFrom !== holoTo) holoIn(tl, holoTo, '<');
+}
+
+const CYCLE = ['reference', 'nxp', 'versal'];
+const CYCLE_DWELL = 10;
+let cycleTime = 0;
+
+function setPcb(next) {
+	cycleTime = 0;
+	if (!pcbs[next]) return;
+	if (next === pcb && (!pcbTween || shownPcb === next) && shownMode === MODEL_FOR[next]) return;
+	if (next === pcb && pcbTween && shownPcb !== next) return;
+	if (holoTween) {
+		holoTween.kill();
+		holoTween = null;
+	}
+	pcb = next;
+	syncPcbUi(next);
+	mode = MODEL_FOR[next];
+	syncModeUi(mode);
+	if (reduced.matches) {
+		showPcbImmediate(next);
+		return;
+	}
+	startTransition(next);
+}
 
 function setMode(next) {
-	if (!studies[next] || next === mode) return;
-	mode = next;
-	for (const name of Object.keys(studies)) studies[name].group.visible = name === next;
-	for (const button of modeButtons) {
-		button.setAttribute('aria-pressed', button.dataset.mode === next ? 'true' : 'false');
+	if (!studies[next] || next === shownMode || pcbTween) return;
+	if (holoTween) {
+		holoTween.kill();
+		holoTween = null;
 	}
-	studyLabel.textContent = studies[next].label;
-	layerTech.textContent = studies[next].layer;
+	const from = shownMode;
+	mode = next;
+	syncModeUi(next);
+	if (reduced.matches) {
+		snapHolo(next);
+		return;
+	}
+	const tl = gsap.timeline({
+		onUpdate: () => {
+			applyHolo(from);
+			applyHolo(next);
+		},
+		onComplete: () => {
+			studies[from].group.visible = false;
+			holoTween = null;
+			snapHolo(next);
+		},
+	});
+	holoTween = tl;
+	holoOut(tl, from, 0);
+	tl.add(() => {
+		studies[from].group.visible = false;
+		shownMode = next;
+	});
+	holoIn(tl, next);
 }
 
 for (const button of modeButtons) {
 	button.addEventListener('click', () => setMode(button.dataset.mode));
+}
+
+for (const button of pcbButtons) {
+	button.addEventListener('click', () => setPcb(button.dataset.pcb));
 }
 
 function resetView() {
@@ -175,13 +650,17 @@ function resize() {
 }
 
 window.addEventListener('pointermove', (event) => {
+	pointerInside = true;
 	pointerX = (event.clientX / window.innerWidth) * 2 - 1;
 	pointerY = (event.clientY / window.innerHeight) * 2 - 1;
 });
 
 document.documentElement.addEventListener('pointerleave', () => {
+	pointerInside = false;
 	pointerX = 0;
 	pointerY = 0;
+	partHover.hide();
+	stage.style.cursor = '';
 });
 
 stage.addEventListener('wheel', (event) => {
@@ -189,7 +668,19 @@ stage.addEventListener('wheel', (event) => {
 	targetZoom = THREE.MathUtils.clamp(targetZoom - event.deltaY * 0.0005, 0.75, 1.6);
 }, { passive: false });
 
+const chrome = document.querySelectorAll('header, nav, footer, .layers');
+
+function setChrome(on) {
+	shell.classList.toggle('show-ui', on);
+	for (const el of chrome) el.setAttribute('aria-hidden', on ? 'false' : 'true');
+}
+
 window.addEventListener('keydown', (event) => {
+	if (event.code === 'KeyD' && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+		event.preventDefault();
+		setChrome(!shell.classList.contains('show-ui'));
+		return;
+	}
 	if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 	if (event.key.toLowerCase() === 'r') resetView();
 });
@@ -203,6 +694,7 @@ const perf = {
 };
 
 const shell = document.querySelector('.circuit-board');
+setChrome(false);
 const gui = new GUI({ title: 'Performance', autoPlace: false });
 gui.domElement.classList.add('perf-gui');
 shell.appendChild(gui.domElement);
@@ -255,6 +747,14 @@ function notePerf(dt) {
 	fpsWindow = 0;
 }
 
+const depthMaterial = new THREE.MeshBasicMaterial({
+	colorWrite: false,
+	depthWrite: true,
+	polygonOffset: true,
+	polygonOffsetFactor: 1,
+	polygonOffsetUnits: 1,
+});
+
 function renderFrame() {
 	renderer.info.reset();
 
@@ -273,7 +773,24 @@ function renderFrame() {
 	frameStats.lines = renderer.info.render.lines;
 
 	if (bloom.strength > 0) {
-		bloom.capture(() => renderer.render(scene, camera));
+		bloom.capture(() => {
+			const hidden = [];
+			scene.traverse((obj) => {
+				if (!obj.visible) return;
+				if (obj.isLine || obj.isLineSegments || obj.isLineSegments2 || obj.isPoints) {
+					hidden.push(obj);
+					obj.visible = false;
+				}
+			});
+			camera.layers.set(0);
+			scene.overrideMaterial = depthMaterial;
+			renderer.render(scene, camera);
+			scene.overrideMaterial = null;
+			for (const obj of hidden) obj.visible = true;
+			camera.layers.set(1);
+			renderer.autoClear = false;
+			renderer.render(scene, camera);
+		});
 		bloom.composite();
 	}
 
@@ -308,6 +825,21 @@ function tick(now) {
 		if (Math.abs(zoomDelta) > 0.0001) placeCamera();
 	}
 
+	if (pcbTween || holoTween) cycleTime = 0;
+	else {
+		cycleTime += dt;
+		if (cycleTime >= CYCLE_DWELL) {
+			cycleTime = 0;
+			const next = CYCLE[(CYCLE.indexOf(shownPcb) + 1) % CYCLE.length];
+			setPcb(next);
+		}
+	}
+
+	if (pointerInside) {
+		const hot = partHover.update(pointerX, -pointerY, camera);
+		stage.style.cursor = hot ? 'pointer' : '';
+	}
+
 	renderFrame();
 	notePerf(raw || dt);
 	for (const stats of statsPanels) stats.end();
@@ -327,8 +859,10 @@ renderer.setAnimationLoop(tick);
 
 window.boardStudy = {
 	setMode,
+	setPcb,
 	resetView,
 	get mode() { return mode; },
+	get pcb() { return pcb; },
 	renderer,
 	scene,
 	camera,

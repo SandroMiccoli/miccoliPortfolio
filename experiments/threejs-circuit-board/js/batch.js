@@ -142,10 +142,14 @@ function createMeshBuilder() {
 	const positions = growFloat();
 	const indices = growUint();
 	const fades = growFloat();
+	const partIds = growFloat();
+	const primIds = growFloat();
 	let trackFade = false;
+	let trackPart = false;
 	let vertexBase = 0;
+	let prim = 0;
 
-	function addSolid(template, matrix, fade = null) {
+	function addSolid(template, matrix, fade = null, partIndex = null) {
 		const src = template.position;
 		const base = vertexBase;
 		for (let i = 0; i < src.length; i += 3) {
@@ -157,6 +161,14 @@ function createMeshBuilder() {
 			trackFade = true;
 			for (let i = 0; i < count; i++) fades.push1(fade);
 		}
+		if (partIndex !== null) {
+			trackPart = true;
+			for (let i = 0; i < count; i++) {
+				partIds.push1(partIndex);
+				primIds.push1(prim);
+			}
+			prim++;
+		}
 		if (template.index) {
 			const idx = template.index;
 			for (let i = 0; i < idx.length; i++) indices.push1(idx[i] + base);
@@ -167,9 +179,18 @@ function createMeshBuilder() {
 	}
 
 	function geometry() {
+		const pos = positions.seal();
 		const geo = new THREE.BufferGeometry();
-		geo.setAttribute('position', new THREE.BufferAttribute(positions.seal(), 3));
+		geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
 		if (trackFade) geo.setAttribute('fade', new THREE.BufferAttribute(fades.seal(), 1));
+		if (trackPart) {
+			geo.userData.part = partIds.seal();
+			geo.userData.prim = primIds.seal();
+			const baseZ = new Float32Array(pos.length / 3);
+			for (let i = 0; i < baseZ.length; i++) baseZ[i] = pos[i * 3 + 2];
+			geo.userData.baseZ = baseZ;
+			geo.attributes.position.setUsage(THREE.DynamicDrawUsage);
+		}
 		geo.setIndex(new THREE.BufferAttribute(indices.seal(), 1));
 		geo.computeBoundingSphere();
 		return geo;
@@ -194,11 +215,19 @@ function applyFade(material, floor) {
 	material.customProgramCacheKey = () => `hologram-fade-${floor}`;
 }
 
-function edgeLinesFrom(buckets, opacity, depthWrite) {
+function edgeLinesFrom(buckets, opacity, depthWrite, dynamic = false) {
 	const group = new THREE.Group();
-	for (const [color, buffer] of buckets) {
+	for (const [color, bucket] of buckets) {
+		const pos = bucket.buffer ? bucket.buffer.seal() : bucket.seal();
 		const geometry = new THREE.BufferGeometry();
-		geometry.setAttribute('position', new THREE.BufferAttribute(buffer.seal(), 3));
+		geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+		if (dynamic && bucket.parts) {
+			geometry.userData.part = bucket.parts.seal();
+			const baseZ = new Float32Array(pos.length / 3);
+			for (let i = 0; i < baseZ.length; i++) baseZ[i] = pos[i * 3 + 2];
+			geometry.userData.baseZ = baseZ;
+			geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
+		}
 		geometry.computeBoundingSphere();
 		group.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
 			color,
@@ -210,21 +239,125 @@ function edgeLinesFrom(buckets, opacity, depthWrite) {
 	return group;
 }
 
-export function createPcbBatch() {
-	const mesh = createMeshBuilder();
-	const edges = new Map();
-
-	function edgeBuffer(color) {
-		let buffer = edges.get(color);
-		if (!buffer) {
-			buffer = growFloat();
-			edges.set(color, buffer);
+function nearestPart(parts, point) {
+	let best = 0;
+	let bestD = Infinity;
+	for (let i = 0; i < parts.length; i++) {
+		const dx = parts[i].x - point.x;
+		const dy = parts[i].y - point.y;
+		const d = dx * dx + dy * dy;
+		if (d < bestD) {
+			bestD = d;
+			best = i;
 		}
-		return buffer;
+	}
+	return best;
+}
+
+export function applyPartLifts(group) {
+	const lifts = group.userData.lifts;
+	if (!lifts.length) return;
+	for (const geo of group.userData.geos) {
+		const arr = geo.attributes.position.array;
+		const baseZ = geo.userData.baseZ;
+		const part = geo.userData.part;
+		for (let i = 0; i < baseZ.length; i++) {
+			arr[i * 3 + 2] = baseZ[i] * lifts[part[i]].lift;
+		}
+		geo.attributes.position.needsUpdate = true;
+	}
+	const die = group.userData.die;
+	if (die) die.position.z = die.userData.baseZ * lifts[die.userData.part].lift;
+}
+
+export function mountBoard(name, built, silk, die) {
+	const group = new THREE.Group();
+	group.name = name;
+	group.position.y = -2.4;
+
+	const plate = new THREE.Group();
+	plate.name = 'plate';
+	plate.visible = false;
+	plate.add(built.plate, built.plateLines);
+	if (silk) plate.add(silk);
+
+	const parts = new THREE.Group();
+	parts.name = 'parts';
+	if (built.solid) parts.add(built.solid);
+	if (built.lines) parts.add(built.lines);
+	if (die) {
+		parts.add(die);
+		die.userData.baseZ = die.position.z;
+		die.userData.part = nearestPart(built.parts, die.position);
 	}
 
-	function addEdges(template, matrix, color) {
-		const buffer = edgeBuffer(color);
+	group.add(plate, parts);
+	const geos = [];
+	parts.traverse((obj) => {
+		if (obj.geometry?.userData.baseZ) geos.push(obj.geometry);
+	});
+	group.userData.lifts = built.parts;
+	group.userData.geos = geos;
+	group.userData.die = die || null;
+	group.userData.plate = plate;
+	group.userData.parts = parts;
+	return group;
+}
+
+function partEdgeBuffer(edges, color) {
+	let bucket = edges.get(color);
+	if (!bucket) {
+		bucket = { buffer: growFloat(), parts: growFloat() };
+		edges.set(color, bucket);
+	}
+	return bucket;
+}
+
+function plateEdgeBuffer(edges, color) {
+	let buffer = edges.get(color);
+	if (!buffer) {
+		buffer = growFloat();
+		edges.set(color, buffer);
+	}
+	return buffer;
+}
+
+export function createPcbBatch() {
+	const mesh = createMeshBuilder();
+	const plateMesh = createMeshBuilder();
+	const edges = new Map();
+	const plateEdges = new Map();
+	const parts = [];
+	let holding = false;
+	let current = -1;
+	let onPlate = false;
+
+	function begin(x, y) {
+		holding = true;
+		current = parts.length;
+		parts.push({ x, y, lift: 1 });
+		return current;
+	}
+
+	function partId(x, y) {
+		if (holding) return current;
+		current = parts.length;
+		parts.push({ x, y, lift: 1 });
+		return current;
+	}
+
+	function addPartEdges(template, matrix, color, id) {
+		const bucket = partEdgeBuffer(edges, color);
+		const src = template.edges;
+		for (let i = 0; i < src.length; i += 3) {
+			_v.fromArray(src, i).applyMatrix4(matrix);
+			bucket.buffer.push3(_v.x, _v.y, _v.z);
+			bucket.parts.push1(id);
+		}
+	}
+
+	function addPlateEdges(template, matrix, color) {
+		const buffer = plateEdgeBuffer(plateEdges, color);
 		const src = template.edges;
 		for (let i = 0; i < src.length; i += 3) {
 			_v.fromArray(src, i).applyMatrix4(matrix);
@@ -234,21 +367,54 @@ export function createPcbBatch() {
 
 	function place(template, x, y, z, rx, ry, rz, color, sx, sy, sz) {
 		const matrix = compose(x, y, z, rx, ry, rz, sx, sy, sz, null);
-		mesh.addSolid(template, matrix);
-		addEdges(template, matrix, color);
+		if (onPlate) {
+			plateMesh.addSolid(template, matrix);
+			addPlateEdges(template, matrix, color);
+			return;
+		}
+		const id = partId(x, y);
+		mesh.addSolid(template, matrix, null, id);
+		addPartEdges(template, matrix, color, id);
 	}
 
 	function addCircle(x, y, z, radius, color) {
-		const buffer = edgeBuffer(color);
+		if (onPlate) {
+			const buffer = plateEdgeBuffer(plateEdges, color);
+			for (let i = 0; i < 32; i++) {
+				const a = (i / 32) * Math.PI * 2;
+				const b = ((i + 1) / 32) * Math.PI * 2;
+				buffer.push3(x + Math.cos(a) * radius, y + Math.sin(a) * radius, z);
+				buffer.push3(x + Math.cos(b) * radius, y + Math.sin(b) * radius, z);
+			}
+			return;
+		}
+		const id = partId(x, y);
+		const bucket = partEdgeBuffer(edges, color);
 		for (let i = 0; i < 32; i++) {
 			const a = (i / 32) * Math.PI * 2;
 			const b = ((i + 1) / 32) * Math.PI * 2;
-			buffer.push3(x + Math.cos(a) * radius, y + Math.sin(a) * radius, z);
-			buffer.push3(x + Math.cos(b) * radius, y + Math.sin(b) * radius, z);
+			bucket.buffer.push3(x + Math.cos(a) * radius, y + Math.sin(a) * radius, z);
+			bucket.parts.push1(id);
+			bucket.buffer.push3(x + Math.cos(b) * radius, y + Math.sin(b) * radius, z);
+			bucket.parts.push1(id);
 		}
 	}
 
+	const dark = new THREE.MeshBasicMaterial({
+		color: 0x080f18,
+		polygonOffset: true,
+		polygonOffsetFactor: 1,
+		polygonOffsetUnits: 1,
+	});
+
 	return {
+		begin,
+		end() {
+			holding = false;
+		},
+		fixed(flag) {
+			onPlate = flag;
+		},
 		box(x, y, z, w, h, d, mat = 'black', rz = 0) {
 			place(boxTemplate(), x, y, z, 0, 0, rz, edgeColor(mat, x), w, h, d);
 		},
@@ -270,26 +436,29 @@ export function createPcbBatch() {
 		},
 		ring(x, y, z, radius, tube, mat = 'gold') {
 			const color = edgeColor(mat, x);
+			const opened = !onPlate && !holding;
+			if (opened) begin(x, y);
 			place(torusTemplate(radius, tube, 6, 24), x, y, z, 0, 0, 0, color, 1, 1, 1);
 			addCircle(x, y, z, radius - tube, color);
 			addCircle(x, y, z, radius + tube, color);
+			if (opened) holding = false;
 		},
 		slab(geometry) {
 			const template = templateFrom(geometry, 20);
 			_m.identity();
-			mesh.addSolid(template, _m);
+			plateMesh.addSolid(template, _m);
 			_m.makeTranslation(0, 0, 0.012);
-			addEdges(template, _m, 0x1fc283);
+			addPlateEdges(template, _m, 0x1fc283);
 		},
 		build() {
-			const solid = new THREE.Mesh(mesh.geometry(), new THREE.MeshBasicMaterial({
-				color: 0x080f18,
-				polygonOffset: true,
-				polygonOffsetFactor: 1,
-				polygonOffsetUnits: 1,
-			}));
-			const lines = edgeLinesFrom(edges, 0.95, true);
-			return { solid, lines };
+			const solidGeo = mesh.geometry();
+			const solid = solidGeo.getAttribute('position').count
+				? new THREE.Mesh(solidGeo, dark)
+				: null;
+			const lines = edges.size ? edgeLinesFrom(edges, 0.95, true, true) : null;
+			const plate = new THREE.Mesh(plateMesh.geometry(), dark.clone());
+			const plateLines = edgeLinesFrom(plateEdges, 0.95, true);
+			return { solid, lines, plate, plateLines, parts };
 		},
 	};
 }

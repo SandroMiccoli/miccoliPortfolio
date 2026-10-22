@@ -1,6 +1,6 @@
 # Circuit board
 
-A PCB study in three layers: the physical board, an intelligence plane, and a technology hologram. Four studies share the same board. **3D Robotic Arm** is the industrial arm. **3D Plane** is the volumetric airframe. **3D Satellite** is the communications spacecraft. **3D Data Center** is the six-rack compute cluster.
+A PCB study in three layers: the physical board, an intelligence plane, and a technology hologram. **PCB 01** is the original reference board. **PCB 02** is the NXP EVK. **PCB 03** is the AMD Versal VEK385. All three are drawn the same way: unlit solids, energy-colored edges, and a canvas silkscreen of traces and reference designators. Four hologram studies sit on whichever board is showing. **3D Robotic Arm** is the industrial arm. **3D Plane** is the volumetric airframe. **3D Satellite** is the communications spacecraft. **3D Data Center** is the six-rack compute cluster.
 
 The reference files in `tmp/` are not loaded.
 
@@ -14,7 +14,7 @@ npx serve .
 
 Open `/experiments/threejs-circuit-board/`.
 
-The pointer tilts the board a little around its rest angle, and it eases back when the pointer leaves. Scroll zooms. `R` or Reset zoom returns to 1×. The performance panels stay on screen: FPS, frame time, memory, triangles, line segments, draw calls, and the UnrealBloomPass controls.
+The pointer tilts the board a little around its rest angle, and it eases back when the pointer leaves. Scroll zooms. `R` or Reset zoom returns to 1×. **PCB 01**, **PCB 02**, and **PCB 03** switch the physical board. The performance panels stay on screen: FPS, frame time, memory, triangles, line segments, draw calls, and the UnrealBloomPass controls.
 
 The four holograms take the bloom. The PCB and the faint grid do not. On the arm, the plinth stays faint and the gripper stays solid.
 
@@ -31,7 +31,7 @@ FPS depends on the machine. The panel is there to watch it.
 
 ## How it is built
 
-The board is one indexed mesh plus a few line batches, not a mesh per part. The studies are built once and toggled, so switching does not rebuild the PCB. The hologram is drawn sharp. `UnrealBloomPass` then blurs that layer alone, and the glow is added back. The board never enters that pass.
+Each board is one indexed mesh plus a few line batches, not a mesh per part. All three boards and the four studies are built once and toggled. The hologram is drawn sharp. `UnrealBloomPass` then blurs that layer alone, and the glow is added back. The board never enters that pass. PCB 02 and PCB 03 use the same construction as PCB 01: a canvas silkscreen of traces, pads, and labels, with the kit parts batched on top.
 
 Edge color is the part's energy color: blue, violet, gold, or green, by material. Lights are not in the scene. The faces are unlit; the lines carry the color.
 
@@ -100,12 +100,13 @@ The header, study buttons, layer list, footer, performance panel, and Stats mete
 
 ### 4. Choose the opening study
 
-The page opens on the arm. `window.boardStudy.setMode` accepts `arm`, `plane`, `satellite`, or `datacenter`. A same-origin parent can switch after load:
+The page opens on the arm and PCB 01. `window.boardStudy.setMode` accepts `arm`, `plane`, `satellite`, or `datacenter`. `window.boardStudy.setPcb` accepts `reference`, `nxp`, or `versal`. A same-origin parent can switch after load:
 
 ```javascript
 const frame = document.querySelector('.hero iframe');
 frame.addEventListener('load', () => {
   frame.contentWindow.boardStudy.setMode('plane');
+  frame.contentWindow.boardStudy.setPcb('nxp');
 });
 ```
 

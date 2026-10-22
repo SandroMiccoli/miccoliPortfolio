@@ -9,29 +9,32 @@
 	<link rel="manifest" href="/images/favicon/site.webmanifest">
 	<link rel="shortcut icon" href="/images/favicon/favicon.ico">
 	<title>Three.js — Circuit Board</title>
-	<meta name="description" content="A PCB study in three layers. Switch between a 3D arm, a 3D airframe, a 3D satellite, and a 3D data center.">
+	<meta name="description" content="A PCB study in three layers. Each board brings its own hologram: a satellite, a plane, or a data center.">
 	<link rel="stylesheet" href="style.css">
 </head>
 <body>
 	<div class="circuit-board">
 		<header>
-			<div class="brand"><i></i>CIRCUIT MIND<span id="study-label">3D ROBOTIC ARM</span></div>
+			<div class="brand"><i></i>CIRCUIT MIND<span id="study-label">3D SATELLITE</span></div>
 			<div class="tools">
+				<button type="button" data-pcb="reference" aria-pressed="true" aria-label="Reference board">PCB 01</button>
+				<button type="button" data-pcb="nxp" aria-pressed="false" aria-label="NXP EVK board">PCB 02</button>
+				<button type="button" data-pcb="versal" aria-pressed="false" aria-label="Versal VEK board">PCB 03</button>
 				<button type="button" id="reset">Reset zoom</button>
 			</div>
 		</header>
 		<main id="stage" tabindex="0" aria-label="Circuit board. Move the pointer to tilt. Scroll to zoom. R resets the zoom."></main>
 		<div id="error" hidden>WebGL is unavailable. Please enable hardware acceleration.</div>
 		<nav aria-label="Study">
-			<button type="button" data-mode="arm" aria-pressed="true">3D Robotic Arm</button>
+			<button type="button" data-mode="arm" aria-pressed="false">3D Robotic Arm</button>
 			<button type="button" data-mode="plane" aria-pressed="false">3D Plane</button>
-			<button type="button" data-mode="satellite" aria-pressed="false">3D Satellite</button>
+			<button type="button" data-mode="satellite" aria-pressed="true">3D Satellite</button>
 			<button type="button" data-mode="datacenter" aria-pressed="false">3D Data Center</button>
 		</nav>
 		<aside class="layers">
-			<span>03 <b>REAL-WORLD TECHNOLOGY</b><small id="layer-tech">Industrial arm · hologram</small></span>
+			<span>03 <b>REAL-WORLD TECHNOLOGY</b><small id="layer-tech">Spacecraft · hologram</small></span>
 			<span>02 <b>AI INTELLIGENCE</b><small>Processing grid</small></span>
-			<span>01 <b>PHYSICAL FOUNDATION</b><small>PCB board</small></span>
+			<span>01 <b>PHYSICAL FOUNDATION</b><small id="layer-board">Reference board</small></span>
 		</aside>
 		<footer>
 			<span><b></b>BOARD DESIGN STUDY</span>
@@ -43,7 +46,8 @@
 	{
 		"imports": {
 			"three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-			"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+			"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+			"gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.7/index.js"
 		}
 	}
 	</script>
