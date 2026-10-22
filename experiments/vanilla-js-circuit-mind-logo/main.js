@@ -14,7 +14,7 @@ const DEFAULT_STATE = {
   refX: 0,
   refY: 0,
   trace: 1.25,
-  node: 6.2,
+  node: 5.6,
   glow: 3.3,
   packet: 62,
   speed: 96,
@@ -68,6 +68,11 @@ let elapsed = 0;
 let lastStamp = 0;
 let mm = null;
 let gui = null;
+let tickerOn = false;
+let motionOn = false;
+let burstHue = false;
+let fadeSerial = 0;
+const bursts = [];
 
 const logoRoot = document.querySelector('.logo');
 const board = document.getElementById('cm-board');
@@ -142,6 +147,7 @@ function loadInto(target, targetPoints) {
 }
 
 const hadSave = loadInto(state, points);
+if (hadSave && state.node === 6.2) state.node = DEFAULT_STATE.node;
 if (reduceQuery.matches && state.playing) allowReducedMotion = hadSave;
 if (!hadSave && reduceQuery.matches) state.playing = false;
 
@@ -238,6 +244,7 @@ function addTrace(layer, spec) {
     points: spec.points || null,
     d: spec.d || '',
     length: 0,
+    pointerGap: Infinity,
   };
   layer.items.push(item);
   return item;
@@ -264,6 +271,154 @@ function writeItem(item) {
     node.halo.setAttribute('cy', round(node.y));
   }
   item.length = item.path.getTotalLength();
+}
+
+function closestOnItem(item, x, y) {
+  const { path, length } = item;
+  if (length < 1) return null;
+  const steps = Math.min(180, Math.max(8, Math.ceil(length / 14)));
+  let bestGap = Infinity;
+  let bestAt = 0;
+  let prev = path.getPointAtLength(0);
+  let prevAt = 0;
+  for (let i = 1; i <= steps; i += 1) {
+    const at = (i / steps) * length;
+    const next = path.getPointAtLength(Math.min(length, at));
+    const dx = next.x - prev.x;
+    const dy = next.y - prev.y;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 < 1e-6 ? 0 : Math.min(1, Math.max(0, ((x - prev.x) * dx + (y - prev.y) * dy) / len2));
+    const gap = Math.hypot(prev.x + dx * t - x, prev.y + dy * t - y);
+    if (gap < bestGap) {
+      bestGap = gap;
+      bestAt = prevAt + (at - prevAt) * t;
+    }
+    prev = next;
+    prevAt = at;
+  }
+  return { at: bestAt, gap: bestGap };
+}
+
+function slicePath(path, length, from, to) {
+  const span = Math.max(0.01, to - from);
+  const steps = Math.max(2, Math.ceil(span / 8));
+  let d = '';
+  for (let i = 0; i <= steps; i += 1) {
+    const at = Math.min(length - 0.01, Math.max(0, from + (span * i) / steps));
+    const point = path.getPointAtLength(at);
+    d += `${i === 0 ? 'M' : 'L'} ${round(point.x)} ${round(point.y)} `;
+  }
+  return d.trim();
+}
+
+function makeFadeGradient(defs) {
+  fadeSerial += 1;
+  const grad = svgEl('linearGradient');
+  grad.setAttribute('id', `cm-fade-${fadeSerial}`);
+  grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+  const stops = [0, 0.42, 1].map((offset) => {
+    const stop = svgEl('stop');
+    stop.setAttribute('offset', String(offset));
+    grad.append(stop);
+    return stop;
+  });
+  defs.append(grad);
+  return { grad, stops };
+}
+
+function ensureFade(item, layer) {
+  if (item.fadeStart) return;
+  const defs = layer.traces.ownerSVGElement.querySelector('defs');
+  const makePath = (stroke) => {
+    const path = svgEl('path');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('vector-effect', 'non-scaling-stroke');
+    path.setAttribute('stroke-linecap', 'butt');
+    path.setAttribute('stroke', stroke);
+    path.style.display = 'none';
+    layer.traces.append(path);
+    return path;
+  };
+  item.fadeIn = makeFadeGradient(defs);
+  item.fadeOut = makeFadeGradient(defs);
+  item.solid = makePath(state.traceColor);
+  item.solid.setAttribute('stroke-linecap', 'round');
+  item.fadeStart = makePath(`url(#${item.fadeIn.grad.id})`);
+  item.fadeEnd = makePath(`url(#${item.fadeOut.grad.id})`);
+}
+
+function paintFade(entry, tip, inner) {
+  entry.grad.setAttribute('x1', round(tip.x));
+  entry.grad.setAttribute('y1', round(tip.y));
+  entry.grad.setAttribute('x2', round(inner.x));
+  entry.grad.setAttribute('y2', round(inner.y));
+  const opacities = ['0', '0.2', '1'];
+  entry.stops.forEach((stop, index) => {
+    stop.setAttribute('stop-color', state.traceColor);
+    stop.setAttribute('stop-opacity', opacities[index]);
+  });
+}
+
+function endpointFree(item, at, layer) {
+  const point = item.path.getPointAtLength(Math.min(item.length - 0.01, Math.max(0, at)));
+  const limit = Math.max(layer.radius * 1.2, 7 * layer.unit);
+  for (const other of layer.items) {
+    if (other === item || other.length < 1 || !itemOn(other)) continue;
+    const hit = closestOnItem(other, point.x, point.y);
+    if (hit && hit.gap < limit) return false;
+  }
+  for (const node of layer.nodeList) {
+    if (node.el.style.display === 'none') continue;
+    if (Math.hypot(node.x - point.x, node.y - point.y) < limit) return false;
+  }
+  return true;
+}
+
+function hideFade(item) {
+  item.path.removeAttribute('stroke');
+  if (!item.fadeStart) return;
+  item.solid.style.display = 'none';
+  item.fadeStart.style.display = 'none';
+  item.fadeEnd.style.display = 'none';
+}
+
+function updateFade(item, layer, on) {
+  if (!on || item.length < 8) {
+    hideFade(item);
+    return;
+  }
+  ensureFade(item, layer);
+  const fade = Math.min(50 * layer.unit, item.length * 0.35);
+  const startFree = fade > 2 && endpointFree(item, 0, layer);
+  const endFree = fade > 2 && endpointFree(item, item.length, layer);
+  if (!startFree && !endFree) {
+    hideFade(item);
+    return;
+  }
+  const overlap = Math.min(1.2, fade * 0.08);
+  const from = startFree ? Math.max(0, fade - overlap) : 0;
+  const to = endFree ? Math.min(item.length, item.length - fade + overlap) : item.length;
+  item.path.setAttribute('stroke', 'none');
+  item.solid.style.display = '';
+  item.solid.setAttribute('stroke', state.traceColor);
+  item.solid.setAttribute('stroke-width', String(state.trace));
+  item.solid.setAttribute('d', slicePath(item.path, item.length, from, to));
+  item.fadeStart.style.display = startFree ? '' : 'none';
+  item.fadeEnd.style.display = endFree ? '' : 'none';
+  if (startFree) {
+    item.fadeStart.setAttribute('d', slicePath(item.path, item.length, 0, fade));
+    item.fadeStart.setAttribute('stroke-width', String(state.trace));
+    paintFade(item.fadeIn, item.path.getPointAtLength(0), item.path.getPointAtLength(fade));
+  }
+  if (endFree) {
+    item.fadeEnd.setAttribute('d', slicePath(item.path, item.length, item.length - fade, item.length));
+    item.fadeEnd.setAttribute('stroke-width', String(state.trace));
+    paintFade(
+      item.fadeOut,
+      item.path.getPointAtLength(Math.max(0, item.length - 0.05)),
+      item.path.getPointAtLength(Math.max(0, item.length - fade)),
+    );
+  }
 }
 
 function buildLogo() {
@@ -361,6 +516,9 @@ function applyLayer(layer, el, view) {
       node.el.style.display = on ? '' : 'none';
     }
   }
+  for (const item of layer.items) {
+    updateFade(item, layer, itemOn(item));
+  }
 }
 
 function styleNodes(layer) {
@@ -386,8 +544,56 @@ function sample(item, distance) {
   return { x: point.x, y: point.y };
 }
 
+function placeDot(dot, point, t, hue, layer) {
+  if (!point) {
+    dot.setAttribute('opacity', '0');
+    return null;
+  }
+  const radiusPx = 2.35 - t * 1.15;
+  dot.setAttribute('cx', round(point.x));
+  dot.setAttribute('cy', round(point.y));
+  dot.setAttribute('r', round(Math.max(0.8, radiusPx) * layer.unit));
+  dot.setAttribute('fill', mix(hue, '#f7fffd', (1 - t) ** 2 * 0.7));
+  dot.setAttribute('opacity', String(0.92 * (1 - t * 0.78)));
+  return point;
+}
+
+function heatNodes(layer, point, hue, reach) {
+  if (!point || !state.showNodes) return;
+  for (const node of layer.nodeList) {
+    if (node.el.style.display === 'none') continue;
+    const dist = Math.hypot(node.x - point.x, node.y - point.y);
+    if (dist < reach && dist < node.hotDist) {
+      node.hot = 1 - dist / reach;
+      node.hotDist = dist;
+      node.hotColor = hue;
+    }
+  }
+}
+
+function placeHead(head, point, hue, layer) {
+  if (!point) {
+    head.setAttribute('opacity', '0');
+    return;
+  }
+  head.setAttribute('cx', round(point.x));
+  head.setAttribute('cy', round(point.y));
+  head.setAttribute('r', round(1.15 * layer.unit));
+  head.setAttribute('fill', mix(hue, '#f7fffd', 0.82));
+  head.setAttribute('opacity', '0.95');
+}
+
+function burstPoint(burst, back) {
+  const along = burst.travel - back;
+  const { item } = burst;
+  if (along > item.length) return null;
+  if (!item.closed && along < 0) return null;
+  return sample(item, burst.origin + burst.dir * along);
+}
+
 function paint(time) {
   const layer = activeLayer();
+  if (!state.showComets && bursts.length) clearBursts();
   for (const node of layer.nodeList) {
     node.hot = 0;
     node.hotDist = Infinity;
@@ -411,43 +617,28 @@ function paint(time) {
     const spacing = tail / (DOTS - 1);
     let headPoint = null;
     for (let i = 0; i < DOTS; i += 1) {
-      const point = sample(item, head - i * spacing);
-      const dot = item.dots[i];
-      if (!point) {
-        dot.setAttribute('opacity', '0');
-        continue;
-      }
-      const t = i / (DOTS - 1);
-      const radiusPx = 2.35 - t * 1.15;
-      dot.setAttribute('cx', round(point.x));
-      dot.setAttribute('cy', round(point.y));
-      dot.setAttribute('r', round(Math.max(0.8, radiusPx) * layer.unit));
-      dot.setAttribute('fill', mix(hue, '#f7fffd', (1 - t) ** 2 * 0.7));
-      dot.setAttribute('opacity', String(0.92 * (1 - t * 0.78)));
+      const point = placeDot(item.dots[i], sample(item, head - i * spacing), i / (DOTS - 1), hue, layer);
       if (i === 0) headPoint = point;
     }
-    if (item.head) {
-      if (headPoint) {
-        item.head.setAttribute('cx', round(headPoint.x));
-        item.head.setAttribute('cy', round(headPoint.y));
-        item.head.setAttribute('r', round(1.15 * layer.unit));
-        item.head.setAttribute('fill', mix(hue, '#f7fffd', 0.82));
-        item.head.setAttribute('opacity', '0.95');
-      } else {
-        item.head.setAttribute('opacity', '0');
-      }
+    if (item.head) placeHead(item.head, headPoint, hue, layer);
+    heatNodes(layer, headPoint, hue, reach);
+  }
+
+  for (const burst of bursts) {
+    if (burst.layer !== layer) {
+      for (const dot of burst.dots) dot.setAttribute('opacity', '0');
+      burst.head.setAttribute('opacity', '0');
+      continue;
     }
-    if (headPoint && state.showNodes) {
-      for (const node of layer.nodeList) {
-        if (node.el.style.display === 'none') continue;
-        const dist = Math.hypot(node.x - headPoint.x, node.y - headPoint.y);
-        if (dist < reach && dist < node.hotDist) {
-          node.hot = 1 - dist / reach;
-          node.hotDist = dist;
-          node.hotColor = hue;
-        }
-      }
+    const hue = state[burst.hue];
+    const spacing = tail / (DOTS - 1);
+    let headPoint = null;
+    for (let i = 0; i < DOTS; i += 1) {
+      const point = placeDot(burst.dots[i], burstPoint(burst, i * spacing), i / (DOTS - 1), hue, layer);
+      if (i === 0) headPoint = point;
     }
+    placeHead(burst.head, headPoint, hue, layer);
+    heatNodes(layer, headPoint, hue, reach);
   }
   styleNodes(layer);
 }
@@ -468,14 +659,48 @@ function applyLook() {
   syncScenes();
 }
 
+function removeBurst(index) {
+  const burst = bursts[index];
+  for (const dot of burst.dots) dot.remove();
+  burst.head.remove();
+  bursts.splice(index, 1);
+}
+
+function clearBursts() {
+  while (bursts.length) removeBurst(0);
+}
+
+function stepBursts(dt) {
+  if (!dt || !state.showComets) return;
+  for (let i = bursts.length - 1; i >= 0; i -= 1) {
+    const burst = bursts[i];
+    burst.travel += dt * state.speed * burst.layer.unit;
+    const tail = state.packet * burst.layer.unit;
+    if (burst.travel > burst.item.length + tail) removeBurst(i);
+  }
+}
+
+function ensureTicker() {
+  if (tickerOn || !window.gsap) return;
+  tickerOn = true;
+  lastStamp = 0;
+  gsap.ticker.add(tick);
+}
+
 function tick() {
   const now = performance.now();
-  if (lastStamp) {
-    const dt = Math.min(0.05, (now - lastStamp) / 1000);
-    if (!document.hidden) elapsed += dt;
-  }
+  const dt = lastStamp ? Math.min(0.05, (now - lastStamp) / 1000) : 0;
   lastStamp = now;
+  if (!document.hidden) {
+    if (motionOn) elapsed += dt;
+    stepBursts(dt);
+  }
   paint(elapsed);
+  if (!motionOn && !bursts.length && tickerOn) {
+    gsap.ticker.remove(tick);
+    tickerOn = false;
+    lastStamp = 0;
+  }
 }
 
 function armMotion() {
@@ -489,16 +714,95 @@ function armMotion() {
     },
     (context) => {
       const reduced = Boolean(context.conditions && context.conditions.reduce);
+      motionOn = !(reduced && !allowReducedMotion) && state.playing && state.showComets;
       paint(elapsed);
-      if (reduced && !allowReducedMotion) return undefined;
-      if (!state.playing || !state.showComets) return undefined;
-      gsap.ticker.add(tick);
+      if (motionOn || bursts.length) ensureTicker();
       return () => {
+        motionOn = false;
         gsap.ticker.remove(tick);
+        tickerOn = false;
         lastStamp = 0;
       };
     },
   );
+}
+
+function spawnBurst(layer, item, at) {
+  while (bursts.length >= 14) removeBurst(0);
+  const dots = [];
+  for (let i = 0; i < DOTS; i += 1) {
+    const dot = svgEl('circle');
+    dot.setAttribute('opacity', '0');
+    layer.comets.append(dot);
+    dots.push(dot);
+  }
+  const head = svgEl('circle');
+  head.setAttribute('opacity', '0');
+  layer.heads.append(head);
+  let dir = 1;
+  if (!item.closed && item.length - at < at * 0.35) dir = -1;
+  let hue = item.hue;
+  if (!hue) {
+    burstHue = !burstHue;
+    hue = burstHue ? 'mint' : 'cyan';
+  }
+  bursts.push({
+    layer,
+    item,
+    origin: at,
+    dir,
+    travel: 0,
+    hue,
+    dots,
+    head,
+  });
+  ensureTicker();
+}
+
+function resetCrossings() {
+  for (const item of logoLayer.items) item.pointerGap = Infinity;
+  for (const item of fourLayer.items) item.pointerGap = Infinity;
+}
+
+function activeSvg() {
+  return (state.scene === '404' ? stage404 : stage).querySelector('svg');
+}
+
+function eventToSvg(event) {
+  const svg = activeSvg();
+  if (!svg) return null;
+  const rect = svg.getBoundingClientRect();
+  if (rect.width < 2 || rect.height < 2) return null;
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+    return null;
+  }
+  const view = svg.viewBox.baseVal;
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * view.width,
+    y: ((event.clientY - rect.top) / rect.height) * view.height,
+  };
+}
+
+function onPointerMove(event) {
+  if (event.target instanceof Element && event.target.closest('.logo-gui, .switchers')) {
+    resetCrossings();
+    return;
+  }
+  const point = eventToSvg(event);
+  if (!point || !state.showTraces || !state.showComets) {
+    resetCrossings();
+    return;
+  }
+  const layer = activeLayer();
+  const threshold = 8 * layer.unit;
+  for (const item of layer.items) {
+    if (!itemOn(item) || item.length < 8 || item.path.style.display === 'none') continue;
+    const hit = closestOnItem(item, point.x, point.y);
+    if (!hit) continue;
+    const was = item.pointerGap;
+    item.pointerGap = hit.gap;
+    if (was > threshold && hit.gap <= threshold) spawnBurst(layer, item, hit.at);
+  }
 }
 
 function refreshGui() {
@@ -535,6 +839,8 @@ function syncScenes() {
 
 function setScene(scene) {
   state.scene = scene === '404' ? '404' : 'logo';
+  clearBursts();
+  resetCrossings();
   syncScenes();
   applyLook();
   armMotion();
@@ -681,4 +987,5 @@ if (!window.gsap) {
     resizeRaf = requestAnimationFrame(applyLook);
   });
   observer.observe(board);
+  window.addEventListener('pointermove', onPointerMove);
 }
