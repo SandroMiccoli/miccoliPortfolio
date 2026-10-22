@@ -28,13 +28,13 @@ export const defaultConfig = {
   /** How far the cards reach toward each pole, in degrees. The caps past this are the holes. */
   latLimit: 68,
   /** Empty share of each cell. Higher opens the white gaps. */
-  gap: 0.15,
+  gap: 0.25,
   /** Card width / height. 1.12 is a little taller than a wide 4:3 card. */
-  aspect: 0.85,
+  aspect: 0.56,
   /** 0 is a perfect grid. Keep this under 0.6 so neighbors do not collide. */
-  jitter: 0.28,
+  jitter: 0,
   /** Uniform size variation, as a fraction. 0.04 is plus or minus 4%. */
-  scaleJitter: 0.035,
+  scaleJitter: 0,
   /** Random in-plane tilt, in degrees. */
   roll: 3,
   /** Corner radius as a fraction of the card's short side. */
