@@ -287,12 +287,13 @@ function collectEdges(group) {
 			base[to + 3] = kept[from + 3];
 			base[to + 4] = kept[from + 4];
 			base[to + 5] = kept[from + 5];
-			colors[to] = kept[from + 6];
-			colors[to + 1] = kept[from + 7];
-			colors[to + 2] = kept[from + 8];
-			colors[to + 3] = kept[from + 9];
-			colors[to + 4] = kept[from + 10];
-			colors[to + 5] = kept[from + 11];
+			const tint = 0.48;
+			colors[to] = kept[from + 6] * tint;
+			colors[to + 1] = kept[from + 7] * tint;
+			colors[to + 2] = kept[from + 8] * tint;
+			colors[to + 3] = kept[from + 9] * tint;
+			colors[to + 4] = kept[from + 10] * tint;
+			colors[to + 5] = kept[from + 11] * tint;
 		}
 		return { base, colors, count, live: null, liveLift: -1 };
 	});
@@ -302,8 +303,10 @@ function createWire(renderer) {
 	const geometry = new LineSegmentsGeometry();
 	const material = new LineMaterial({
 		color: 0xffffff,
-		linewidth: 2.25,
+		linewidth: 1.5,
 		vertexColors: true,
+		transparent: true,
+		opacity: 0.85,
 		depthTest: true,
 		depthWrite: false,
 		toneMapped: false,

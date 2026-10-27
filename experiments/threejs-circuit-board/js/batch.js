@@ -9,12 +9,12 @@ import * as THREE from 'three';
 
 const PALETTE = {
 	black: 0x49a9ed,
-	chip: 0xb79ae6,
+	chip: 0xA99DFC,
 	gold: 0xe4cc74,
 	silver: 0x49a9ed,
-	ceramic: 0xb79ae6,
+	ceramic: 0xA99DFC,
 	substrate: 0x49a9ed,
-	die: 0xb79ae6,
+	die: 0xA99DFC,
 	grey: 0x1fc283,
 	white: 0x49a9ed,
 	led: 0x1fc283,

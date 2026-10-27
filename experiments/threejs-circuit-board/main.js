@@ -5,7 +5,7 @@ import Stats from 'three/addons/libs/stats.module.js';
 import { createBoard } from './js/board.js';
 import { createNxpBoard } from './js/board-nxp.js';
 import { createVersalBoard } from './js/board-versal.js';
-import { createIntelligence } from './js/intelligence.js';
+import { createIntelligence, createRoutes } from './js/intelligence.js';
 import { createArm } from './js/arm.js';
 import { createDataCenter } from './js/datacenter.js';
 import { createPlane } from './js/plane.js';
@@ -15,12 +15,13 @@ import { applyPartLifts } from './js/batch.js';
 import { createPcbBase, PROFILES, mixProfile, cloneProfile } from './js/pcb-base.js';
 import { createPartHover } from './js/hover.js';
 
-const HOME_PITCH = -0.96;
+const HOME_PITCH = -1.25;
 const HOME_ROLL = 0.02;
 const MOUSE_PITCH = 0.12;
 const MOUSE_ROLL = 0.16;
-const FOV = 38;
-const FRAME_PADDING = 1.28;
+const FOV = 45;
+const FRAME_PADDING = 1.22;
+const FRAME_PAN_Y = 1.2;
 
 const stage = document.querySelector('#stage');
 const errorEl = document.querySelector('#error');
@@ -54,6 +55,7 @@ scene.background = new THREE.Color(0x06090c);
 const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 500);
 const lookTarget = new THREE.Vector3();
 const viewOffset = new THREE.Vector3(2.4, 0.6, 14);
+const _look = new THREE.Vector3();
 let baseDistance = 28;
 
 const board = new THREE.Group();
@@ -101,13 +103,20 @@ const studies = {
 	datacenter: { group: dataCenterStudy, label: '3D DATA CENTER', layer: 'Compute cluster · hologram' },
 };
 
+for (const key of Object.keys(studies)) {
+	const routes = createRoutes(key);
+	studies[key].group.add(routes.group);
+	studies[key].routes = routes;
+}
+
 const MODEL_FOR = { reference: 'satellite', nxp: 'plane', versal: 'datacenter' };
 
 function bindStudy(entry) {
 	const tech = entry.group.children[0];
 	const lines = [];
 	const fades = [];
-	tech.traverse((obj) => {
+	entry.group.traverse((obj) => {
+		if (obj === entry.group) return;
 		if (obj.isLineSegments && obj.geometry?.attributes?.position) {
 			const count = obj.geometry.attributes.position.count;
 			obj.userData.count = count;
@@ -144,6 +153,7 @@ let targetPitch = HOME_PITCH;
 let targetRoll = HOME_ROLL;
 let zoom = 1;
 let targetZoom = 1;
+let energyTime = 0;
 let pointerX = 0;
 let pointerY = 0;
 let pointerInside = false;
@@ -259,6 +269,11 @@ function applyHolo(name) {
 	for (let i = 0; i < study.fades.length; i++) {
 		const mat = study.fades[i];
 		mat.opacity = mat.userData.baseOpacity * Math.min(1, v * 1.35);
+	}
+	if (study.routes?.sparks) {
+		const sparkMat = study.routes.sparks.material;
+		sparkMat.opacity = sparkMat.userData.baseOpacity * Math.min(1, v * 1.35);
+		study.routes.sparks.visible = v > 0.04;
 	}
 	for (let i = 0; i < study.lines.length; i++) {
 		const line = study.lines[i];
@@ -528,7 +543,7 @@ function startTransition(to) {
 }
 
 const CYCLE = ['reference', 'nxp', 'versal'];
-const CYCLE_DWELL = 10;
+const CYCLE_DWELL = 4;
 let cycleTime = 0;
 
 function setPcb(next) {
@@ -628,7 +643,10 @@ function measureFrame() {
 function placeCamera() {
 	_viewDir.copy(viewOffset).normalize();
 	camera.position.copy(lookTarget).addScaledVector(_viewDir, baseDistance / zoom);
-	camera.lookAt(lookTarget);
+	camera.position.y -= FRAME_PAN_Y;
+	_look.copy(lookTarget);
+	_look.y -= FRAME_PAN_Y;
+	camera.lookAt(_look);
 	camera.updateProjectionMatrix();
 }
 
@@ -833,6 +851,11 @@ function tick(now) {
 			const next = CYCLE[(CYCLE.indexOf(shownPcb) + 1) % CYCLE.length];
 			setPcb(next);
 		}
+	}
+
+	if (!reduced.matches) energyTime += dt;
+	for (const study of Object.values(studies)) {
+		if (study.group.visible && study.routes) study.routes.update(energyTime);
 	}
 
 	if (pointerInside) {
