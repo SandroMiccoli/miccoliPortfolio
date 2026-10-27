@@ -26,10 +26,10 @@ const DEFAULT_STATE = {
   showBot: true,
   showTrace: true,
   scene: 'logo',
-  traceColor: '#A9BCCE',
-  mint: '#3DFFC2',
-  cyan: '#5CC8FF',
-  background: '#041122',
+  traceColor: '#F2F8FE',
+  mint: '#1FC283',
+  cyan: '#2D8AE8',
+  background: '#020B16',
 };
 
 const DEFAULT_POINTS = {
