@@ -221,7 +221,6 @@ function staggerEach(list) {
 function snapBase(name) {
 	liveProfile = cloneProfile(PROFILES[name]);
 	pcbBase.apply(liveProfile);
-	pcbBase.setLogoOpacity(1);
 }
 
 function profilesDiffer(a, b) {
@@ -403,9 +402,6 @@ function addWarp(tl, targetName, position) {
 	const origin = liveProfile;
 	if (!profilesDiffer(origin, PROFILES[targetName])) return;
 	const warp = { u: 0 };
-	const fromLogo = origin.logo;
-	const toLogo = PROFILES[targetName].logo;
-	const logoMoves = Math.hypot(fromLogo.x - toLogo.x, fromLogo.y - toLogo.y) > 0.05;
 	tl.to(warp, {
 		u: 1,
 		duration: position === 0 ? 0.5 : 0.66,
@@ -413,18 +409,7 @@ function addWarp(tl, targetName, position) {
 		onUpdate: () => {
 			liveProfile = mixProfile(origin, PROFILES[targetName], warp.u);
 			pcbBase.apply(liveProfile);
-			if (!logoMoves) {
-				pcbBase.setLogoOpacity(1);
-				return;
-			}
-			const u = warp.u;
-			let fade = 1;
-			if (u < 0.28) fade = 1 - u / 0.28;
-			else if (u > 0.72) fade = (u - 0.72) / 0.28;
-			else fade = 0;
-			pcbBase.setLogoOpacity(fade);
 		},
-		onComplete: () => pcbBase.setLogoOpacity(1),
 	}, position);
 }
 

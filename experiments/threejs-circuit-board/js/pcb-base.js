@@ -25,7 +25,6 @@ export const PROFILES = {
 			{ x: 2.25, y: -4.35, r: 0 },
 			{ x: 0, y: 4.65, r: 0 },
 		],
-		logo: { x: -3.96, y: 3.88 },
 	},
 	nxp: {
 		w: 12,
@@ -40,7 +39,6 @@ export const PROFILES = {
 			{ x: 0, y: -4.192, r: 0 },
 			{ x: 0, y: 4.182, r: 0 },
 		],
-		logo: { x: -3.2, y: 3.15 },
 	},
 	versal: {
 		w: 12,
@@ -55,7 +53,6 @@ export const PROFILES = {
 			{ x: 0, y: -4.5, r: 0 },
 			{ x: 0, y: 4.5, r: 0 },
 		],
-		logo: { x: -2.55, y: -4.2 },
 	},
 };
 
@@ -66,7 +63,6 @@ export function cloneProfile(profile) {
 		r: profile.r,
 		bow: profile.bow,
 		holes: profile.holes.map((hole) => ({ x: hole.x, y: hole.y, r: hole.r })),
-		logo: { x: profile.logo.x, y: profile.logo.y },
 	};
 }
 
@@ -82,7 +78,6 @@ export function mixProfile(a, b, u) {
 		r: a.r + (b.r - a.r) * u,
 		bow: 0,
 		holes,
-		logo: u < 0.5 ? { x: a.logo.x, y: a.logo.y } : { x: b.logo.x, y: b.logo.y },
 	};
 }
 
@@ -310,62 +305,9 @@ export function createPcbBase() {
 		rings.push(rig);
 	}
 
-	const logo = new THREE.Mesh(
-		new THREE.PlaneGeometry(1, 1),
-		new THREE.MeshBasicMaterial({
-			transparent: true,
-			alphaTest: 0.06,
-			depthWrite: true,
-		}),
-	);
-	const logoWidth = 2.05;
-	logo.scale.set(logoWidth, logoWidth * (42 / 218), 1);
-	logo.position.set(-3.96, 3.88, 0.1);
-	logo.visible = false;
-	logo.renderOrder = 3;
-	group.add(face, wall, edge, bottomEdge, ribs, logo);
-
-	let logoReady = false;
-
-	function setLogoOpacity(value) {
-		logo.material.opacity = value;
-		if (logoReady) logo.visible = value > 0.01;
-	}
-
-	const loader = new THREE.TextureLoader();
-	loader.load(new URL('../assets/logo-circuit-mind.png', import.meta.url).href, (source) => {
-		const image = source.image;
-		const canvas = document.createElement('canvas');
-		canvas.width = image.width;
-		canvas.height = image.height;
-		const ctx = canvas.getContext('2d', { willReadFrequently: true });
-		ctx.drawImage(image, 0, 0);
-		const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-		const data = pixels.data;
-		for (let i = 0; i < data.length; i += 4) {
-			const m = Math.max(data[i], data[i + 1], data[i + 2]);
-			if (m < 18) data[i + 3] = 0;
-			else if (m < 56) data[i + 3] = Math.round(((m - 18) / 38) * 255);
-			else data[i + 3] = 255;
-		}
-		ctx.putImageData(pixels, 0, 0);
-		const texture = new THREE.CanvasTexture(canvas);
-		texture.colorSpace = THREE.SRGBColorSpace;
-		texture.anisotropy = 8;
-		logo.material.map = texture;
-		logo.material.needsUpdate = true;
-		const width = logoWidth;
-		logo.scale.set(width, width * (image.height / image.width), 1);
-		logoReady = true;
-		logo.visible = logo.material.opacity > 0.01;
-		source.dispose();
-		if (current) apply(current);
-	});
-
-	let current = null;
+	group.add(face, wall, edge, bottomEdge, ribs);
 
 	function apply(profile) {
-		current = profile;
 		uniforms.uSize.value.set(profile.w, profile.h);
 		uniforms.uRadius.value = profile.r;
 		uniforms.uBow.value = profile.bow;
@@ -413,14 +355,7 @@ export function createPcbBase() {
 		fitBounds(edgeGeometry, profile.w, profile.h, profile.bow);
 		fitBounds(bottomEdgeGeometry, profile.w, profile.h, profile.bow);
 		fitBounds(ribGeometry, profile.w, profile.h, profile.bow);
-		const marginX = logo.scale.x * 0.5 + 0.06;
-		const marginY = logo.scale.y * 0.5 + 0.06;
-		const halfW = profile.w * 0.5;
-		const halfH = profile.h * 0.5;
-		const x = Math.min(halfW - marginX, Math.max(-halfW + marginX, profile.logo.x));
-		const y = Math.min(halfH - marginY, Math.max(-halfH + marginY, profile.logo.y));
-		logo.position.set(x, bowY(x, y, profile.w, profile.bow), 0.1);
 	}
 
-	return { group, apply, setLogoOpacity };
+	return { group, apply };
 }
