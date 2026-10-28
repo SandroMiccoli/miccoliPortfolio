@@ -211,9 +211,8 @@ export function createRoutes(kind) {
 		geometry.setAttribute('position', new THREE.BufferAttribute(sampled, 3));
 		geometry.setDrawRange(0, SAMPLE_STEPS + 1);
 		geometry.computeBoundingSphere();
-		const accent = i === 4;
 		const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({
-			color: accent ? 0x49a9ed : 0x1fc283,
+			color: 0x1fc283,
 			transparent: true,
 			opacity: 0.72,
 			depthWrite: false,
