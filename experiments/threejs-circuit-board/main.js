@@ -15,13 +15,13 @@ import { applyPartLifts } from './js/batch.js';
 import { createPcbBase, PROFILES, mixProfile, cloneProfile } from './js/pcb-base.js';
 import { createPartHover } from './js/hover.js';
 
-const HOME_PITCH = -1.25;
-const HOME_ROLL = 0.02;
+const HOME_PITCH = -1.15;
+const HOME_ROLL = -0.58;
 const MOUSE_PITCH = 0.12;
 const MOUSE_ROLL = 0.16;
-const FOV = 45;
-const FRAME_PADDING = 1.22;
-const FRAME_PAN_Y = 1.2;
+const FRAME_PADDING = 1.16;
+const FRAME_PAN_Y = 0.15;
+const CAM_Z = 48;
 
 const stage = document.querySelector('#stage');
 const errorEl = document.querySelector('#error');
@@ -52,11 +52,9 @@ stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x06090c);
-const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 500);
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
 const lookTarget = new THREE.Vector3();
-const viewOffset = new THREE.Vector3(2.4, 0.6, 14);
-const _look = new THREE.Vector3();
-let baseDistance = 28;
+const _corner = new THREE.Vector3();
 
 const board = new THREE.Group();
 board.name = 'stage';
@@ -438,11 +436,13 @@ function startTransition(to) {
 					applyHolo(holoFrom);
 					if (holoTo !== holoFrom) applyHolo(holoTo);
 				},
-				onComplete: () => {
-					snapBase(from);
-					snapHolo(holoTo);
-					pcbTween = null;
-				},
+		onComplete: () => {
+			snapBase(from);
+			snapHolo(holoTo);
+			pcbTween = null;
+			measureFrame();
+			placeCamera();
+		},
 			});
 			pcbTween = tl;
 			tl.to(order, riseVars(order), 0);
@@ -501,6 +501,8 @@ function startTransition(to) {
 			snapHolo(holoTo);
 			shownPcb = to;
 			pcbTween = null;
+			measureFrame();
+			placeCamera();
 			if (pcb !== shownPcb) startTransition(pcb);
 		},
 	});
@@ -573,6 +575,8 @@ function setMode(next) {
 			studies[from].group.visible = false;
 			holoTween = null;
 			snapHolo(next);
+			measureFrame();
+			placeCamera();
 		},
 	});
 	holoTween = tl;
@@ -603,35 +607,59 @@ function resolvePixelRatio() {
 }
 
 const _bounds = new THREE.Box3();
-const _size = new THREE.Vector3();
-const _viewDir = new THREE.Vector3();
 
 function measureFrame() {
-	const shown = studyGroups.map((study) => study.visible);
-	for (const study of studyGroups) study.visible = true;
 	board.updateMatrixWorld(true);
-	_bounds.setFromObject(board);
-	studyGroups.forEach((study, index) => {
-		study.visible = shown[index];
-	});
-
+	_bounds.makeEmpty();
+	_bounds.expandByObject(pcbBase.group);
+	const live = pcbs[shownPcb];
+	if (live?.group) _bounds.expandByObject(live.group);
+	for (const study of studyGroups) {
+		if (study.visible) _bounds.expandByObject(study);
+	}
+	if (overlay.children[0]) _bounds.expandByObject(overlay.children[0]);
+	if (_bounds.isEmpty()) _bounds.setFromObject(board);
 	_bounds.getCenter(lookTarget);
-	_bounds.getSize(_size);
-	const aspect = camera.aspect || 1;
-	const vFov = THREE.MathUtils.degToRad(FOV);
-	const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
-	const distV = (_size.y * 0.5 * FRAME_PADDING) / Math.tan(vFov / 2);
-	const distH = (_size.x * 0.5 * FRAME_PADDING) / Math.tan(hFov / 2);
-	baseDistance = Math.max(distV, distH);
 }
 
 function placeCamera() {
-	_viewDir.copy(viewOffset).normalize();
-	camera.position.copy(lookTarget).addScaledVector(_viewDir, baseDistance / zoom);
-	camera.position.y -= FRAME_PAN_Y;
-	_look.copy(lookTarget);
-	_look.y -= FRAME_PAN_Y;
-	camera.lookAt(_look);
+	if (!viewW || !viewH) return;
+	camera.position.set(lookTarget.x, lookTarget.y, lookTarget.z + CAM_Z);
+	camera.up.set(0, 1, 0);
+	camera.lookAt(lookTarget);
+	camera.updateMatrixWorld(true);
+
+	const min = _bounds.min;
+	const max = _bounds.max;
+	let minX = Infinity;
+	let maxX = -Infinity;
+	let minY = Infinity;
+	let maxY = -Infinity;
+	for (const x of [min.x, max.x]) {
+		for (const y of [min.y, max.y]) {
+			for (const z of [min.z, max.z]) {
+				_corner.set(x, y, z).applyMatrix4(camera.matrixWorldInverse);
+				if (_corner.x < minX) minX = _corner.x;
+				if (_corner.x > maxX) maxX = _corner.x;
+				if (_corner.y < minY) minY = _corner.y;
+				if (_corner.y > maxY) maxY = _corner.y;
+			}
+		}
+	}
+
+	const width = Math.max(0.01, (maxX - minX) * FRAME_PADDING);
+	const height = Math.max(0.01, (maxY - minY) * FRAME_PADDING);
+	const aspect = viewW / viewH;
+	let halfW = width / 2;
+	let halfH = height / 2;
+	if (halfW / halfH > aspect) halfH = halfW / aspect;
+	else halfW = halfH * aspect;
+
+	const z = zoom || 1;
+	camera.left = -halfW / z;
+	camera.right = halfW / z;
+	camera.top = halfH / z - FRAME_PAN_Y;
+	camera.bottom = -halfH / z - FRAME_PAN_Y;
 	camera.updateProjectionMatrix();
 }
 
@@ -646,7 +674,6 @@ function resize() {
 	viewRatio = ratio;
 	renderer.setPixelRatio(ratio);
 	renderer.setSize(w, h);
-	camera.aspect = w / h;
 	measureFrame();
 	placeCamera();
 	bloom.resize(renderer.domElement.width, renderer.domElement.height);
