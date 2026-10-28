@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../vendor/three.module.min.js';
+import { mergeGeometries } from '../vendor/addons/utils/BufferGeometryUtils.js';
 import { createLineBatch } from './batch.js';
 import { markBloom } from './bloom.js';
 

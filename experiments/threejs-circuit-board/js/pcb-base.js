@@ -1,7 +1,7 @@
-import * as THREE from 'three';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import * as THREE from '../vendor/three.module.min.js';
+import { Line2 } from '../vendor/addons/lines/Line2.js';
+import { LineGeometry } from '../vendor/addons/lines/LineGeometry.js';
+import { LineMaterial } from '../vendor/addons/lines/LineMaterial.js';
 
 const HOLE = 0.15;
 const EDGE = 1;

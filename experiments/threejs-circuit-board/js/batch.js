@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 
 /**
  * Build helpers. Parts are copied into a handful of buffers instead of one mesh each.

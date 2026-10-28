@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import * as THREE from '../vendor/three.module.min.js';
+import { UnrealBloomPass } from '../vendor/addons/postprocessing/UnrealBloomPass.js';
 
 export const BLOOM_LAYER = 1;
 
@@ -105,6 +105,12 @@ export function createBloom(renderer) {
 			renderer.setRenderTarget(null);
 			renderer.autoClear = false;
 			renderer.render(quadScene, quadCamera);
+		},
+		dispose() {
+			source.dispose();
+			pass.dispose();
+			compositeMaterial.dispose();
+			quad.geometry.dispose();
 		},
 	};
 

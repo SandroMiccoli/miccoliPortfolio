@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { createHologramBatch, createLineBatch } from './batch.js';
 import { markBloom } from './bloom.js';
 import { ARM_PIVOT, ARM_SCALE } from './constants.js';

@@ -1,7 +1,7 @@
-import * as THREE from 'three';
-import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
-import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import * as THREE from '../vendor/three.module.min.js';
+import { LineSegments2 } from '../vendor/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from '../vendor/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from '../vendor/addons/lines/LineMaterial.js';
 import { BLOOM_LAYER } from './bloom.js';
 
 const raycaster = new THREE.Raycaster();
@@ -334,7 +334,7 @@ export function createPartHover(groups, renderer) {
 		boxes: footprint(group),
 		edges: collectEdges(group),
 	}));
-	const { line, material } = createWire(renderer);
+	const { line, geometry: scratch, material } = createWire(renderer);
 
 	function hide() {
 		line.visible = false;
@@ -408,5 +408,20 @@ export function createPartHover(groups, renderer) {
 		return show(best.board, best.id, best.lift);
 	}
 
-	return { update, hide };
+	function dispose() {
+		hide();
+		line.remove();
+		const geometries = new Set();
+		if (scratch) geometries.add(scratch);
+		if (line.geometry) geometries.add(line.geometry);
+		for (const board of boards) {
+			for (const edges of board.edges) {
+				if (edges?.geometry) geometries.add(edges.geometry);
+			}
+		}
+		for (const geometry of geometries) geometry.dispose();
+		material.dispose();
+	}
+
+	return { update, hide, dispose };
 }

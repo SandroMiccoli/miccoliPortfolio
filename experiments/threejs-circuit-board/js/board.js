@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { createPcbBatch, mountBoard } from './batch.js';
 import { attachTraces, createTraceCollector, fanOut } from './traces.js';
 
