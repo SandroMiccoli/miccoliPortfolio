@@ -315,7 +315,6 @@ function applyHolo(name) {
 	const study = studies[name];
 	if (!study?.tech) return;
 	const v = study.reveal.v;
-	study.tech.scale.setScalar(0.04 + 0.96 * v);
 	for (let i = 0; i < study.fades.length; i++) {
 		const mat = study.fades[i];
 		mat.opacity = mat.userData.baseOpacity * Math.min(1, v * 1.35);
@@ -662,19 +661,23 @@ function resolvePixelRatio() {
 }
 
 const _bounds = new THREE.Box3();
+let frameReady = false;
 
 function measureFrame() {
+	if (frameReady) return;
+	const savedRot = board.rotation.clone();
+	board.rotation.set(HOME_PITCH, 0, HOME_ROLL);
 	board.updateMatrixWorld(true);
 	_bounds.makeEmpty();
 	_bounds.expandByObject(pcbBase.group);
-	const live = pcbs[shownPcb];
-	if (live?.group) _bounds.expandByObject(live.group);
-	for (const study of studyGroups) {
-		if (study.visible) _bounds.expandByObject(study);
-	}
+	for (const entry of Object.values(pcbs)) _bounds.expandByObject(entry.group);
+	for (const study of studyGroups) _bounds.expandByObject(study);
 	if (overlay.children[0]) _bounds.expandByObject(overlay.children[0]);
 	if (_bounds.isEmpty()) _bounds.setFromObject(board);
 	_bounds.getCenter(lookTarget);
+	board.rotation.copy(savedRot);
+	board.updateMatrixWorld(true);
+	frameReady = true;
 }
 
 function placeCamera() {
