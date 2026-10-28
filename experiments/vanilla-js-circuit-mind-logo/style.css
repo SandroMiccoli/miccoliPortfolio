@@ -1,18 +1,11 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #041122;
+  background: #020b16;
 }
 
-.logo {
-  --logo-bg: #041122;
+.cm-demo {
   --stage: min(64vw, 700px, calc((100dvh - 180px) * 327 / 310));
   position: relative;
   height: 100dvh;
@@ -20,19 +13,24 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--logo-bg);
+  background: #020b16;
   color: #e7eef6;
   font-family: Poppins, "Segoe UI", system-ui, sans-serif;
 }
 
-.board {
+.lab-experiment-demo > .cm-demo {
+  height: 100%;
+  min-height: 100%;
+}
+
+.cm-demo__board {
   position: relative;
   display: grid;
   width: 100%;
   place-items: center;
 }
 
-.stage {
+.cm-demo__stage {
   --ref-opacity: 0;
   --ref-x: 0%;
   --ref-y: 0%;
@@ -42,14 +40,28 @@ body {
   aspect-ratio: 327 / 310;
 }
 
-.stage.is-off {
+.cm-demo__stage--404 {
+  width: min(88vw, 1200px, calc((100dvh - 180px) * 2442 / 1014));
+  aspect-ratio: 2442 / 1014;
+}
+
+.cm-demo__stage.is-off {
   position: absolute;
   visibility: hidden;
   pointer-events: none;
 }
 
-.stage-ref {
+.cm-demo__stage .circuit-mind {
   position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+.cm-demo__ref {
+  position: absolute;
+  z-index: 0;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -61,22 +73,7 @@ body {
   user-select: none;
 }
 
-.stage svg {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.stage-404 {
-  width: min(88vw, 1200px, calc((100dvh - 180px) * 2442 / 1014));
-  aspect-ratio: 2442 / 1014;
-}
-
-.switchers {
+.cm-demo__switchers {
   position: absolute;
   z-index: 40;
   top: 22px;
@@ -88,7 +85,7 @@ body {
   margin: 0;
 }
 
-.export-status {
+.cm-demo__export {
   appearance: none;
   margin: 10px 0 0;
   padding: 0;
@@ -102,7 +99,7 @@ body {
   cursor: default;
 }
 
-.export-status:not(:disabled) {
+.cm-demo__export:not(:disabled) {
   min-height: 2.75rem;
   padding: 0 1rem;
   border-radius: 999px;
@@ -111,16 +108,16 @@ body {
   cursor: pointer;
 }
 
-.export-status:not(:disabled):focus-visible {
+.cm-demo__export:not(:disabled):focus-visible {
   outline: 2px solid #e8eef6;
   outline-offset: 3px;
 }
 
-.export-status[hidden] {
+.cm-demo__export[hidden] {
   display: none;
 }
 
-.versions {
+.cm-demo__versions {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -130,7 +127,7 @@ body {
   background: rgb(2 8 18 / 0.45);
 }
 
-.versions button {
+.cm-demo__versions button {
   appearance: none;
   min-width: 4.75rem;
   min-height: 2.75rem;
@@ -144,35 +141,35 @@ body {
   cursor: pointer;
 }
 
-.versions button[aria-selected="true"] {
+.cm-demo__versions button[aria-selected="true"] {
   background: #6ef3c5;
   color: #041122;
 }
 
-.versions button:disabled {
+.cm-demo__versions button:disabled {
   cursor: progress;
   opacity: 0.55;
 }
 
-.versions button:focus-visible {
+.cm-demo__versions button:focus-visible {
   outline: 2px solid #e8eef6;
   outline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .versions button {
+  .cm-demo__versions button {
     transition: background-color 160ms ease, color 160ms ease;
   }
 }
 
-.logo-error {
+.cm-demo__error {
   margin: 1rem 0 0;
   color: #ffb4b4;
   font-size: 0.95rem;
   text-align: center;
 }
 
-.lil-gui.logo-gui.autoPlace {
+.lil-gui.cm-demo__gui.autoPlace {
   right: 16px;
   top: 88px;
   z-index: 30;
@@ -181,18 +178,13 @@ body {
   overflow: auto;
 }
 
-body.lab-body .lil-gui.logo-gui.autoPlace {
-  top: 88px;
-  max-height: calc(100dvh - 104px);
-}
-
 @media (max-width: 720px) {
-  .lil-gui.logo-gui.autoPlace {
+  .lil-gui.cm-demo__gui.autoPlace {
     top: 88px;
     width: min(260px, calc(100vw - 24px));
   }
 }
 
-.logo.is-exporting {
+.cm-demo.is-exporting {
   cursor: progress;
 }

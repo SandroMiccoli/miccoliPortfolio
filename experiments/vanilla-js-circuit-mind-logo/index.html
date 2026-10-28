@@ -10,57 +10,38 @@
   <link rel="shortcut icon" href="/images/favicon/favicon.ico">
   <title>Vanilla JS — Circuit Mind Logo</title>
   <meta name="description" content="The Circuit Mind mark and an Orbitron 404 drawn as open circuit traces, with a light traveling each path.">
+  <link rel="stylesheet" href="css/circuit-mind.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="logo">
-    <div class="board" id="cm-board">
-      <div class="stage stage-logo" id="cm-stage-logo">
-        <img
-          class="stage-ref"
-          id="cm-ref"
-          src="assets/logo-reference.png"
-          alt=""
-          width="327"
-          height="310"
-          draggable="false"
-        >
-        <svg viewBox="0 0 327 310" role="img" aria-label="Circuit Mind">
-          <defs>
-            <filter id="cm-glow" filterUnits="userSpaceOnUse" x="-80" y="-80" width="500" height="480" color-interpolation-filters="sRGB">
-              <feGaussianBlur id="cm-glow-wide" in="SourceGraphic" stdDeviation="3" />
-            </filter>
-          </defs>
-          <g id="cm-traces" fill="none" stroke-linecap="round" stroke-linejoin="miter" stroke-miterlimit="8"></g>
-          <g id="cm-nodes"></g>
-          <g id="cm-comets" filter="url(#cm-glow)"></g>
-          <g id="cm-heads"></g>
-        </svg>
+  <div class="cm-demo">
+    <div class="cm-demo__board">
+      <div class="cm-demo__stage cm-demo__stage--logo" id="cm-stage-logo">
+        <div id="cm-logo">
+          <img
+            class="cm-demo__ref"
+            id="cm-ref"
+            src="assets/logo-reference.png"
+            alt=""
+            width="327"
+            height="310"
+            draggable="false"
+          >
+        </div>
       </div>
-      <div class="stage stage-404 is-off" id="cm-stage-404" aria-hidden="true" inert>
-        <svg viewBox="0 0 2442 1014" role="img" aria-label="404">
-          <defs>
-            <filter id="cm-glow-404" filterUnits="userSpaceOnUse" x="-120" y="-120" width="2682" height="1254" color-interpolation-filters="sRGB">
-              <feGaussianBlur id="cm-glow-wide-404" in="SourceGraphic" stdDeviation="4" />
-            </filter>
-          </defs>
-          <g id="cm-404-traces" fill="none" stroke-linecap="round" stroke-linejoin="round"></g>
-          <g id="cm-404-nodes"></g>
-          <g id="cm-404-comets" filter="url(#cm-glow-404)"></g>
-          <g id="cm-404-heads"></g>
-        </svg>
+      <div class="cm-demo__stage cm-demo__stage--404 is-off" id="cm-stage-404" aria-hidden="true" inert>
+        <div id="cm-404"></div>
       </div>
     </div>
-    <div class="switchers">
-      <div class="versions" role="tablist" aria-label="Cena">
+    <div class="cm-demo__switchers">
+      <div class="cm-demo__versions" role="tablist" aria-label="Scene">
         <button type="button" id="cm-scene-logo" role="tab" aria-selected="true" aria-controls="cm-stage-logo">Logo</button>
         <button type="button" id="cm-scene-404" role="tab" aria-selected="false" aria-controls="cm-stage-404" tabindex="-1">404</button>
       </div>
-      <button type="button" id="cm-export-status" class="export-status" aria-live="polite" hidden disabled></button>
+      <button type="button" id="cm-export-status" class="cm-demo__export" aria-live="polite" hidden disabled></button>
     </div>
   </div>
-  <noscript><p class="logo-error">This page needs JavaScript.</p></noscript>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
-  <script type="module" src="main.js"></script>
+  <noscript><p class="cm-demo__error">This page needs JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

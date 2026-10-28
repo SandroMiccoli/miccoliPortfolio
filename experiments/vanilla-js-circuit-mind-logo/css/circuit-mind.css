@@ -1,0 +1,30 @@
+.circuit-mind {
+  --cm-bg: #020b16;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 327 / 310;
+  background: var(--cm-bg);
+  color: #e7eef6;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.circuit-mind--404 {
+  aspect-ratio: 2442 / 1014;
+}
+
+.circuit-mind--passthrough {
+  pointer-events: none;
+}
+
+.circuit-mind svg {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
