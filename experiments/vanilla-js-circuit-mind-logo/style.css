@@ -13,13 +13,13 @@ body {
 
 .logo {
   --logo-bg: #041122;
-  --stage: min(86vw, 72dvh, 560px);
-  min-height: 100dvh;
+  --stage: min(64vw, 700px, calc((100dvh - 180px) * 327 / 310));
+  position: relative;
+  height: 100dvh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px 32px;
+  overflow: hidden;
   background: var(--logo-bg);
   color: #e7eef6;
   font-family: Poppins, "Segoe UI", system-ui, sans-serif;
@@ -48,13 +48,6 @@ body {
   pointer-events: none;
 }
 
-@media (min-width: 900px) {
-  .logo {
-    --stage: min(72dvh, 100%, 560px);
-    padding-right: 332px;
-  }
-}
-
 .stage-ref {
   position: absolute;
   inset: 0;
@@ -79,14 +72,52 @@ body {
 }
 
 .stage-404 {
-  width: min(100%, 1080px, calc(68dvh * 2442 / 1014));
+  width: min(88vw, 1200px, calc((100dvh - 180px) * 2442 / 1014));
   aspect-ratio: 2442 / 1014;
 }
 
 .switchers {
+  position: absolute;
+  z-index: 40;
+  top: 22px;
+  left: 50%;
+  translate: -50% 0;
   display: flex;
-  justify-content: center;
-  margin-top: 1.35rem;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+}
+
+.export-status {
+  appearance: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d5e4f2;
+  font: 600 0.72rem/1 "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: default;
+}
+
+.export-status:not(:disabled) {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background: #6ef3c5;
+  color: #041122;
+  cursor: pointer;
+}
+
+.export-status:not(:disabled):focus-visible {
+  outline: 2px solid #e8eef6;
+  outline-offset: 3px;
+}
+
+.export-status[hidden] {
+  display: none;
 }
 
 .versions {
@@ -118,6 +149,11 @@ body {
   color: #041122;
 }
 
+.versions button:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+
 .versions button:focus-visible {
   outline: 2px solid #e8eef6;
   outline-offset: 3px;
@@ -138,21 +174,25 @@ body {
 
 .lil-gui.logo-gui.autoPlace {
   right: 16px;
-  top: 16px;
+  top: 88px;
   z-index: 30;
   width: min(300px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 104px);
   overflow: auto;
 }
 
 body.lab-body .lil-gui.logo-gui.autoPlace {
-  top: 84px;
-  max-height: calc(100dvh - 108px);
+  top: 88px;
+  max-height: calc(100dvh - 104px);
 }
 
 @media (max-width: 720px) {
   .lil-gui.logo-gui.autoPlace {
-    top: 72px;
+    top: 88px;
     width: min(260px, calc(100vw - 24px));
   }
+}
+
+.logo.is-exporting {
+  cursor: progress;
 }

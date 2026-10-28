@@ -6,6 +6,9 @@ const DOTS = 28;
 
 const LOGO_VIEW = { w: 327, h: 310 };
 const FOUR_VIEW = { w: 2442, h: 1014 };
+const EXPORT_W = 1920;
+const EXPORT_H = 1080;
+const EXPORT_FPS = 60;
 
 const DEFAULT_STATE = {
   showRef: false,
@@ -70,6 +73,11 @@ let elapsed = 0;
 let lastStamp = 0;
 let mm = null;
 let gui = null;
+let exportCtrl = null;
+let exporting = false;
+let pendingDownload = null;
+let loopSample = null;
+let loopProgress = 0;
 let tickerOn = false;
 let motionOn = false;
 let burstHue = false;
@@ -628,9 +636,9 @@ function stageWidth(el, view) {
   if (measured > 8) return measured;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  if (view === FOUR_VIEW) return Math.min(vw - 32, 1080, vh * 0.68 * (FOUR_VIEW.w / FOUR_VIEW.h));
-  if (vw >= 900) return Math.min(vh * 0.72, 560);
-  return Math.min(vw * 0.86, vh * 0.72, 560);
+  const maxH = Math.max(160, vh - 180);
+  if (view === FOUR_VIEW) return Math.min(vw * 0.88, 1200, maxH * (FOUR_VIEW.w / FOUR_VIEW.h));
+  return Math.min(vw * 0.64, 700, maxH * (LOGO_VIEW.w / LOGO_VIEW.h));
 }
 
 function applyLayer(layer, el, view) {
@@ -753,7 +761,9 @@ function paint(time) {
       continue;
     }
     const span = item.closed ? item.length : item.length + tail;
-    const head = mod(time * speed + item.phase * item.length, span);
+    const head = loopSample
+      ? loopSample(item, span)
+      : mod(time * speed + item.phase * item.length, span);
     const hue = state[item.hue];
     const spacing = tail / (DOTS - 1);
     let headPoint = null;
@@ -785,6 +795,7 @@ function paint(time) {
 }
 
 function applyLook() {
+  if (exporting) return;
   stage.style.setProperty('--ref-opacity', state.showRef ? String(state.refOpacity) : '0');
   stage.style.setProperty('--ref-x', `${state.refX}%`);
   stage.style.setProperty('--ref-y', `${state.refY}%`);
@@ -829,6 +840,7 @@ function ensureTicker() {
 }
 
 function tick() {
+  if (exporting) return;
   const now = performance.now();
   const dt = lastStamp ? Math.min(0.05, (now - lastStamp) / 1000) : 0;
   lastStamp = now;
@@ -925,6 +937,7 @@ function eventToSvg(event) {
 }
 
 function onPointerMove(event) {
+  if (exporting) return;
   if (event.target instanceof Element && event.target.closest('.logo-gui, .switchers')) {
     resetCrossings();
     return;
@@ -979,6 +992,7 @@ function syncScenes() {
 }
 
 function setScene(scene) {
+  if (exporting) return;
   state.scene = scene === '404' ? '404' : 'logo';
   clearBursts();
   resetCrossings();
@@ -993,11 +1007,374 @@ function focusScene(scene) {
   (scene === '404' ? sceneFour : sceneLogo).focus();
 }
 
+function exportStatus(text, ready = false) {
+  const status = document.getElementById('cm-export-status');
+  if (!status) return;
+  status.hidden = !text;
+  status.textContent = text || '';
+  status.disabled = !ready;
+}
+
+function showExportProgress(label, text, ready = false) {
+  if (exportCtrl) exportCtrl.name(label);
+  exportStatus(text, ready);
+}
+
+function setGuiLocked(locked) {
+  if (!gui) return;
+  gui.controllersRecursive().forEach((controller) => controller.disable(locked));
+  sceneLogo.disabled = locked;
+  sceneFour.disabled = locked;
+}
+
+function activeComets(layer) {
+  if (!state.showComets) return [];
+  return layer.items.filter((item) => item.hue && itemOn(item) && item.length > 1 && item.dots.length);
+}
+
+function cometSpan(item, layer) {
+  const tail = state.packet * layer.unit;
+  return item.closed ? item.length : item.length + tail;
+}
+
+// Shortest duration in which every comet can finish a whole number of trips,
+// so the rendered file repeats without a jump.
+function loopPlan(layer) {
+  const comets = activeComets(layer);
+  const speed = Math.max(1, state.speed * layer.unit);
+  const periods = comets.map((item) => cometSpan(item, layer) / speed);
+  const minFrames = EXPORT_FPS * 4;
+  const maxFrames = EXPORT_FPS * 8;
+  if (!periods.length) return { frameCount: EXPORT_FPS * 2, cycles: new Map() };
+
+  let bestError = Infinity;
+  const errors = [];
+  for (let frames = minFrames; frames <= maxFrames; frames += 1) {
+    const seconds = frames / EXPORT_FPS;
+    let error = 0;
+    for (const period of periods) {
+      const cycles = seconds / period;
+      error += Math.abs(cycles - Math.round(cycles));
+    }
+    errors.push(error);
+    if (error < bestError) bestError = error;
+  }
+
+  let frameCount = minFrames;
+  for (let frames = minFrames; frames <= maxFrames; frames += 1) {
+    if (errors[frames - minFrames] <= bestError + 0.05) {
+      frameCount = frames;
+      break;
+    }
+  }
+
+  const seconds = frameCount / EXPORT_FPS;
+  const cycles = new Map();
+  for (const item of comets) {
+    const period = cometSpan(item, layer) / speed;
+    cycles.set(item, Math.max(1, Math.round(seconds / period)));
+  }
+  return { frameCount, cycles };
+}
+
+function assertLoopCloses(layer, cycles) {
+  for (const [item, turns] of cycles) {
+    const span = cometSpan(item, layer);
+    const start = mod(item.phase * item.length, span);
+    const end = mod(start + turns * span, span);
+    const gap = Math.min(Math.abs(start - end), Math.abs(span - Math.abs(start - end)));
+    if (gap > 0.05) throw new Error('Loop does not close');
+  }
+}
+
+function motionValues(layer) {
+  const values = [];
+  const take = (root) => {
+    root.querySelectorAll('circle').forEach((el) => {
+      ['cx', 'cy', 'r', 'opacity'].forEach((name) => {
+        const number = Number(el.getAttribute(name));
+        if (Number.isFinite(number)) values.push(number);
+      });
+    });
+  };
+  take(layer.comets);
+  take(layer.heads);
+  take(layer.nodes);
+  return values;
+}
+
+function sameMotion(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (Math.abs(a[i] - b[i]) > 0.02) return false;
+  }
+  return true;
+}
+
+function fitArt(boxW, boxH) {
+  const scale = Math.min((EXPORT_W * 0.92) / boxW, (EXPORT_H * 0.92) / boxH);
+  const w = Math.max(2, Math.round(boxW * scale));
+  const h = Math.max(2, Math.round(boxH * scale));
+  return {
+    w,
+    h,
+    x: Math.round((EXPORT_W - w) / 2),
+    y: Math.round((EXPORT_H - h) / 2),
+  };
+}
+
+function bakeStrokes(clone, unit) {
+  clone.querySelectorAll('[vector-effect], [stroke-width]').forEach((el) => {
+    el.removeAttribute('vector-effect');
+    const width = el.getAttribute('stroke-width');
+    if (width == null || width === '') return;
+    const value = Number(width);
+    if (Number.isFinite(value)) el.setAttribute('stroke-width', String(round(value * unit)));
+  });
+}
+
+async function rasterFrame(canvas, svg, view, unit) {
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const pad = (state.glow * 3.2 + state.node * 0.6 + 8) * unit;
+  const boxW = view.w + pad * 2;
+  const boxH = view.h + pad * 2;
+  const art = fitArt(boxW, boxH);
+  const clone = svg.cloneNode(true);
+  clone.setAttribute('xmlns', NS);
+  clone.setAttribute('width', String(art.w));
+  clone.setAttribute('height', String(art.h));
+  clone.setAttribute('viewBox', `${round(-pad)} ${round(-pad)} ${round(boxW)} ${round(boxH)}`);
+  bakeStrokes(clone, unit);
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+  const source = await loadSvgSource(blob);
+  ctx.fillStyle = state.background;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, art.x, art.y, art.w, art.h);
+  if (typeof source.close === 'function') source.close();
+}
+
+async function loadSvgSource(blob) {
+  try {
+    return await createImageBitmap(blob);
+  } catch {
+    const url = URL.createObjectURL(blob);
+    try {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      return image;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function encodeMp4(canvas, renderFrame, frameCount) {
+  if (typeof VideoEncoder === 'undefined') throw new Error('WebCodecs unavailable');
+  const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/+esm');
+  let failed = null;
+  const muxer = new Muxer({
+    target: new ArrayBufferTarget(),
+    video: { codec: 'avc', width: EXPORT_W, height: EXPORT_H, frameRate: EXPORT_FPS },
+    fastStart: 'in-memory',
+    firstTimestampBehavior: 'offset',
+  });
+  const makeEncoder = () => new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+    error: (error) => { failed = error; },
+  });
+  let encoder = makeEncoder();
+  const candidates = ['avc1.64002a', 'avc1.640032', 'avc1.640028', 'avc1.4d002a', 'avc1.42001f'];
+  let configured = false;
+  for (const codec of candidates) {
+    const config = {
+      codec,
+      width: EXPORT_W,
+      height: EXPORT_H,
+      bitrate: 12_000_000,
+      framerate: EXPORT_FPS,
+      avc: { format: 'avc' },
+      hardwareAcceleration: 'prefer-hardware',
+      latencyMode: 'quality',
+    };
+    try {
+      const support = await VideoEncoder.isConfigSupported(config);
+      if (support.supported === false) continue;
+      if (encoder.state === 'closed') encoder = makeEncoder();
+      encoder.configure({ ...(support.config || config), avc: { format: 'avc' } });
+      configured = true;
+      break;
+    } catch {
+      try { encoder.close(); } catch { /* encoder already closed */ }
+      encoder = makeEncoder();
+    }
+  }
+  if (!configured) {
+    if (encoder.state !== 'closed') encoder.close();
+    throw new Error('H.264 encoder unavailable');
+  }
+
+  const frameDuration = Math.round(1e6 / EXPORT_FPS);
+  try {
+    for (let index = 0; index < frameCount; index += 1) {
+      if (failed) throw failed;
+      await renderFrame(index);
+      if (encoder.encodeQueueSize > 6) {
+        await new Promise((resolve) => encoder.addEventListener('dequeue', resolve, { once: true }));
+      }
+      const frame = new VideoFrame(canvas, {
+        timestamp: index * frameDuration,
+        duration: frameDuration,
+      });
+      try {
+        encoder.encode(frame, { keyFrame: index % 30 === 0 });
+      } finally {
+        frame.close();
+      }
+    }
+    await encoder.flush();
+    if (failed) throw failed;
+    muxer.finalize();
+    return new Blob([muxer.target.buffer], { type: 'video/mp4' });
+  } finally {
+    if (encoder.state !== 'closed') encoder.close();
+  }
+}
+
+async function encodeWebm(canvas, renderFrame, frameCount) {
+  if (typeof MediaRecorder === 'undefined' || typeof canvas.captureStream !== 'function') {
+    throw new Error('Recording unavailable');
+  }
+  const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    .find((type) => MediaRecorder.isTypeSupported(type)) || '';
+  const stream = canvas.captureStream(0);
+  const track = stream.getVideoTracks()[0];
+  const recorder = mime
+    ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12_000_000 })
+    : new MediaRecorder(stream, { videoBitsPerSecond: 12_000_000 });
+  const chunks = [];
+  recorder.ondataavailable = (event) => {
+    if (event.data && event.data.size) chunks.push(event.data);
+  };
+  const stopped = new Promise((resolve, reject) => {
+    recorder.onstop = resolve;
+    recorder.onerror = () => reject(new Error('Recording failed'));
+  });
+  recorder.start();
+  const frameMs = 1000 / EXPORT_FPS;
+  for (let index = 0; index < frameCount; index += 1) {
+    await renderFrame(index);
+    if (typeof track.requestFrame === 'function') track.requestFrame();
+    await new Promise((resolve) => window.setTimeout(resolve, frameMs));
+  }
+  if (recorder.state !== 'inactive') recorder.stop();
+  await stopped;
+  stream.getTracks().forEach((item) => item.stop());
+  if (!chunks.length) throw new Error('Recording produced no data');
+  return new Blob(chunks, { type: mime || 'video/webm' });
+}
+
+function onExportClick() {
+  if (pendingDownload) {
+    downloadBlob(pendingDownload.blob, pendingDownload.name);
+    pendingDownload = null;
+    showExportProgress('Export loop', '');
+    return;
+  }
+  startExport();
+}
+
+async function startExport() {
+  if (exporting) return;
+  pendingDownload = null;
+  const layer = activeLayer();
+  const svg = activeSvg();
+  if (!svg) return;
+  const previous = elapsed;
+  const { frameCount, cycles } = loopPlan(layer);
+  exporting = true;
+  logoRoot.classList.add('is-exporting');
+  setGuiLocked(true);
+  clearBursts();
+  showExportProgress('Exporting…', 'Exporting loop');
+  try {
+    assertLoopCloses(layer, cycles);
+    loopSample = (item, span) => {
+      const turns = cycles.get(item) || 1;
+      const start = mod(item.phase * item.length, span);
+      return mod(start + loopProgress * turns * span, span);
+    };
+    loopProgress = 0;
+    paint(0);
+    const opened = motionValues(layer);
+    loopProgress = 1;
+    paint(0);
+    if (!sameMotion(opened, motionValues(layer))) throw new Error('Painted loop does not close');
+    loopProgress = 0;
+    const canvas = document.createElement('canvas');
+    canvas.width = EXPORT_W;
+    canvas.height = EXPORT_H;
+    const view = state.scene === '404' ? FOUR_VIEW : LOGO_VIEW;
+    const unit = layer.unit;
+    const renderFrame = async (index) => {
+      loopProgress = index / frameCount;
+      paint(0);
+      await rasterFrame(canvas, svg, view, unit);
+      if (index % 12 === 0 || index === frameCount - 1) {
+        const pct = Math.round(((index + 1) / frameCount) * 100);
+        showExportProgress(`Export ${pct}%`, `Exporting ${pct}%`);
+      }
+    };
+    let blob;
+    try {
+      blob = await encodeMp4(canvas, renderFrame, frameCount);
+    } catch (error) {
+      console.warn(error);
+      showExportProgress('Exporting…', 'Exporting loop');
+      blob = await encodeWebm(canvas, renderFrame, frameCount);
+    }
+    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+    pendingDownload = { blob, name: `circuit-mind-${state.scene}-loop.${ext}` };
+    const mb = blob.size / (1024 * 1024);
+    showExportProgress('Download', `Download · ${mb.toFixed(1)} MB`, true);
+  } catch (error) {
+    console.error(error);
+    showExportProgress('Export failed', 'Export failed');
+    window.setTimeout(() => {
+      if (!exporting && !pendingDownload) showExportProgress('Export loop', '');
+    }, 1800);
+  } finally {
+    loopSample = null;
+    loopProgress = 0;
+    elapsed = previous;
+    exporting = false;
+    logoRoot.classList.remove('is-exporting');
+    applyLook();
+    armMotion();
+    setGuiLocked(false);
+  }
+}
+
 function mountGui() {
   const narrow = window.matchMedia('(max-width: 720px)').matches;
   gui = new GUI({ title: 'Circuit Mind', width: narrow ? 250 : 300 });
   gui.domElement.classList.add('logo-gui');
-  if (narrow) gui.close();
+
+  exportCtrl = gui.add({ exportLoop: () => onExportClick() }, 'exportLoop').name('Export loop');
+  exportCtrl.domElement.title = 'Seamless MP4 of this scene, ready to loop.';
+  document.getElementById('cm-export-status')?.addEventListener('click', () => onExportClick());
 
   const reference = gui.addFolder('Reference');
   reference.add(state, 'showRef').name('Show').onChange(applyLook).onFinishChange(save);
@@ -1081,6 +1458,7 @@ function mountGui() {
   };
   gui.add(actions, 'reset').name('Reset');
   const copyCtrl = gui.add(actions, 'copyValues').name('Copy values');
+  gui.close();
 }
 
 function bindPoint(folder, point, label) {
