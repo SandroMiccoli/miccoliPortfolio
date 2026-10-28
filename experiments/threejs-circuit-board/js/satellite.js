@@ -22,7 +22,6 @@ export function createSatellite() {
 	const CYAN = 0x62c9ff;
 	const BLUE = 0x49a9ed;
 	const VIOLET = 0xb79ae6;
-	const GOLD = 0xe4cc74;
 	const GREEN = 0x1fc283;
 
 	const CUBE = 2.12;
@@ -151,7 +150,7 @@ export function createSatellite() {
 		geo.translate(0, 0, -0.022);
 		if (side < 0) geo.scale(-1, 1, 1);
 		geo.translate(side * HALF, 0, 0);
-		keepFacet(geo, GOLD, 0.9, false);
+		keepFacet(geo, CYAN, 0.9, false);
 
 		const x0 = side * HALF;
 		const x1 = side * (HALF + TRAP_W);
@@ -161,7 +160,7 @@ export function createSatellite() {
 			[x1, PANEL_D / 2, 0.03],
 			[x0, TRAP_INNER_H / 2, 0.03],
 			[x0, -TRAP_INNER_H / 2, 0.03],
-		], GOLD, 0.95);
+		], CYAN, 0.95);
 
 		const holePts = roundedRectPts(
 			side * (HALF + TRAP_W / 2),
@@ -172,7 +171,7 @@ export function createSatellite() {
 			TRAP_CORNER,
 			6,
 		);
-		ml(holePts, GOLD, 0.95);
+		ml(holePts, CYAN, 0.95);
 	}
 
 	// --- cubic bus ---
@@ -205,11 +204,11 @@ export function createSatellite() {
 
 	const mast = new THREE.CylinderGeometry(0.03, 0.03, 0.85, 8);
 	mast.translate(0.2, HALF + 0.42, -0.15);
-	keepFacet(mast, GOLD, 0.9);
+	keepFacet(mast, CYAN, 0.9);
 
 	const mastCap = new THREE.CylinderGeometry(0.07, 0.04, 0.12, 8);
 	mastCap.translate(0.2, HALF + 0.88, -0.15);
-	keepFacet(mastCap, GOLD, 0.85);
+	keepFacet(mastCap, BLUE, 0.85);
 
 	const topSensor = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 12);
 	topSensor.translate(-0.35, HALF + 0.08, 0.2);
@@ -219,7 +218,7 @@ export function createSatellite() {
 		const nozzle = new THREE.ConeGeometry(0.1, 0.18, 10, 1);
 		nozzle.rotateX(Math.PI);
 		nozzle.translate(side * 0.45, -0.5, -HALF - 0.08);
-		keepFacet(nozzle, GOLD, 1);
+		keepFacet(nozzle, BLUE, 1);
 	}
 
 	// --- dish antenna on the cube face ---
@@ -276,7 +275,7 @@ export function createSatellite() {
 	const disk = new THREE.CylinderGeometry(SUB_R, SUB_R, 0.045, 24);
 	disk.rotateX(Math.PI / 2);
 	disk.translate(0, 0, SUB_Z);
-	keepFacet(disk, GOLD, 0.95);
+	keepFacet(disk, CYAN, 0.95);
 	ring(0, 0, SUB_Z + 0.025, SUB_R, SUB_R, 28, GREEN, 0.95);
 	ring(0, 0, SUB_Z + 0.025, SUB_R * 0.42, SUB_R * 0.42, 18, GREEN, 0.9);
 
@@ -294,7 +293,7 @@ export function createSatellite() {
 			Math.sin(phi) * SUB_R * 0.88,
 			SUB_Z,
 			0.02,
-			GOLD,
+			CYAN,
 		);
 	}
 
@@ -330,8 +329,8 @@ export function createSatellite() {
 
 			if (panel < 3) {
 				const hx = x + side * (PANEL_W / 2 + PANEL_GAP / 2);
-				modelBox(hx, 0.55, 0, 0.035, 0.07, 0.05, GOLD, 0.7);
-				modelBox(hx, -0.55, 0, 0.035, 0.07, 0.05, GOLD, 0.7);
+				modelBox(hx, 0.55, 0, 0.035, 0.07, 0.05, BLUE, 0.7);
+				modelBox(hx, -0.55, 0, 0.035, 0.07, 0.05, BLUE, 0.7);
 			}
 		}
 	}
@@ -395,27 +394,6 @@ export function createSatellite() {
 		sl([[x - 0.08, -depth / 2 - 0.52, sheetZ], [x + 0.08, -depth / 2 - 0.68, sheetZ]], CYAN, 0.6);
 	}
 	technology.add(sheetLines.build());
-
-	function label(text, x, y) {
-		const canvas = document.createElement('canvas');
-		canvas.width = text.length * 22 + 16;
-		canvas.height = 64;
-		const context = canvas.getContext('2d');
-		context.fillStyle = '#79b5d0';
-		context.font = '36px monospace';
-		context.fillText(text, 8, 46);
-		const texture = new THREE.CanvasTexture(canvas);
-		texture.colorSpace = THREE.SRGBColorSpace;
-		const mesh = new THREE.Mesh(
-			new THREE.PlaneGeometry(canvas.width * 0.0038, 0.2432),
-			new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0.85 }),
-		);
-		mesh.position.set(x, y, sheetZ + 0.01);
-		technology.add(mesh);
-	}
-
-	label('CM / GEO COMMUNICATIONS', 0, depth / 2 + 0.25);
-	label('SOLAR WINGS + PARABOLIC DISH / CONCEPT / NTS', 0, -depth / 2 - 0.3);
 
 	markBloom(technology);
 	return technology;

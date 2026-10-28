@@ -341,7 +341,7 @@ export function createVersalBoard(renderer) {
 
 	[x, y] = at(0.46, 0.56);
 	batch.begin(x, y);
-	box(x, y, 0.1, 2.05, 2.05, 0.16, 'gold');
+	box(x, y, 0.1, 2.05, 2.05, 0.16, 'black');
 	box(x, y, 0.24, 1.95, 1.95, 0.2, 'chip');
 	box(x, y, 0.38, 0.95, 0.95, 0.1, 'die');
 	outline(x, y, 2.22, 2.22);
@@ -362,7 +362,7 @@ export function createVersalBoard(renderer) {
 	for (const [u, v] of dram) {
 		const p = at(u, v);
 		batch.begin(p[0], p[1]);
-		box(p[0], p[1], 0.1, 0.62, 0.62, 0.14, 'gold');
+		box(p[0], p[1], 0.1, 0.62, 0.62, 0.14, 'black');
 		box(p[0], p[1], 0.2, 0.55, 0.55, 0.12, 'chip');
 		batch.end();
 		outline(p[0], p[1], 0.74, 0.74);

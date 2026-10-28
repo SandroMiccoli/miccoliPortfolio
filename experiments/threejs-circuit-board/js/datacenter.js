@@ -129,27 +129,6 @@ export function createDataCenter() {
 		lines.build(),
 	);
 
-	function label(text, x, y) {
-		const canvas = document.createElement('canvas');
-		canvas.width = text.length * 22 + 16;
-		canvas.height = 64;
-		const context = canvas.getContext('2d');
-		context.fillStyle = '#79b5d0';
-		context.font = '36px monospace';
-		context.fillText(text, 8, 46);
-		const texture = new THREE.CanvasTexture(canvas);
-		texture.colorSpace = THREE.SRGBColorSpace;
-		const mesh = new THREE.Mesh(
-			new THREE.PlaneGeometry(canvas.width * 0.0038, 0.2432),
-			new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0.85 }),
-		);
-		mesh.position.set(x, y, sheetZ + 0.01);
-		technology.add(mesh);
-	}
-
-	label('CM / COMPUTE CLUSTER', 0, depth / 2 + 0.25);
-	label('DGX-INSPIRED / 06 RACKS / REV 5.2 / NTS', 0, -depth / 2 - 0.3);
-
 	markBloom(technology);
 	return technology;
 }

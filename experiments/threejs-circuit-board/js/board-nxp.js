@@ -309,7 +309,7 @@ export function createNxpBoard(renderer) {
 
 	[x, y] = at(0.528, 0.355);
 	batch.begin(x, y);
-	box(x, y, 0.09, 0.95, 0.95, 0.12, 'gold');
+	box(x, y, 0.09, 0.95, 0.95, 0.12, 'black');
 	box(x, y, 0.18, 0.9, 0.9, 0.14, 'chip');
 	box(x, y, 0.28, 0.42, 0.42, 0.08, 'die');
 	outline(x, y, 1.12, 1.12);
@@ -327,7 +327,7 @@ export function createNxpBoard(renderer) {
 
 	[x, y] = at(0.705, 0.6);
 	batch.begin(x, y);
-	box(x, y, 0.09, 1.05, 1.05, 0.12, 'gold');
+	box(x, y, 0.09, 1.05, 1.05, 0.12, 'black');
 	box(x, y, 0.2, 0.98, 0.98, 0.16, 'chip');
 	outline(x, y, 1.22, 1.22);
 	label(x - 0.38, y + 0.68, 'U' + serial++ + ' LPDDR', 0.065);

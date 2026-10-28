@@ -14,7 +14,7 @@ export function createPlane() {
 	const height = 6.65;
 
 	function av(x, y, z) {
-		return new THREE.Vector3(x * scale, (38.15 - y) * scale, height + z * scale);
+		return new THREE.Vector3((38.15 - y) * scale, x * scale, height + z * scale);
 	}
 
 	function al(points, opacity = 0.65, color = 0x62c9ff) {
@@ -170,30 +170,6 @@ export function createPlane() {
 	for (const y of [0, 76.3]) al([[38.4, y - 0.6, -6], [39.6, y + 0.6, -6]], 0.6);
 
 	technology.add(lines.build());
-
-	function draftingText(text, x, y) {
-		const canvas = document.createElement('canvas');
-		canvas.width = text.length * 22 + 16;
-		canvas.height = 64;
-		const context = canvas.getContext('2d');
-		context.fillStyle = '#79b5d0';
-		context.font = '36px monospace';
-		context.fillText(text, 8, 46);
-		const texture = new THREE.CanvasTexture(canvas);
-		texture.colorSpace = THREE.SRGBColorSpace;
-		const mesh = new THREE.Mesh(
-			new THREE.PlaneGeometry(canvas.width * 0.0038, 64 * 0.0038),
-			new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.85, depthWrite: false }),
-		);
-		mesh.position.copy(av(x, y, -5.98));
-		technology.add(mesh);
-	}
-
-	draftingText('CM / 747-8I   •   AIRFRAME STUDY', -15, -5.8);
-	draftingText('DWG CM-0747   /   REV 4.2   /   NTS', -14, 87);
-	draftingText('WINGSPAN  68.4 m', 0, 83);
-	draftingText('LENGTH', 45, 35);
-	draftingText('76.3 m', 45, 38);
 
 	markBloom(technology);
 	return technology;

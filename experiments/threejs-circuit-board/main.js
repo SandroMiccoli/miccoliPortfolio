@@ -114,7 +114,7 @@ function bindStudy(entry) {
 	const lines = [];
 	const fades = [];
 	entry.group.traverse((obj) => {
-		if (obj === entry.group) return;
+		if (obj === entry.group || obj.userData.energy) return;
 		if (obj.isLineSegments && obj.geometry?.attributes?.position) {
 			const count = obj.geometry.attributes.position.count;
 			obj.userData.count = count;
@@ -137,6 +137,7 @@ for (const key of Object.keys(studies)) {
 	if (key === 'satellite') continue;
 	studies[key].reveal.v = 0;
 	for (const line of studies[key].lines) line.userData.grow.p = 0;
+	snapEnergy(studies[key], false);
 }
 
 const bloom = createBloom(renderer);
@@ -258,6 +259,58 @@ function syncPcbUi(name) {
 	layerBoard.textContent = pcbs[name].label;
 }
 
+function energyPaths(study) {
+	return study.routes?.paths || [];
+}
+
+function snapEnergy(study, on) {
+	const p = on ? 1 : 0;
+	if (study.routes?.hexScale) study.routes.hexScale.s = p;
+	for (const line of energyPaths(study)) line.userData.grow.p = p;
+	study.routes?.apply();
+}
+
+function energyOut(tl, study, position) {
+	if (study.routes?.hexScale) {
+		tl.to(study.routes.hexScale, {
+			s: 0,
+			duration: 0.32,
+			ease: 'power2.in',
+		}, position);
+	}
+	const paths = energyPaths(study);
+	if (paths.length) {
+		tl.to(paths.map((line) => line.userData.grow), {
+			p: 0,
+			duration: 0.58,
+			ease: 'power2.in',
+			stagger: { each: 0.04, from: 'end' },
+		}, position);
+	}
+}
+
+function energyIn(tl, study, position) {
+	const paths = energyPaths(study);
+	if (paths.length) {
+		tl.fromTo(paths.map((line) => line.userData.grow), { p: 0 }, {
+			p: 1,
+			duration: 0.74,
+			ease: 'power2.out',
+			immediateRender: false,
+			stagger: { each: 0.05, from: 'start' },
+		}, position);
+	}
+	if (study.routes?.hexScale) {
+		tl.fromTo(study.routes.hexScale, { s: 0 }, {
+			s: 1,
+			duration: 0.4,
+			ease: 'back.out(1.5)',
+			immediateRender: false,
+			delay: 0.2,
+		}, position);
+	}
+}
+
 function applyHolo(name) {
 	const study = studies[name];
 	if (!study?.tech) return;
@@ -267,11 +320,7 @@ function applyHolo(name) {
 		const mat = study.fades[i];
 		mat.opacity = mat.userData.baseOpacity * Math.min(1, v * 1.35);
 	}
-	if (study.routes?.sparks) {
-		const sparkMat = study.routes.sparks.material;
-		sparkMat.opacity = sparkMat.userData.baseOpacity * Math.min(1, v * 1.35);
-		study.routes.sparks.visible = v > 0.04;
-	}
+	study.routes?.apply();
 	for (let i = 0; i < study.lines.length; i++) {
 		const line = study.lines[i];
 		const count = line.userData.count;
@@ -303,6 +352,7 @@ function snapHolo(name) {
 		study.group.visible = on;
 		study.reveal.v = on ? 1 : 0;
 		for (const line of study.lines) line.userData.grow.p = on ? 1 : 0;
+		snapEnergy(study, on);
 		applyHolo(key);
 	}
 	mode = name;
@@ -312,14 +362,16 @@ function snapHolo(name) {
 
 function holoOut(tl, name, position) {
 	const study = studies[name];
-	if (!study.lines.length) return;
-	tl.to(study.lines.map((line) => line.userData.grow), {
-		p: 0,
-		duration: 0.42,
-		ease: 'power2.in',
-		stagger: { each: 0.02, from: 'end' },
-	}, position);
+	if (study.lines.length) {
+		tl.to(study.lines.map((line) => line.userData.grow), {
+			p: 0,
+			duration: 0.42,
+			ease: 'power2.in',
+			stagger: { each: 0.02, from: 'end' },
+		}, position);
+	}
 	tl.to(study.reveal, { v: 0, duration: 0.5, ease: 'power2.in' }, position);
+	energyOut(tl, study, position);
 }
 
 function holoIn(tl, name, position) {
@@ -328,6 +380,7 @@ function holoIn(tl, name, position) {
 		study.group.visible = true;
 		study.reveal.v = 0;
 		for (const line of study.lines) line.userData.grow.p = 0;
+		snapEnergy(study, false);
 		applyHolo(name);
 	}, position);
 	tl.fromTo(study.reveal, { v: 0 }, {
@@ -345,6 +398,7 @@ function holoIn(tl, name, position) {
 			stagger: { each: 0.025, from: 'start' },
 		}, position);
 	}
+	energyIn(tl, study, position);
 }
 
 function showPcbImmediate(name) {
@@ -466,6 +520,7 @@ function startTransition(to) {
 						ease: 'power2.out',
 					}, 0);
 				}
+				energyIn(tl, studies[holoFrom], 0);
 			}
 			return;
 		}
@@ -677,6 +732,7 @@ function resize() {
 	measureFrame();
 	placeCamera();
 	bloom.resize(renderer.domElement.width, renderer.domElement.height);
+	if (pcbBase.resize) pcbBase.resize(w, h);
 }
 
 window.addEventListener('pointermove', (event) => {

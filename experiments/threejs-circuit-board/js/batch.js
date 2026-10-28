@@ -10,7 +10,7 @@ import * as THREE from 'three';
 const PALETTE = {
 	black: 0x49a9ed,
 	chip: 0xA99DFC,
-	gold: 0xe4cc74,
+	gold: 0x1fc283,
 	silver: 0x49a9ed,
 	ceramic: 0xA99DFC,
 	substrate: 0x49a9ed,
@@ -18,7 +18,7 @@ const PALETTE = {
 	grey: 0x1fc283,
 	white: 0x49a9ed,
 	led: 0x1fc283,
-	amber: 0xe4cc74,
+	amber: 0x62c9ff,
 	green: 0x1fc283,
 };
 
@@ -231,8 +231,8 @@ function edgeLinesFrom(buckets, opacity, depthWrite, dynamic = false) {
 		geometry.computeBoundingSphere();
 		group.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
 			color,
-			transparent: opacity < 1,
-			opacity,
+			transparent: true,
+			opacity: Math.min(opacity, 0.78),
 			depthWrite,
 		})));
 	}

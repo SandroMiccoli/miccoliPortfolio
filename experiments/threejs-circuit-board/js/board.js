@@ -137,7 +137,7 @@ export function createBoard(renderer) {
 	batch.slab(slab);
 
 	batch.begin(-0.15, 0.05);
-	box(-0.15, 0.05, 0.1, 2.9, 2.9, 0.18, 'gold');
+	box(-0.15, 0.05, 0.1, 2.9, 2.9, 0.18, 'black');
 	box(-0.15, 0.05, 0.205, 2.85, 2.85, 0.18, 'substrate');
 	box(-0.15, 0.05, 0.32, 0.95, 0.95, 0.075, 'die');
 	outline(-0.15, 0.05, 3.12, 3.12);

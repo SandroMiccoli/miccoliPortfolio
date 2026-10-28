@@ -15,7 +15,7 @@ function satEnd(x, y, z) {
 
 function planeEnd(x, y, z) {
 	const scale = 0.135;
-	return new THREE.Vector3(x * scale, (38.15 - y) * scale, 6.65 + z * scale);
+	return new THREE.Vector3((38.15 - y) * scale, x * scale, 6.65 + z * scale);
 }
 
 const STUDIES = {
@@ -138,76 +138,149 @@ export function createIntelligence() {
 	return { group };
 }
 
+function createHexMaterial(baseSize) {
+	const material = new THREE.PointsMaterial({
+		color: 0x74e6b4,
+		size: baseSize,
+		sizeAttenuation: false,
+		transparent: true,
+		opacity: 1,
+		depthWrite: false,
+	});
+	material.userData.baseSize = baseSize;
+	material.userData.baseOpacity = 1;
+	material.onBeforeCompile = (shader) => {
+		shader.fragmentShader = shader.fragmentShader.replace(
+			'#include <opaque_fragment>',
+			`
+			vec2 p = abs(gl_PointCoord * 2.0 - 1.0);
+			float hex = max(p.y * 0.866025404 + p.x * 0.5, p.x);
+			if (hex > 0.82) discard;
+			#include <opaque_fragment>
+			`,
+		);
+	};
+	material.customProgramCacheKey = () => 'spark-hexagon-fill';
+	return material;
+}
+
+function pushUnique(pts, x, y, z) {
+	const point = new THREE.Vector3(x, y, z);
+	const last = pts[pts.length - 1];
+	if (!last || last.distanceToSquared(point) > 0.0004) pts.push(point);
+	return point;
+}
+
 export function createRoutes(kind) {
 	const study = STUDIES[kind];
 	const group = new THREE.Group();
 	group.name = 'intelligence-routes';
-	const routes = createLineBatch();
+	group.userData.energy = true;
 
-	function squareNode(x, y, z, radius = 0.1, color = 0x1fc283) {
-		routes.add([
-			new THREE.Vector3(x - radius, y - radius, z),
-			new THREE.Vector3(x + radius, y - radius, z),
-			new THREE.Vector3(x + radius, y + radius, z),
-			new THREE.Vector3(x - radius, y + radius, z),
-			new THREE.Vector3(x - radius, y - radius, z),
-		], color, 0.9);
+	const ends = study.destinations.map((destination) => (
+		study.resolveEnd(destination[0], destination[1], destination[2])
+	));
+	const order = ends.map((end, i) => ({ i, x: end.x })).sort((a, b) => a.x - b.x);
+	const lanes = new Array(ends.length);
+	const minGap = 0.42;
+	for (let k = 0; k < order.length; k++) {
+		const { i, x } = order[k];
+		const prev = k ? lanes[order[k - 1].i] : x - minGap;
+		lanes[i] = k && x < prev + minGap ? prev + minGap : x;
 	}
 
+	const paths = [];
 	const packets = [];
-	study.destinations.forEach((destination, i) => {
-		const side = i % 2 === 0 ? -1 : 1;
-		const x = -2.7 + i * 1.02;
-		const lane = (i - 2.5) * 0.43;
-		const start = new THREE.Vector3(x, side * 1.65, 0.12);
-		const end = study.resolveEnd(destination[0], destination[1], destination[2]);
-		const hubX = -1.75 + i * 0.66;
-		const pts = [
-			start,
-			new THREE.Vector3(x, side * 1.65, LAYER_Z),
-			new THREE.Vector3(x, lane, LAYER_Z),
-			new THREE.Vector3(hubX, lane, LAYER_Z),
-			new THREE.Vector3(hubX + 0.24, lane + 0.24, LAYER_Z),
-			new THREE.Vector3(end.x, lane + 0.24, LAYER_Z),
-			new THREE.Vector3(end.x, lane + 0.24, end.z - 0.35),
-			new THREE.Vector3(end.x, end.y, end.z - 0.35),
-			end,
-		];
-		const accent = i === 4;
-		routes.add(pts, accent ? 0x49a9ed : 0x1fc283, 0.45);
-		routes.add(pts.slice(1, 6), 0x1fc283, 0.78);
-		squareNode(hubX, lane, LAYER_Z, 0.12, accent ? 0xb79ae6 : 0x1fc283);
-		squareNode(start.x, start.y, start.z, 0.075);
-		squareNode(end.x, end.y, end.z, 0.075, 0x49a9ed);
+	const nodePositions = [];
+	const hexScale = { s: 1 };
+
+	ends.forEach((end, i) => {
+		const laneX = lanes[i];
+		const startY = THREE.MathUtils.clamp(end.y, -1.85, 1.85);
+		const stubZ = Math.max(LAYER_Z + 0.25, end.z - 0.08) - i * 0.11;
+		const start = new THREE.Vector3(laneX, startY, 0.12);
+		const pts = [start];
+		pushUnique(pts, laneX, startY, LAYER_Z);
+		if (Math.abs(end.y - startY) > 0.04) pushUnique(pts, laneX, end.y, LAYER_Z);
+		pushUnique(pts, laneX, end.y, stubZ);
+		if (Math.abs(end.x - laneX) > 0.04) pushUnique(pts, end.x, end.y, stubZ);
+		pushUnique(pts, end.x, end.y, end.z);
 
 		const sampled = sampleCurve(pts);
+		const geometry = new THREE.BufferGeometry();
+		geometry.setAttribute('position', new THREE.BufferAttribute(sampled, 3));
+		geometry.setDrawRange(0, SAMPLE_STEPS + 1);
+		geometry.computeBoundingSphere();
+		const accent = i === 4;
+		const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+			color: accent ? 0x49a9ed : 0x1fc283,
+			transparent: true,
+			opacity: 0.72,
+			depthWrite: false,
+		}));
+		line.userData.energy = true;
+		line.userData.count = SAMPLE_STEPS + 1;
+		line.userData.grow = { p: 1 };
+		line.userData.shown = SAMPLE_STEPS + 1;
+		line.frustumCulled = false;
+		markBloom(line);
+		group.add(line);
+		paths.push(line);
+
+		nodePositions.push(start.x, start.y, start.z);
+		nodePositions.push(laneX, end.y, LAYER_Z);
+		nodePositions.push(end.x, end.y, end.z);
+
 		for (let k = 0; k < 2; k++) {
-			packets.push({ data: sampled, offset: k / 2 + i * 0.13, speed: 0.055 });
+			packets.push({
+				data: sampled,
+				offset: k / 2 + i * 0.13,
+				speed: 0.055,
+				line,
+			});
 		}
 	});
-
-	const routeLines = routes.build();
-	markBloom(routeLines);
-	group.add(routeLines);
 
 	const sparkPositions = new Float32Array(packets.length * 3);
 	const sparkGeometry = new THREE.BufferGeometry();
 	const sparkAttribute = new THREE.BufferAttribute(sparkPositions, 3);
 	sparkAttribute.usage = THREE.DynamicDrawUsage;
 	sparkGeometry.setAttribute('position', sparkAttribute);
-	const sparks = new THREE.Points(sparkGeometry, new THREE.PointsMaterial({
-		color: 0x74e6b4,
-		size: 6.5,
-		sizeAttenuation: false,
-		transparent: true,
-		opacity: 1,
-		depthWrite: false,
-		blending: THREE.AdditiveBlending,
-	}));
+	const sparkMat = createHexMaterial(10);
+	const sparks = new THREE.Points(sparkGeometry, sparkMat);
+	sparks.userData.energy = true;
 	sparks.frustumCulled = false;
 	sparks.layers.set(1);
-	sparks.material.userData.baseOpacity = 1;
 	group.add(sparks);
+
+	const nodeGeometry = new THREE.BufferGeometry();
+	nodeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nodePositions), 3));
+	nodeGeometry.computeBoundingSphere();
+	const nodeMat = createHexMaterial(6);
+	const nodes = new THREE.Points(nodeGeometry, nodeMat);
+	nodes.userData.energy = true;
+	nodes.frustumCulled = false;
+	nodes.layers.set(1);
+	group.add(nodes);
+
+	function apply() {
+		for (let i = 0; i < paths.length; i++) {
+			const line = paths[i];
+			const count = line.userData.count;
+			let shown = Math.round(line.userData.grow.p * count);
+			if (shown < 0) shown = 0;
+			if (shown > 0 && shown < 2) shown = 2;
+			if (line.userData.shown === shown) continue;
+			line.geometry.setDrawRange(0, shown);
+			line.userData.shown = shown;
+		}
+		const s = hexScale.s;
+		sparkMat.size = sparkMat.userData.baseSize * s;
+		nodeMat.size = nodeMat.userData.baseSize * s;
+		const showHex = s > 0.03;
+		sparks.visible = showHex;
+		nodes.visible = showHex;
+	}
 
 	let written = Number.NaN;
 	function update(time) {
@@ -215,11 +288,21 @@ export function createRoutes(kind) {
 		written = time;
 		for (let i = 0; i < packets.length; i++) {
 			const packet = packets[i];
-			writeSample(packet.data, packet.offset + time * packet.speed, sparkPositions, i * 3);
+			const o = i * 3;
+			let t = packet.offset + time * packet.speed;
+			t -= Math.floor(t);
+			if (hexScale.s < 0.03 || t > packet.line.userData.grow.p) {
+				sparkPositions[o] = 0;
+				sparkPositions[o + 1] = 0;
+				sparkPositions[o + 2] = -1000;
+				continue;
+			}
+			writeSample(packet.data, t, sparkPositions, o);
 		}
 		sparkAttribute.needsUpdate = true;
+		apply();
 	}
 
 	update(0);
-	return { group, update, sparks };
+	return { group, update, sparks, paths, hexScale, apply };
 }

@@ -1,11 +1,15 @@
 import * as THREE from 'three';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 
 const HOLE = 0.15;
-const EDGE = 10;
+const EDGE = 1;
 const CORNER = 8;
 const OUTLINE = 4 * (EDGE + CORNER);
-const THICKNESS = 0.28;
-const RIBS = 16;
+const THICKNESS = 0.16;
+const FACE = 0x091f38;
+const WALL = 0x102844;
 
 /**
  * One physical board shared by every PCB option. Width, height, corner
@@ -217,14 +221,14 @@ export function createPcbBase() {
 
 	const holeUniforms = Array.from({ length: 6 }, () => new THREE.Vector3());
 	const uniforms = {
-		uColor: { value: new THREE.Color(0x080f18) },
+		uColor: { value: new THREE.Color(FACE) },
 		uSize: { value: new THREE.Vector2(12, 10) },
 		uRadius: { value: 0 },
 		uBow: { value: 0 },
 		uHoles: { value: holeUniforms },
 	};
 	const face = new THREE.Mesh(
-		new THREE.PlaneGeometry(12, 10, 48, 1),
+		new THREE.PlaneGeometry(12, 10, 1, 1),
 		new THREE.ShaderMaterial({
 			uniforms,
 			vertexShader: faceVertex,
@@ -252,42 +256,38 @@ export function createPcbBase() {
 	wallGeometry.setIndex(wallIndex);
 	const wall = new THREE.Mesh(
 		wallGeometry,
-		new THREE.MeshBasicMaterial({ color: 0x12263a, side: THREE.DoubleSide }),
+		new THREE.MeshBasicMaterial({ color: WALL, side: THREE.DoubleSide }),
 	);
 	wall.frustumCulled = false;
 
-	const edgePositions = new Float32Array(OUTLINE * 3);
-	const edgeGeometry = new THREE.BufferGeometry();
-	edgeGeometry.setAttribute('position', new THREE.BufferAttribute(edgePositions, 3));
-	edgeGeometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
-	const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x1fc283 });
-	const edge = new THREE.LineLoop(edgeGeometry, edgeMaterial);
+	const edgeSeq = new Float32Array((OUTLINE + 1) * 3);
+	const bottomSeq = new Float32Array((OUTLINE + 1) * 3);
+	const edgeGeometry = new LineGeometry();
+	const bottomEdgeGeometry = new LineGeometry();
+	const edgeMaterial = new LineMaterial({
+		color: 0x1fc283,
+		linewidth: 0.9,
+		worldUnits: false,
+		toneMapped: false,
+		transparent: true,
+		opacity: 0.92,
+		depthWrite: false,
+	});
+	edgeMaterial.resolution.set(window.innerWidth || 1, window.innerHeight || 1);
+	const edge = new Line2(edgeGeometry, edgeMaterial);
 	edge.frustumCulled = false;
 	edge.renderOrder = 1;
-
-	const bottomEdgePositions = new Float32Array(OUTLINE * 3);
-	const bottomEdgeGeometry = new THREE.BufferGeometry();
-	bottomEdgeGeometry.setAttribute('position', new THREE.BufferAttribute(bottomEdgePositions, 3));
-	bottomEdgeGeometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
-	const bottomEdge = new THREE.LineLoop(bottomEdgeGeometry, edgeMaterial);
+	const bottomEdge = new Line2(bottomEdgeGeometry, edgeMaterial);
 	bottomEdge.frustumCulled = false;
 	bottomEdge.renderOrder = 1;
 
-	const ribPositions = new Float32Array(RIBS * 2 * 3);
-	const ribGeometry = new THREE.BufferGeometry();
-	ribGeometry.setAttribute('position', new THREE.BufferAttribute(ribPositions, 3));
-	ribGeometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
-	const ribs = new THREE.LineSegments(ribGeometry, edgeMaterial);
-	ribs.frustumCulled = false;
-	ribs.renderOrder = 1;
-
-	const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x080f18 });
-	const ringEdgeMaterial = new THREE.LineBasicMaterial({ color: 0xe4cc74 });
+	const ringMaterial = new THREE.MeshBasicMaterial({ color: FACE });
+	const ringEdgeMaterial = new THREE.LineBasicMaterial({ color: 0x1fc283 });
 	const topRingGeo = new THREE.TorusGeometry(0.205, 0.048, 6, 24);
 	const sleeveGeo = new THREE.CylinderGeometry(HOLE, HOLE, THICKNESS, 20, 1, true);
 	sleeveGeo.rotateX(Math.PI / 2);
 	sleeveGeo.translate(0, 0, -THICKNESS * 0.5);
-	const sleeveMaterial = new THREE.MeshBasicMaterial({ color: 0x080f18, side: THREE.BackSide });
+	const sleeveMaterial = new THREE.MeshBasicMaterial({ color: FACE, side: THREE.BackSide });
 	const innerGeo = circleGeometry(0.157);
 	const outerGeo = circleGeometry(0.253);
 	const rings = [];
@@ -305,7 +305,18 @@ export function createPcbBase() {
 		rings.push(rig);
 	}
 
-	group.add(face, wall, edge, bottomEdge, ribs);
+	group.add(face, wall, edge, bottomEdge);
+
+	function writeLoop(target, pts, z) {
+		for (let i = 0; i < OUTLINE; i++) {
+			target[i * 3] = pts[i * 2];
+			target[i * 3 + 1] = pts[i * 2 + 1];
+			target[i * 3 + 2] = z;
+		}
+		target[OUTLINE * 3] = pts[0];
+		target[OUTLINE * 3 + 1] = pts[1];
+		target[OUTLINE * 3 + 2] = z;
+	}
 
 	function apply(profile) {
 		uniforms.uSize.value.set(profile.w, profile.h);
@@ -330,32 +341,20 @@ export function createPcbBase() {
 			top[o + 2] = -THICKNESS;
 		}
 		wallGeometry.attributes.position.needsUpdate = true;
-		const rim = pushOut(pts, 0.02);
-		const edgeArray = edgeGeometry.attributes.position.array;
-		writeRings(edgeArray, rim, 0.012);
-		edgeGeometry.attributes.position.needsUpdate = true;
-		const bottomArray = bottomEdgeGeometry.attributes.position.array;
-		writeRings(bottomArray, rim, -THICKNESS);
-		bottomEdgeGeometry.attributes.position.needsUpdate = true;
-		const ribArray = ribGeometry.attributes.position.array;
-		const ribStep = OUTLINE / RIBS;
-		for (let i = 0; i < RIBS; i++) {
-			const p = Math.floor(i * ribStep) * 2;
-			const o = i * 6;
-			ribArray[o] = rim[p];
-			ribArray[o + 1] = rim[p + 1];
-			ribArray[o + 2] = 0.012;
-			ribArray[o + 3] = rim[p];
-			ribArray[o + 4] = rim[p + 1];
-			ribArray[o + 5] = -THICKNESS;
-		}
-		ribGeometry.attributes.position.needsUpdate = true;
+		const rim = pushOut(pts, 0.012);
+		writeLoop(edgeSeq, rim, 0.012);
+		writeLoop(bottomSeq, rim, -THICKNESS);
+		edgeGeometry.setPositions(edgeSeq);
+		bottomEdgeGeometry.setPositions(bottomSeq);
+		edge.computeLineDistances();
+		bottomEdge.computeLineDistances();
 		fitBounds(face.geometry, profile.w, profile.h, profile.bow);
 		fitBounds(wallGeometry, profile.w, profile.h, profile.bow);
-		fitBounds(edgeGeometry, profile.w, profile.h, profile.bow);
-		fitBounds(bottomEdgeGeometry, profile.w, profile.h, profile.bow);
-		fitBounds(ribGeometry, profile.w, profile.h, profile.bow);
 	}
 
-	return { group, apply };
+	function resize(width, height) {
+		edgeMaterial.resolution.set(Math.max(1, width), Math.max(1, height));
+	}
+
+	return { group, apply, resize };
 }
