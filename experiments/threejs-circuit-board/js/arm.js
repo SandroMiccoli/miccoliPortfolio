@@ -62,7 +62,7 @@ export function createArm() {
 			const a = (i / 64) * Math.PI * 2;
 			ring.push(new THREE.Vector3(-0.75 + Math.cos(a) * radius, Math.sin(a) * radius, 5.08));
 		}
-		lines.add(ring, 0x62c9ff, 0.4, 0.15);
+		lines.add(ring, 'models.wire', 0.4, 0.15);
 	}
 
 	for (const [x, y, z, radius, fade] of [
@@ -116,7 +116,7 @@ export function createArm() {
 		]);
 		const points = cable.getPoints(100);
 		const fade = points.map((_, index) => index / (points.length - 1));
-		lines.add(points, 0xb79ae6, 0.75, fade);
+		lines.add(points, 'models.violet', 0.75, fade);
 	}
 
 	const body = hologram.build();

@@ -2,6 +2,7 @@ import * as THREE from '../vendor/three.module.min.js';
 import { mergeGeometries } from '../vendor/addons/utils/BufferGeometryUtils.js';
 import { createLineBatch } from './batch.js';
 import { markBloom } from './bloom.js';
+import { mark } from './look.js';
 
 /**
  * Six-rack compute cluster from the R2 study: chassis, trays, rails,
@@ -27,14 +28,14 @@ export function createDataCenter() {
 		edges.dispose();
 	}
 
-	function modelBox(x, y, z, w, d, h, color = 0x62c9ff) {
+	function modelBox(x, y, z, w, d, h, color = 'models.wire') {
 		const geometry = new THREE.BoxGeometry(w, d, h);
 		geometry.translate(x, y, z);
 		addEdges(geometry, color, 0.75);
 		boxes.push(geometry);
 	}
 
-	function ml(points, color = 0x62c9ff, opacity = 0.5) {
+	function ml(points, color = 'models.wire', opacity = 0.5) {
 		lines.add(points.map((point) => new THREE.Vector3(point[0], point[1], point[2])), color, opacity);
 	}
 
@@ -51,10 +52,10 @@ export function createDataCenter() {
 					ml([
 						[x - 0.44 + k * 0.15, y - 0.815, z],
 						[x - 0.37 + k * 0.15, y - 0.815, z],
-					], 0x1fc283, 0.8);
+					], 'models.green', 0.8);
 				}
 			}
-			ml([[x, y, 8.98], [x, y, 9.3], [0, y, 9.3], [0, 0, 9.3]], 0x1fc283, 0.6);
+			ml([[x, y, 8.98], [x, y, 9.3], [0, y, 9.3], [0, 0, 9.3]], 'models.green', 0.6);
 		}
 	}
 
@@ -72,27 +73,27 @@ export function createDataCenter() {
 				const z = 6.55 + unit * 0.57;
 				modelBox(x, y - 0.85, z, 1.2, 0.08, 0.48);
 				for (const dx of [-0.55, 0.55]) {
-					modelBox(x + dx, y - 0.94, z, 0.035, 0.07, 0.27, 0xe4cc74);
+					modelBox(x + dx, y - 0.94, z, 0.035, 0.07, 0.27, 'models.gold');
 				}
 				for (let j = 0; j < 12; j++) {
 					ml([
 						[x - 0.45 + j * 0.08, y - 0.9, z - 0.17],
 						[x - 0.45 + j * 0.08, y - 0.9, z + 0.17],
-					], 0x49a9ed, 0.4);
+					], 'models.blue', 0.4);
 				}
 				for (let k = 0; k < 4; k++) {
-					modelBox(x - 0.35 + k * 0.22, y - 0.93, z + 0.13, 0.13, 0.025, 0.05, 0x1fc283);
+					modelBox(x - 0.35 + k * 0.22, y - 0.93, z + 0.13, 0.13, 0.025, 0.05, 'models.green');
 				}
 			}
 			for (let k = 0; k < 12; k++) {
-				modelBox(x - 0.53 + k * 0.095, y - 0.9, 8.75, 0.055, 0.04, 0.06, 0x1fc283);
+				modelBox(x - 0.53 + k * 0.095, y - 0.9, 8.75, 0.055, 0.04, 0.06, 'models.green');
 			}
 			ml([
 				[x + 0.7, y + 0.6, 6.2],
 				[x + 0.7, y + 0.6, 9.1],
 				[x + 0.7, 0, 9.1],
 				[0, 0, 9.1],
-			], 0xb79ae6, 0.55);
+			], 'models.violet', 0.55);
 		}
 	}
 
@@ -100,10 +101,10 @@ export function createDataCenter() {
 	const width = 8;
 	const depth = 5;
 	for (let x = -width / 2; x <= width / 2 + 0.01; x += 0.5) {
-		ml([[x, -depth / 2, sheetZ], [x, depth / 2, sheetZ]], 0x62c9ff, 0.115);
+		ml([[x, -depth / 2, sheetZ], [x, depth / 2, sheetZ]], 'models.wire', 0.115);
 	}
 	for (let y = -depth / 2; y <= depth / 2 + 0.01; y += 0.5) {
-		ml([[-width / 2, y, sheetZ], [width / 2, y, sheetZ]], 0x62c9ff, 0.115);
+		ml([[-width / 2, y, sheetZ], [width / 2, y, sheetZ]], 'models.wire', 0.115);
 	}
 	ml([
 		[-width / 2, -depth / 2, sheetZ],
@@ -111,21 +112,21 @@ export function createDataCenter() {
 		[width / 2, depth / 2, sheetZ],
 		[-width / 2, depth / 2, sheetZ],
 		[-width / 2, -depth / 2, sheetZ],
-	], 0x62c9ff, 0.3);
+	], 'models.wire', 0.3);
 	ml([
 		[-width / 2, -depth / 2 - 0.05, sheetZ],
 		[-width / 2, -depth / 2 - 0.6, sheetZ],
 		[width / 2, -depth / 2 - 0.6, sheetZ],
 		[width / 2, -depth / 2 - 0.05, sheetZ],
-	], 0x62c9ff, 0.3);
+	], 'models.wire', 0.3);
 	for (const x of [-width / 2, width / 2]) {
-		ml([[x - 0.08, -depth / 2 - 0.52, sheetZ], [x + 0.08, -depth / 2 - 0.68, sheetZ]], 0x62c9ff, 0.6);
+		ml([[x - 0.08, -depth / 2 - 0.52, sheetZ], [x + 0.08, -depth / 2 - 0.68, sheetZ]], 'models.wire', 0.6);
 	}
 
 	const merged = mergeGeometries(boxes);
 	for (const geometry of boxes) geometry.dispose();
 	technology.add(
-		new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ color: 0x071522, transparent: true, opacity: 0.55 })),
+		new THREE.Mesh(merged, mark(new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55 }), 'models.hull')),
 		lines.build(),
 	);
 

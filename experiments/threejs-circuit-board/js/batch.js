@@ -1,4 +1,5 @@
 import * as THREE from '../vendor/three.module.min.js';
+import { mark } from './look.js';
 
 /**
  * Build helpers. Parts are copied into a handful of buffers instead of one mesh each.
@@ -8,18 +9,18 @@ import * as THREE from '../vendor/three.module.min.js';
  */
 
 const PALETTE = {
-	black: 0x49a9ed,
-	chip: 0xA99DFC,
-	gold: 0x1fc283,
-	silver: 0x49a9ed,
-	ceramic: 0xA99DFC,
-	substrate: 0x49a9ed,
-	die: 0xA99DFC,
-	grey: 0x1fc283,
-	white: 0x49a9ed,
-	led: 0x1fc283,
-	amber: 0x62c9ff,
-	green: 0x1fc283,
+	black: 'pcb.blue',
+	chip: 'pcb.chip',
+	gold: 'pcb.green',
+	silver: 'pcb.blue',
+	ceramic: 'pcb.chip',
+	substrate: 'pcb.blue',
+	die: 'pcb.chip',
+	grey: 'pcb.green',
+	white: 'pcb.blue',
+	led: 'pcb.green',
+	amber: 'pcb.cyan',
+	green: 'pcb.green',
 };
 
 const _euler = new THREE.Euler();
@@ -122,8 +123,8 @@ function torusTemplate(radius, tube, radial, tubular) {
 }
 
 function edgeColor(mat, x) {
-	if (mat === 'black') return x < -2 ? 0xb79ae6 : 0x49a9ed;
-	return PALETTE[mat] || 0x1fc283;
+	if (mat === 'black') return x < -2 ? 'pcb.violet' : 'pcb.blue';
+	return PALETTE[mat] || 'pcb.green';
 }
 
 function compose(x, y, z, rx, ry, rz, sx, sy, sz, quaternion) {
@@ -229,12 +230,11 @@ function edgeLinesFrom(buckets, opacity, depthWrite, dynamic = false) {
 			geometry.attributes.position.setUsage(THREE.DynamicDrawUsage);
 		}
 		geometry.computeBoundingSphere();
-		group.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({
-			color,
+		group.add(new THREE.LineSegments(geometry, mark(new THREE.LineBasicMaterial({
 			transparent: true,
 			opacity: Math.min(opacity, 0.78),
 			depthWrite,
-		})));
+		}), color)));
 	}
 	return group;
 }
@@ -400,12 +400,11 @@ export function createPcbBatch() {
 		}
 	}
 
-	const dark = new THREE.MeshBasicMaterial({
-		color: 0x080f18,
+	const dark = mark(new THREE.MeshBasicMaterial({
 		polygonOffset: true,
 		polygonOffsetFactor: 1,
 		polygonOffsetUnits: 1,
-	});
+	}), 'pcb.body');
 
 	return {
 		begin,
@@ -448,7 +447,7 @@ export function createPcbBatch() {
 			_m.identity();
 			plateMesh.addSolid(template, _m);
 			_m.makeTranslation(0, 0, 0.012);
-			addPlateEdges(template, _m, 0x1fc283);
+			addPlateEdges(template, _m, 'pcb.rim');
 		},
 		build() {
 			const solidGeo = mesh.geometry();
@@ -456,7 +455,9 @@ export function createPcbBatch() {
 				? new THREE.Mesh(solidGeo, dark)
 				: null;
 			const lines = edges.size ? edgeLinesFrom(edges, 0.95, true, true) : null;
-			const plate = new THREE.Mesh(plateMesh.geometry(), dark.clone());
+			const plateMaterial = dark.clone();
+			plateMaterial.userData.look = 'pcb.body';
+			const plate = new THREE.Mesh(plateMesh.geometry(), plateMaterial);
 			const plateLines = edgeLinesFrom(plateEdges, 0.95, true);
 			return { solid, lines, plate, plateLines, parts };
 		},
@@ -489,20 +490,20 @@ export function createHologramBatch() {
 		},
 		build() {
 			const fill = new THREE.MeshBasicMaterial({
-				color: 0x237ca5,
 				transparent: true,
 				opacity: 0.2,
 				depthWrite: false,
 				side: THREE.DoubleSide,
 			});
 			const stroke = new THREE.LineBasicMaterial({
-				color: 0x62c9ff,
 				transparent: true,
 				opacity: 0.95,
 				depthWrite: false,
 			});
 			applyFade(fill, 0.08);
 			applyFade(stroke, 0.16);
+			mark(fill, 'models.glass');
+			mark(stroke, 'models.wire');
 			const group = new THREE.Group();
 			group.add(new THREE.Mesh(mesh.geometry(), fill));
 			const geometry = new THREE.BufferGeometry();
@@ -524,11 +525,11 @@ export function createLineBatch(options = {}) {
 	const withFade = fadeFloor !== undefined;
 	const buckets = new Map();
 
-	function add(points, color, opacity, fade = 1) {
-		const key = color * 1000 + Math.round(opacity * 1000);
+	function add(points, ink, opacity, fade = 1) {
+		const key = ink + '|' + Math.round(opacity * 1000);
 		let bucket = buckets.get(key);
 		if (!bucket) {
-			bucket = { color, opacity, buffer: growFloat(), fades: withFade ? growFloat() : null };
+			bucket = { ink, opacity, buffer: growFloat(), fades: withFade ? growFloat() : null };
 			buckets.set(key, bucket);
 		}
 		const buffer = bucket.buffer;
@@ -552,12 +553,12 @@ export function createLineBatch(options = {}) {
 			if (bucket.fades) geometry.setAttribute('fade', new THREE.BufferAttribute(bucket.fades.seal(), 1));
 			geometry.computeBoundingSphere();
 			const material = new THREE.LineBasicMaterial({
-				color: bucket.color,
 				transparent: true,
 				opacity: bucket.opacity,
 				depthWrite: false,
 			});
 			if (withFade) applyFade(material, fadeFloor);
+			mark(material, bucket.ink);
 			group.add(new THREE.LineSegments(geometry, material));
 		}
 		return group;

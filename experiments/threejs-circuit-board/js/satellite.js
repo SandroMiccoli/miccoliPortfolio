@@ -2,6 +2,7 @@ import * as THREE from '../vendor/three.module.min.js';
 import { mergeGeometries } from '../vendor/addons/utils/BufferGeometryUtils.js';
 import { createLineBatch } from './batch.js';
 import { markBloom } from './bloom.js';
+import { mark } from './look.js';
 
 /**
  * GEO communications satellite from the photo study: large cubic bus,
@@ -19,10 +20,10 @@ export function createSatellite() {
 	const _a = new THREE.Vector3();
 	const _b = new THREE.Vector3();
 
-	const CYAN = 0x62c9ff;
-	const BLUE = 0x49a9ed;
-	const VIOLET = 0xb79ae6;
-	const GREEN = 0x1fc283;
+	const CYAN = 'models.wire';
+	const BLUE = 'models.blue';
+	const VIOLET = 'models.violet';
+	const GREEN = 'models.green';
 
 	const CUBE = 2.12;
 	const HALF = CUBE / 2;
@@ -348,22 +349,19 @@ export function createSatellite() {
 	craft.position.set(0, 0.15, 7.55);
 	craft.rotation.set(0.86, 0.28, 0.04);
 
-	const bodyMesh = meshFrom(boxes, new THREE.MeshBasicMaterial({
-		color: 0x071522,
+	const bodyMesh = meshFrom(boxes, mark(new THREE.MeshBasicMaterial({
 		transparent: true,
 		opacity: 0.55,
-	}));
-	const facetMesh = meshFrom(facets, new THREE.MeshBasicMaterial({
-		color: 0x081421,
+	}), 'models.hull'));
+	const facetMesh = meshFrom(facets, mark(new THREE.MeshBasicMaterial({
 		transparent: true,
 		opacity: 0.52,
 		side: THREE.DoubleSide,
-	}));
-	const sphereMesh = meshFrom(spheres, new THREE.MeshBasicMaterial({
-		color: 0x122636,
+	}), 'models.facet'));
+	const sphereMesh = meshFrom(spheres, mark(new THREE.MeshBasicMaterial({
 		transparent: true,
 		opacity: 0.7,
-	}));
+	}), 'models.node'));
 
 	craft.add(...[bodyMesh, facetMesh, sphereMesh, lines.build()].filter(Boolean));
 	technology.add(craft);

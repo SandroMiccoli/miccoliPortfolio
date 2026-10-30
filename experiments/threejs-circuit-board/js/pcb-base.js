@@ -2,14 +2,13 @@ import * as THREE from '../vendor/three.module.min.js';
 import { Line2 } from '../vendor/addons/lines/Line2.js';
 import { LineGeometry } from '../vendor/addons/lines/LineGeometry.js';
 import { LineMaterial } from '../vendor/addons/lines/LineMaterial.js';
+import { mark } from './look.js';
 
 const HOLE = 0.15;
 const EDGE = 1;
 const CORNER = 8;
 const OUTLINE = 4 * (EDGE + CORNER);
 const THICKNESS = 0.16;
-const FACE = 0x091f38;
-const WALL = 0x102844;
 
 /**
  * One physical board shared by every PCB option. Width, height, corner
@@ -221,22 +220,24 @@ export function createPcbBase() {
 
 	const holeUniforms = Array.from({ length: 6 }, () => new THREE.Vector3());
 	const uniforms = {
-		uColor: { value: new THREE.Color(FACE) },
+		uColor: { value: new THREE.Color() },
 		uSize: { value: new THREE.Vector2(12, 10) },
 		uRadius: { value: 0 },
 		uBow: { value: 0 },
 		uHoles: { value: holeUniforms },
 	};
+	const faceMaterial = new THREE.ShaderMaterial({
+		uniforms,
+		vertexShader: faceVertex,
+		fragmentShader: faceFragment,
+		polygonOffset: true,
+		polygonOffsetFactor: -1,
+		polygonOffsetUnits: -1,
+	});
+	mark(faceMaterial, 'pcb.face');
 	const face = new THREE.Mesh(
 		new THREE.PlaneGeometry(12, 10, 1, 1),
-		new THREE.ShaderMaterial({
-			uniforms,
-			vertexShader: faceVertex,
-			fragmentShader: faceFragment,
-			polygonOffset: true,
-			polygonOffsetFactor: -1,
-			polygonOffsetUnits: -1,
-		}),
+		faceMaterial,
 	);
 	face.position.z = 0.004;
 	face.renderOrder = 0;
@@ -256,7 +257,7 @@ export function createPcbBase() {
 	wallGeometry.setIndex(wallIndex);
 	const wall = new THREE.Mesh(
 		wallGeometry,
-		new THREE.MeshBasicMaterial({ color: WALL, side: THREE.DoubleSide }),
+		mark(new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), 'pcb.wall'),
 	);
 	wall.frustumCulled = false;
 
@@ -264,15 +265,14 @@ export function createPcbBase() {
 	const bottomSeq = new Float32Array((OUTLINE + 1) * 3);
 	const edgeGeometry = new LineGeometry();
 	const bottomEdgeGeometry = new LineGeometry();
-	const edgeMaterial = new LineMaterial({
-		color: 0x1fc283,
+	const edgeMaterial = mark(new LineMaterial({
 		linewidth: 0.9,
 		worldUnits: false,
 		toneMapped: false,
 		transparent: true,
 		opacity: 0.92,
 		depthWrite: false,
-	});
+	}), 'pcb.rim');
 	edgeMaterial.resolution.set(window.innerWidth || 1, window.innerHeight || 1);
 	const edge = new Line2(edgeGeometry, edgeMaterial);
 	edge.frustumCulled = false;
@@ -281,13 +281,13 @@ export function createPcbBase() {
 	bottomEdge.frustumCulled = false;
 	bottomEdge.renderOrder = 1;
 
-	const ringMaterial = new THREE.MeshBasicMaterial({ color: FACE });
-	const ringEdgeMaterial = new THREE.LineBasicMaterial({ color: 0x1fc283 });
+	const ringMaterial = mark(new THREE.MeshBasicMaterial(), 'pcb.face');
+	const ringEdgeMaterial = mark(new THREE.LineBasicMaterial(), 'pcb.rim');
 	const topRingGeo = new THREE.TorusGeometry(0.205, 0.048, 6, 24);
 	const sleeveGeo = new THREE.CylinderGeometry(HOLE, HOLE, THICKNESS, 20, 1, true);
 	sleeveGeo.rotateX(Math.PI / 2);
 	sleeveGeo.translate(0, 0, -THICKNESS * 0.5);
-	const sleeveMaterial = new THREE.MeshBasicMaterial({ color: FACE, side: THREE.BackSide });
+	const sleeveMaterial = mark(new THREE.MeshBasicMaterial({ side: THREE.BackSide }), 'pcb.face');
 	const innerGeo = circleGeometry(0.157);
 	const outerGeo = circleGeometry(0.253);
 	const rings = [];

@@ -12,6 +12,7 @@ import { createBloom } from './bloom.js';
 import { applyPartLifts } from './batch.js';
 import { createPcbBase, PROFILES, mixProfile, cloneProfile } from './pcb-base.js';
 import { createPartHover } from './hover.js';
+import { cloneLook, installLook, normalizeLook, paintRoot, seedLook } from './look.js';
 
 const HOME_PITCH = -1.15;
 const HOME_ROLL = -0.58;
@@ -38,6 +39,7 @@ const NO_HOVER = {
 	},
 	hide() {},
 	dispose() {},
+	refresh() {},
 };
 
 /**
@@ -54,6 +56,7 @@ const NO_HOVER = {
  * @param {boolean} [options.tilt] Pointer tilt and part highlight. Default true.
  * @param {boolean} [options.zoom] Wheel zoom. Default false, so the page can scroll.
  * @param {string|number|null} [options.background] CSS color, or 'transparent'.
+ * @param {object} [options.look] Colors and bloom. Missing keys keep the default. See js/look.js.
  * @param {number|string} [options.pixelRatio] A number, or 'device'.
  * @param {string} [options.label] Accessible name, when the element has none.
  * @param {HTMLElement} [options.pointerRoot] Element that tracks the pointer. Defaults to `root`.
@@ -74,7 +77,9 @@ export function mountCircuitBoard(root, options = {}) {
 	const tiltOn = options.tilt !== false;
 	const zoomOn = options.zoom === true;
 	const transparent = options.background === 'transparent' || options.background === null;
-	const background = transparent || options.background === undefined ? '#06090c' : options.background;
+	let lookState = seedLook(options.look, transparent ? undefined : options.background);
+	installLook(lookState);
+	const background = lookState.system.background;
 	const pointerRoot = options.pointerRoot instanceof HTMLElement ? options.pointerRoot : root;
 	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 	const events = new AbortController();
@@ -90,6 +95,7 @@ export function mountCircuitBoard(root, options = {}) {
 	let resizeObserver = null;
 	let intersectionObserver = null;
 	let forcedPosition = false;
+	let hoverFrame = 0;
 	const addedClass = !root.classList.contains('circuit-board');
 
 	root.classList.add('circuit-board');
@@ -123,6 +129,12 @@ export function mountCircuitBoard(root, options = {}) {
 			setMode() {},
 			resetView() {},
 			setPixelRatio() {},
+			getLook() { return cloneLook(lookState); },
+			setLook(next) {
+				lookState = normalizeLook(next, lookState);
+				installLook(lookState);
+				return cloneLook(lookState);
+			},
 			get mode() { return initialMode; },
 			get pcb() { return initialPcb; },
 			destroy() {
@@ -242,7 +254,36 @@ export function mountCircuitBoard(root, options = {}) {
 	for (const entry of Object.values(studies)) bindStudy(entry);
 
 	bloom = createBloom(renderer);
+	bloom.strength = lookState.bloom.strength;
+	bloom.radius = lookState.bloom.radius;
+	bloom.threshold = lookState.bloom.threshold;
 	const sceneBackground = scene.background;
+
+	function scheduleHoverRefresh() {
+		if (hoverFrame) clearTimeout(hoverFrame);
+		hoverFrame = setTimeout(() => {
+			hoverFrame = 0;
+			if (alive) partHover.refresh();
+		}, 160);
+	}
+
+	function applyLook(next) {
+		const prevPcb = JSON.stringify(lookState.pcb);
+		lookState = normalizeLook(next, lookState);
+		installLook(lookState);
+		paintRoot(scene);
+		if (!transparent) {
+			clearColor.set(lookState.system.background);
+			sceneBackground.copy(clearColor);
+			renderer.setClearColor(clearColor, 1);
+			root.style.setProperty('--cb-bg', lookState.system.background);
+		}
+		bloom.strength = lookState.bloom.strength;
+		bloom.radius = lookState.bloom.radius;
+		bloom.threshold = lookState.bloom.threshold;
+		if (JSON.stringify(lookState.pcb) !== prevPcb) scheduleHoverRefresh();
+		return cloneLook(lookState);
+	}
 
 	let mode = initialMode;
 	let shownMode = initialMode;
@@ -1018,6 +1059,7 @@ export function mountCircuitBoard(root, options = {}) {
 		if (!alive) return;
 		alive = false;
 		looping = false;
+		if (hoverFrame) clearTimeout(hoverFrame);
 		renderer.setAnimationLoop(null);
 		events.abort();
 		resizeObserver?.disconnect();
@@ -1059,6 +1101,8 @@ export function mountCircuitBoard(root, options = {}) {
 		setMode,
 		resetView,
 		setPixelRatio,
+		getLook() { return cloneLook(lookState); },
+		setLook: applyLook,
 		destroy,
 		bloom,
 		get mode() { return mode; },

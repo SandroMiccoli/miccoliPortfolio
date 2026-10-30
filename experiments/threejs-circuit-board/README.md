@@ -14,7 +14,7 @@ npx serve .
 
 Open `/experiments/threejs-circuit-board/`.
 
-The page is the study alone. The pointer tilts the board a little around its rest angle, and it eases back when the pointer leaves. Scroll zooms. `R` returns to 1×. The boards advance on their own.
+The page is the study alone. The pointer tilts the board a little around its rest angle, and it eases back when the pointer leaves. Scroll zooms. `R` returns to 1×. The boards advance on their own. **Colors** on the right edits the palette and the bloom, then exports `circuit-board-look.json`.
 
 `prefers-reduced-motion: reduce` holds the rest angle and snaps board changes instead of tweening them.
 
@@ -103,6 +103,7 @@ The call builds every board before it returns, then draws while the element is o
 | `tilt` | `true` | Pointer tilt and the part highlight |
 | `zoom` | `false` | Wheel zoom. Leave this off in a scrolling page |
 | `background` | `'#06090c'` | A CSS color. `'transparent'` clears the empty pixels |
+| `look` | the shipped palette | Colors and bloom. Missing keys keep the default |
 | `pixelRatio` | `'device'` | A number, or `'device'` capped at 2 |
 | `label` | a short description | Accessible name, used when the element has no `aria-label` |
 | `pointerRoot` | the mount element | Element that receives the pointer |
@@ -130,6 +131,11 @@ study.setPixelRatio(1);
 study.bloom.strength = 0.2;
 study.bloom.radius = 0;
 study.bloom.threshold = 0.06;
+
+study.setLook({
+  bloom: { strength: 0.35 },
+  pcb: { face: '#0c2418' },
+});
 ```
 
 `setPcb` accepts `'reference'`, `'nxp'`, and `'versal'`. `setMode` accepts `'arm'`, `'plane'`, `'satellite'`, and `'datacenter'`. `resetView()` returns the zoom to 1×. `study.pcb` and `study.mode` are the current ids.
@@ -145,6 +151,22 @@ mountCircuitBoard(element, {
 ```
 
 Unknown ids are ignored.
+
+### Color and bloom
+
+`study.getLook()` returns the active palette. `study.setLook(next)` applies one. A partial object changes only the keys it includes. Anything omitted stays as it is. A loaded file fills its gaps from the shipped default.
+
+The lab page mounts a Colors panel (`js/look-panel.js`). It groups the swatches into System, PCB, and Models, plus three bloom sliders. Intensity is `strength`, spread is `radius`, and cutoff is `threshold`.
+
+Download or Copy writes `circuit-board-look.json`. To make that file the default, replace `DEFAULT_LOOK` in `js/look.js` with the object from the file. Load in the panel reads a file back.
+
+```js
+mountCircuitBoard(element, {
+  look: { models: { wire: '#d6b25e' }, bloom: { strength: 0.4, radius: 0.2 } },
+});
+```
+
+Colors are `#rrggbb`. Values outside the bloom range are clamped.
 
 ### 4. Remove it
 
@@ -199,6 +221,8 @@ The loop pauses while the element is off screen and while the tab is hidden. The
 | File | Role |
 |---|---|
 | `js/circuit-board.js` | `mountCircuitBoard` |
+| `js/look.js` | Default colors, bloom, and the export shape |
+| `js/look-panel.js` | The lab page only |
 | `js/*.js` | Boards, holograms, bloom, traces |
 | `css/circuit-board.css` | The element fills its box |
 | `vendor/three.module.min.js` | Three.js r180, MIT. It loads `vendor/three.core.min.js` beside it |

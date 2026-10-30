@@ -17,7 +17,7 @@ export function createPlane() {
 		return new THREE.Vector3((38.15 - y) * scale, x * scale, height + z * scale);
 	}
 
-	function al(points, opacity = 0.65, color = 0x62c9ff) {
+	function al(points, opacity = 0.65, color = 'models.wire') {
 		lines.add(points.map((point) => av(point[0], point[1], point[2])), color, opacity);
 	}
 

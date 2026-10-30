@@ -408,6 +408,17 @@ export function createPartHover(groups, renderer) {
 		return show(best.board, best.id, best.lift);
 	}
 
+	function refresh() {
+		hide();
+		if (line.geometry !== scratch) line.geometry = scratch;
+		for (const board of boards) {
+			for (const edges of board.edges) {
+				if (edges?.geometry && edges.geometry !== scratch) edges.geometry.dispose();
+			}
+			board.edges = collectEdges(board.group);
+		}
+	}
+
 	function dispose() {
 		hide();
 		line.remove();
@@ -423,5 +434,5 @@ export function createPartHover(groups, renderer) {
 		material.dispose();
 	}
 
-	return { update, hide, dispose };
+	return { update, hide, refresh, dispose };
 }

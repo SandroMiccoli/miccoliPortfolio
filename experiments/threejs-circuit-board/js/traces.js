@@ -1,9 +1,12 @@
 import * as THREE from '../vendor/three.module.min.js';
+import { mark } from './look.js';
 
 const TRACE_COLOR = '#1f7863';
 const STEP = 0.07;
 
-const material = new THREE.LineBasicMaterial({ color: 0x1f7863 });
+function copperMaterial() {
+	return mark(new THREE.LineBasicMaterial(), 'pcb.copper');
+}
 
 function orientFromCenter(points) {
 	const a = points[0];
@@ -45,6 +48,7 @@ export function createTraceCollector() {
 			const group = new THREE.Group();
 			group.name = 'traces';
 			const lines = [];
+			const material = copperMaterial();
 			for (const route of routes) {
 				const dense = subdivide(route);
 				const positions = new Float32Array(dense.length * 3);

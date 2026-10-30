@@ -1,6 +1,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { createLineBatch } from './batch.js';
 import { markBloom } from './bloom.js';
+import { mark } from './look.js';
 import { ARM_PIVOT, ARM_SCALE, LAYER_Z } from './constants.js';
 
 const SAMPLE_STEPS = 96;
@@ -118,20 +119,20 @@ export function createIntelligence() {
 				new THREE.Vector3(x - sx * 0.6, y, LAYER_Z),
 				new THREE.Vector3(x, y, LAYER_Z),
 				new THREE.Vector3(x, y - sy * 0.45, LAYER_Z),
-			], 0x49a9ed, 0.36);
+			], 'system.grid', 0.36);
 		}
 	}
 	for (let x = -3; x <= 3; x += 0.5) {
 		grid.add([
 			new THREE.Vector3(x, -1.5, LAYER_Z),
 			new THREE.Vector3(x, 1.5, LAYER_Z),
-		], 0x49a9ed, 0.065);
+		], 'system.grid', 0.065);
 	}
 	for (let y = -1.5; y <= 1.5; y += 0.5) {
 		grid.add([
 			new THREE.Vector3(-3, y, LAYER_Z),
 			new THREE.Vector3(3, y, LAYER_Z),
-		], 0x49a9ed, 0.065);
+		], 'system.grid', 0.065);
 	}
 
 	group.add(grid.build());
@@ -139,14 +140,13 @@ export function createIntelligence() {
 }
 
 function createHexMaterial(baseSize) {
-	const material = new THREE.PointsMaterial({
-		color: 0x74e6b4,
+	const material = mark(new THREE.PointsMaterial({
 		size: baseSize,
 		sizeAttenuation: false,
 		transparent: true,
 		opacity: 1,
 		depthWrite: false,
-	});
+	}), 'system.packet');
 	material.userData.baseSize = baseSize;
 	material.userData.baseOpacity = 1;
 	material.onBeforeCompile = (shader) => {
@@ -211,12 +211,11 @@ export function createRoutes(kind) {
 		geometry.setAttribute('position', new THREE.BufferAttribute(sampled, 3));
 		geometry.setDrawRange(0, SAMPLE_STEPS + 1);
 		geometry.computeBoundingSphere();
-		const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({
-			color: 0x1fc283,
+		const line = new THREE.Line(geometry, mark(new THREE.LineBasicMaterial({
 			transparent: true,
 			opacity: 0.72,
 			depthWrite: false,
-		}));
+		}), 'system.route'));
 		line.userData.energy = true;
 		line.userData.count = SAMPLE_STEPS + 1;
 		line.userData.grow = { p: 1 };
