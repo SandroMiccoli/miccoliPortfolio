@@ -1,8 +1,9 @@
 ---
 ---
 
-@import "lab/base";
-@import "lab/info-panel";
+@use "lab/variables" as *;
+@use "lab/base";
+@use "lab/info-panel";
 
 // Experiment page (fullscreen)
 .lab-experiment {

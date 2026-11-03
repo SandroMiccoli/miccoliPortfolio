@@ -19,10 +19,23 @@
   cursor: grabbing;
 }
 
-.interactive-globe.is-error {
-  display: grid;
-  place-items: center;
+.interactive-globe:not(:has(canvas)) {
   cursor: default;
+  touch-action: auto;
+}
+
+.interactive-globe__poster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.interactive-globe:has(canvas) .interactive-globe__poster {
+  visibility: hidden;
 }
 
 .interactive-globe:focus-visible {
@@ -33,21 +46,11 @@
 .interactive-globe canvas {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   background: transparent;
-}
-
-.interactive-globe__fallback {
-  position: relative;
-  z-index: 1;
-  max-width: 28rem;
-  margin: 0;
-  padding: 1.5rem;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.95rem;
-  line-height: 1.45;
 }
 
 .lab-experiment-demo > .interactive-globe {
@@ -56,7 +59,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .interactive-globe {
+  .interactive-globe:has(canvas) {
     cursor: grab;
   }
 }

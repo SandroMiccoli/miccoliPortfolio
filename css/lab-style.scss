@@ -1,11 +1,12 @@
 ---
 ---
 
-@import "lab/base";
-@import "lab/grid";
-@import "lab/filters";
-@import "lab/info-panel";
-@import "lab/transitions";
+@use "lab/variables" as *;
+@use "lab/base";
+@use "lab/grid";
+@use "lab/filters";
+@use "lab/info-panel";
+@use "lab/transitions";
 
 // Top bar removed - filters moved to info panel
 

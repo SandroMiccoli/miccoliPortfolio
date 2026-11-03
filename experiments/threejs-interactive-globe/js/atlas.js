@@ -30,6 +30,10 @@ export function createCardAtlas(cards, options) {
       canvas.width = 1;
       canvas.height = 1;
     },
+    clear() {
+      if (destroyed) return;
+      for (const card of cards) paintCell(context, fit, card, null, options);
+    },
     load(imageUrls, { signal, onPaint }) {
       const jobs = uniqueJobs(cards, imageUrls);
       let cursor = 0;

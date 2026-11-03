@@ -1,0 +1,21 @@
+// Lab design tokens. Loaded with @use so each stylesheet gets its own scope.
+
+$lab-bg-dark: #000000;
+$lab-bg-alt: #0a0a0a;
+$lab-text-primary: #ffffff;
+$lab-text-secondary: #eeeeee;
+$lab-text-tertiary: #dddddd;
+$lab-accent: #ffffff;
+$lab-border: #333333;
+$lab-overlay: rgba(0, 0, 0, 0.8);
+
+$lab-font-family: 'Poppins', sans-serif;
+$lab-font-weight-regular: 300;
+$lab-font-weight-medium: 500;
+$lab-font-weight-bold: 700;
+
+$lab-spacing-xs: 0.5rem;
+$lab-spacing-sm: 1rem;
+$lab-spacing-md: 1.5rem;
+$lab-spacing-lg: 2rem;
+$lab-spacing-xl: 3rem;

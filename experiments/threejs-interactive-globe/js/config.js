@@ -1,6 +1,7 @@
 /**
  * Edit this file to recolor the globe, change the spin, or retune the cards.
- * `mountGlobe(element, { ... })` overrides any of these per embed.
+ * `initGlobe(element, { ... })` overrides any of these per embed.
+ * `mountGlobe` is the immediate mount that `initGlobe` calls.
  */
 
 /** Card fills. The list repeats around the sphere. Four or five reads best. */
@@ -62,7 +63,10 @@ export const defaultConfig = {
   inertiaMax: 5.6,
   /** Seconds to ease the holes back onto poleAxis after a release. */
   returnSeconds: 2.1,
-  /** 1 keeps a point under the finger. Lower it if the drag feels too fast. */
+  /**
+   * 1 keeps a point under the finger. Lower it if the drag feels too fast.
+   * Pass `drag: false` to `initGlobe` to leave turning to `rotateTo`.
+   */
   drag: 1,
   /** Radians applied per arrow-key repeat. */
   keyStep: 0.045,
@@ -71,7 +75,12 @@ export const defaultConfig = {
   /** Frame padding. 1 is flush with the viewport. */
   cameraMargin: 1.16,
 
-  pixelRatioMax: 2,
+  /**
+   * Caps `devicePixelRatio`. 1.5 is the default so a retina screen does not
+   * fill four fragments per CSS pixel. Pass `pixelRatioMax: 2` to override.
+   * `pixelBudget` still shrinks the ratio when the canvas is large.
+   */
+  pixelRatioMax: 1.5,
   pixelBudget: 8000000,
   atlasMaxSize: 2048,
   atlasCellHeight: 192,

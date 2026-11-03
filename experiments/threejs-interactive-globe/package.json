@@ -1,0 +1,10 @@
+{
+  "name": "interactive-globe",
+  "private": true,
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^6.0.11"
+  }
+}
