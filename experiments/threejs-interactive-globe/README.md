@@ -16,9 +16,7 @@ Open the URL `serve` prints. The lab home loads the same page. The demo is only 
 
 ## Use it on another site
 
-The other site does not import these source modules. It hosts one built script, the stylesheet, the poster, and the photos. The page decides when to download the script. The globe decides when to start WebGL, when to pause, and when to drop the context.
-
-### 1. Build and copy
+This section is the whole integration. The other site does not import these source modules. Host one built script, the stylesheet, the poster, and the photos. The page owns the container, the section list, and when the script downloads. The globe owns WebGL, pause, dispose, and the pixel cap.
 
 From this folder:
 
@@ -36,13 +34,18 @@ npm run build
 /globe/assets/Globe-01.webp
 ```
 
-`globe.js` already contains Three.js. Serve it with gzip or brotli. The photos stay outside the script. With this layout you do not pass `assetBase`. If `globe.js` does not sit next to `assets/`, pass `assetBase: '/globe/'` so relative photo paths still resolve.
+| File on the other host | Role |
+|---|---|
+| `globe.js` | One IIFE. Global `InteractiveGlobe`. Three.js is already inside it. Serve it with gzip or brotli |
+| `css/globe.css` | The element fills its parent. The poster hides once a canvas exists |
+| `assets/poster.webp` | Still of the globe at rest. It stays visible until WebGL starts, and comes back when the context is released |
+| `assets/` | The built-in photos (`assets/Globe-01.webp` and the rest). Publish them with the script when you do not pass `images` |
 
-The element needs a real width and height. The canvas fills its parent. The color behind the gaps is the element's own background (`--ig-bg`).
+The container needs a real width and height. The canvas fills it. The color behind the gaps is the element's own background (`--ig-bg`). With the folder shape above, do not pass `assetBase`. If `globe.js` does not sit next to `assets/`, pass `assetBase: '/globe/'`.
 
-### 2. Poster first, script only when it is worth it
+Put the poster in the HTML so it shows with no JavaScript. The script does not run on a phone, a coarse pointer, `prefers-reduced-motion`, save-data, or a browser without WebGL. Otherwise it waits until the globe is within 400px of the viewport, then injects `globe.js`. Textures load after that, inside `initGlobe`, not with the page.
 
-Put the poster in the HTML so it is visible with no JavaScript. The script below does not run on a phone, a coarse pointer, `prefers-reduced-motion`, save-data, or a browser without WebGL. Otherwise it waits until the element is within 400px of the viewport, then injects `globe.js`. Textures load after that, inside `initGlobe`, not with the page.
+`sections` is the list of ids the page will turn toward. An id without `azimuth` is spaced evenly around the pole axis. `azimuth` is radians, when that section should face a chosen direction. Replace `research`, `design`, and `launch` with the ids on the host page. Each control uses the same id in `data-section`. The hover listeners stay on the page. `globe.js` does not know about that markup.
 
 ```html
 <link rel="stylesheet" href="/globe/css/globe.css">
@@ -50,6 +53,11 @@ Put the poster in the HTML so it is visible with no JavaScript. The script below
 <div id="globe" style="height: 100dvh;">
   <img class="interactive-globe__poster" src="/globe/assets/poster.webp" alt="">
 </div>
+
+<button type="button" data-section="research">Research</button>
+<button type="button" data-section="design">Design</button>
+<button type="button" data-section="launch">Launch</button>
+
 <script>
 (function () {
   var el = document.getElementById('globe');
@@ -61,7 +69,24 @@ Put the poster in the HTML so it is visible with no JavaScript. The script below
     var script = document.createElement('script');
     script.src = '/globe/globe.js';
     script.onload = function () {
-      window.globe = InteractiveGlobe.initGlobe(el);
+      var globe = InteractiveGlobe.initGlobe(el, {
+        sections: [
+          { id: 'research' },
+          { id: 'design', azimuth: 1.4 },
+          { id: 'launch' }
+        ]
+      });
+      window.globe = globe;
+
+      document.querySelectorAll('[data-section]').forEach(function (item) {
+        var id = item.getAttribute('data-section');
+        item.addEventListener('pointerenter', function () {
+          globe.rotateTo(id);
+        });
+        item.addEventListener('pointerleave', function () {
+          globe.rotateTo(null);
+        });
+      });
     };
     document.head.appendChild(script);
   }, { rootMargin: '400px' });
@@ -86,72 +111,34 @@ Put the poster in the HTML so it is visible with no JavaScript. The script below
 </script>
 ```
 
-`initGlobe` repeats those poster checks. If the script was loaded anyway, it still will not create a context. `globe.ready` resolves when WebGL is up, or on the same turn when the poster stays. Call `globe.destroy()` when the page removes the element.
+`rotateTo(id)` holds the idle spin and eases to that section in about 0.7s. `rotateTo(null)` lets the idle spin resume. An unknown id does nothing. A call made before WebGL exists, or while the context is released offscreen, is kept and applied on the next mount. Pass `drag: false` in the same options object when the list is the only control.
 
-You do not build the pause or the pixel cap. Once WebGL is running, the loop stops as soon as the globe leaves the viewport or the tab is hidden. About 800ms later the context is released and the poster shows again. Coming back rebuilds the scene. The pixel ratio is capped at 1.5. Pass `pixelRatioMax: 2` to raise that cap. A large canvas still shrinks under the pixel budget.
+`initGlobe` repeats the poster checks. If the script was loaded anyway, it still will not create a context. `globe.ready` resolves when WebGL is up, or on the same turn when the poster stays. Call `globe.destroy()` when the page removes the element.
 
-`initGlobe` is what the page calls. `mountGlobe` is the immediate mount it uses once the element is near the viewport.
-
-### 3. Photos for this section
-
-Omit `images` and the globe uses the list baked in from `js/manifest.js`, resolved next to `globe.js` (`assets/Globe-01.webp`, and so on). Publish those files with the script.
-
-Another section passes its own list. A path that starts with `/` or `http` is used as given. A relative path resolves from `assetBase`, or from the folder of `globe.js`. Remote URLs need CORS.
+Omit `images` and the globe uses the photos baked in from `js/manifest.js`, resolved next to `globe.js`. Another section of the site passes its own list in the same `initGlobe` call. A path that starts with `/` or `http` is used as given. A relative path resolves from `assetBase`, or from the folder of `globe.js`. Remote URLs need CORS. If there are more cards than photos, photos repeat. If there are more photos than cards, the globe spreads a sample.
 
 ```js
-window.globe = InteractiveGlobe.initGlobe(el, {
-  images: ['/work/a.webp', '/work/b.webp'],
+InteractiveGlobe.initGlobe(el, {
+  sections: [
+    { id: 'research' },
+    { id: 'design', azimuth: 1.4 },
+    { id: 'launch' }
+  ],
+  images: ['/work/a.webp', '/work/b.webp']
 });
 ```
 
-The same mounted globe can swap later. This does not rebuild the scene:
+The same mounted globe can swap photos later. This does not rebuild the scene:
 
 ```js
 window.globe.setImages(['/about/a.webp', '/about/b.webp']);
 ```
 
-If there are more cards than photos, photos repeat. If there are more photos than cards, the globe spreads a sample.
+You do not build the pause or the pixel cap. Once WebGL is running, the loop stops as soon as the globe leaves the viewport or the tab is hidden. About 800ms later the context is released and the poster shows again. Coming back rebuilds the scene. The pixel ratio is capped at 1.5. Pass `pixelRatioMax: 2` to raise that cap. A large canvas still shrinks under the pixel budget.
 
-### 4. Turn the globe from a list
+`initGlobe` is what the page calls. `mountGlobe` is the immediate mount it uses once the element is near the viewport.
 
-The hover wiring stays on the page. Nothing in `globe.js` knows about your list. Pass `sections`. An id without `azimuth` is spaced evenly around the pole axis. `azimuth` is radians, when that section should face a chosen direction.
-
-```js
-window.globe = InteractiveGlobe.initGlobe(el, {
-  sections: [
-    { id: 'research' },
-    { id: 'design', azimuth: 1.4 },
-    { id: 'launch' },
-  ],
-});
-
-document.querySelectorAll('[data-section]').forEach(function (item) {
-  var id = item.getAttribute('data-section');
-  item.addEventListener('pointerenter', function () {
-    window.globe.rotateTo(id);
-  });
-  item.addEventListener('pointerleave', function () {
-    window.globe.rotateTo(null);
-  });
-});
-```
-
-`rotateTo(id)` holds the idle spin and eases to that section in about 0.7s. `rotateTo(null)` lets the idle spin resume. An unknown id does nothing. A call made before WebGL exists, or while the context is released offscreen, is kept and applied on the next mount. Pass `drag: false` when the list is the only control.
-
-```html
-<button type="button" data-section="design">Design</button>
-```
-
-### Files
-
-| File on the other host | Role |
-|---|---|
-| `globe.js` | Built IIFE. Global `InteractiveGlobe` |
-| `css/globe.css` | The element fills its parent. The poster hides once a canvas exists |
-| `assets/poster.webp` | Still of the globe at rest, shown until WebGL starts |
-| `assets/` | The photos, when you use the built-in manifest |
-
-Source, for this lab and for rebuilding:
+Source, for this lab and for rebuilding. The other site does not need these files. `index.html` and `js/main.js` are the demo only.
 
 | File | Role |
 |---|---|
@@ -164,8 +151,6 @@ Source, for this lab and for rebuilding:
 | `js/manifest.js` | Photo list baked into the build |
 | `js/capabilities.js` | Poster-only checks used by this demo |
 | `vendor/three.module.min.js` | Three.js r170, MIT |
-
-`index.html` and `js/main.js` are the demo only. The other site does not need them.
 
 ### Colors
 
@@ -182,7 +167,7 @@ Any field passed to `initGlobe` overrides the config. `colors` replaces the whol
 
 Formats: png, jpg, webp, gif. Each photo is scaled down to the card. Large originals slow the first load. A `.docx` in the folder is ignored.
 
-On another site, do not edit this manifest. Pass `images` or call `setImages`, as in "Photos for this section" above. Remote URLs need CORS.
+On another site, do not edit this manifest. Pass `images` or call `setImages`, as in "Use it on another site" above. Remote URLs need CORS.
 
 If there are more cards than photos, photos repeat. If there are more photos than cards, the globe spreads a sample.
 
