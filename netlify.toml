@@ -1,0 +1,34 @@
+# Security headers for every URL.
+# `frame-ancestors` only works in an enforced CSP header (it is ignored in
+# Report-Only), so it lives in its own minimal Content-Security-Policy.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
+    Content-Security-Policy = "frame-ancestors 'self'"
+    # Full policy in report-only mode: it logs violations in the browser console
+    # without blocking anything. Once a few days of real traffic show no
+    # violations, rename this key to `Content-Security-Policy` and merge the
+    # `frame-ancestors 'self'` directive into it.
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://ajax.googleapis.com https://use.fontawesome.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.fontawesome.com; font-src 'self' data: https://fonts.gstatic.com https://use.fontawesome.com; img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com; media-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://formspree.io; frame-src https://assets.objkt.media; form-action 'self' https://formspree.io; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
+
+# Image file names are not fingerprinted: if you replace an image keeping the
+# same file name, visitors may keep seeing the old one until the cache expires
+# (use a new file name when replacing images).
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
