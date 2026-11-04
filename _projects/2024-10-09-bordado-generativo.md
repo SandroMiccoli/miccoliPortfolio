@@ -20,21 +20,21 @@ tags:
 ---
 
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/bordado-generativo/CatalogoSandroMiccoli-code2pixels-2024-002.png" cols=2 %}
-	{% include img.html src="/images/bordado-generativo/CatalogoSandroMiccoli-code2pixels-2024-003.png" cols=2 %}
+	{% include img.html src="/images/bordado-generativo/CatalogoSandroMiccoli-code2pixels-2024-002.png" alt="Bordado Generativo – image 1" cols=2 %}
+	{% include img.html src="/images/bordado-generativo/CatalogoSandroMiccoli-code2pixels-2024-003.png" alt="Bordado Generativo – image 2" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="3">
-	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(2).jpg" cols=3 %}
-	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(3).jpg" cols=3 %}
-	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(4).jpg" cols=3 %}
+	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(2).jpg" alt="Bordado Generativo – image 3" cols=3 %}
+	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(3).jpg" alt="Bordado Generativo – image 4" cols=3 %}
+	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(4).jpg" alt="Bordado Generativo – image 5" cols=3 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(6).jpg" cols=2 %}
-	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(5).jpg" cols=2 %}
+	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(6).jpg" alt="Bordado Generativo – image 6" cols=2 %}
+	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(5).jpg" alt="Bordado Generativo – image 7" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(1).jpg" cols=1 %}
+	{% include img.html src="/images/bordado-generativo/BordadoGenerativo(1).jpg" alt="Bordado Generativo – image 8" cols=1 %}
 </div>

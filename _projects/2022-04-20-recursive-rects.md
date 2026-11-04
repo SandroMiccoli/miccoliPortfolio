@@ -32,17 +32,17 @@ Recursive Rectsis a generative series launched on the fx(hash) platform in 2022.
 
 
 <div class="gallery" data-columns="4">
-	{% include img.html src="/images/recursive-rects/recursive-rects-20.png" title="Recursive Rects #20" cols=4 %}
-	{% include img.html src="/images/recursive-rects/recursive-rects-14.png" title="Recursive Rects #14" cols=4 %}
-	{% include img.html src="/images/recursive-rects/recursive-rects-17.png" title="Recursive Rects #17" cols=4 %}
-	{% include img.html src="/images/recursive-rects/recursive-rects-09.png" title="Recursive Rects #09" cols=4 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-20.png" alt="Recursive Rects #20" title="Recursive Rects #20" cols=4 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-14.png" alt="Recursive Rects #14" title="Recursive Rects #14" cols=4 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-17.png" alt="Recursive Rects #17" title="Recursive Rects #17" cols=4 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-09.png" alt="Recursive Rects #09" title="Recursive Rects #09" cols=4 %}
 </div>
 
 
 
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/recursive-rects/recursive-rects-42.png" title="Recursive Rects #42" cols=2 %}
-	{% include img.html src="/images/recursive-rects/recursive-rects-47.png" title="Recursive Rects #47" cols=2 %}
-	{% include img.html src="/images/recursive-rects/recursive-rects-36.png" title="Recursive Rects #36" cols=2 %}
-	{% include img.html src="/images/recursive-rects/recursive-rects-29.png" title="Recursive Rects #29" cols=2 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-42.png" alt="Recursive Rects #42" title="Recursive Rects #42" cols=2 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-47.png" alt="Recursive Rects #47" title="Recursive Rects #47" cols=2 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-36.png" alt="Recursive Rects #36" title="Recursive Rects #36" cols=2 %}
+	{% include img.html src="/images/recursive-rects/recursive-rects-29.png" alt="Recursive Rects #29" title="Recursive Rects #29" cols=2 %}
 </div>

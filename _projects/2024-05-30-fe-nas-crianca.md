@@ -41,31 +41,31 @@ Impressão colorida em papel couché<br>
 
 ---
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg" cols=1 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg" alt="Fé nas Criança – image 1" cols=1 %}
 </div>
 
 
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png" cols=2 %}
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png" alt="Fé nas Criança – image 2" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png" alt="Fé nas Criança – image 3" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png" cols=2 %}
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png" alt="Fé nas Criança – image 4" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png" alt="Fé nas Criança – image 5" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="3">
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png" cols=3 %}
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png" cols=3 %}
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png" alt="Fé nas Criança – image 6" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png" alt="Fé nas Criança – image 7" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png" alt="Fé nas Criança – image 8" cols=3 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png" cols=2 %}
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png" alt="Fé nas Criança – image 9" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png" alt="Fé nas Criança – image 10" cols=2 %}
 </div>
 <div class="gallery" data-columns="2">
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png" cols=2 %}
-	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png" alt="Fé nas Criança – image 11" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png" alt="Fé nas Criança – image 12" cols=2 %}
 </div>

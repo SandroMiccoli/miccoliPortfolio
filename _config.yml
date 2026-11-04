@@ -1,7 +1,22 @@
-site: Sandro Micocli
+site: Sandro Miccoli
+title: Sandro Miccoli
 
-url: sandromiccoli.com
+url: https://sandromiccoli.com
 baseurl: 
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - package.json
+  - package-lock.json
+  - netlify.toml
+  - wip
+  - wip-threejs
+  - _pages/wip.md
+  - _pages/wip-threejs.md
+  - "*.lnk"
 
 collections:
   pages:

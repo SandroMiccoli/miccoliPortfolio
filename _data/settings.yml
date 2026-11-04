@@ -1,6 +1,8 @@
 basic_settings:
   site_title: Sandro Miccoli
   favicon_image: /images/favicon.jpg
+  default_description: Sandro Miccoli is a creative technologist and generative artist.
+  default_social_image: /images/about/c2p_about.jpg
 
 header_settings:
   logo_image: 

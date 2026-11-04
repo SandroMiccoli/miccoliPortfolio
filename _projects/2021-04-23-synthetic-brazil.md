@@ -30,29 +30,29 @@ ficha-tecnica:
 ---
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg" alt="Synthetic Brazil – Mountains, Beaches and Nature" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Covid-19.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Covid-19.jpg" alt="Synthetic Brazil – Bolsonaro and Covid-19" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Brazil.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Brazil.jpg" alt="Synthetic Brazil – Brazil" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Criminal Fire.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Criminal Fire.jpg" alt="Synthetic Brazil – Bolsonaro and Criminal Fire" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg" alt="Synthetic Brazil – Mountains, Beaches and Nature" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Police Militias.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Police Militias.jpg" alt="Synthetic Brazil – Bolsonaro and Police Militias" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Smiles and Happiness.jpg" cols=1 %}
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Smiles and Happiness.jpg" alt="Synthetic Brazil – Smiles and Happiness" cols=1 %}
 </div>

@@ -3,9 +3,10 @@ title: About
 # subtitle: code2pixels
 description: Sandro Miccoli is an generative artist, educator, and creative technologist.
 featured_image: /images/about/c2p_about.jpg
+featured_image_alt: "Stylized portrait of Sandro Miccoli in blue, yellow and orange tones"
 ---
 
-![](/images/about/c2p_about.jpg)
+![Stylized portrait of Sandro Miccoli in blue, yellow and orange tones](/images/about/c2p_about.jpg)
 
 
 Sandro Miccoli is an artist-programmer, educator, and creative technologist specializing in generative art, interactive installations, and real-time visual systems. His practice spans digital and analog media, including live visuals, immersive environments, and algorithm-driven embroidery. He teaches creative coding and TouchDesigner, working with artists, designers, and institutions to develop expressive, concept-driven uses of emerging technologies.

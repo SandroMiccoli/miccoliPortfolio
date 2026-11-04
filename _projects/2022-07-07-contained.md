@@ -36,14 +36,14 @@ Since the work is generative, each viewer will see a different piece. You need t
 
 
 ---
-  <video muted loop playsinline preload="none" data-autoplay-visible poster="/images/contained/contained-pre-release-poster.jpg" width="800" height="800" style="max-width: 100%; height: auto; margin: 0 auto; display: block;">
+  <video muted loop playsinline preload="none" data-autoplay-visible poster="/images/contained/contained-pre-release-poster.jpg" aria-label="Contained – preview of the interactive sculpture" width="800" height="800" style="max-width: 100%; height: auto; margin: 0 auto; display: block;">
     <source src="/images/contained/contained-pre-release-web.mp4" type="video/mp4">
     Your browser does not support the video tag.
   </video>
 
 ---
 
-{% include img.html src="/images/contained/Contained_Cover_2.jpg" %}
+{% include img.html src="/images/contained/Contained_Cover_2.jpg" alt="Contained – image 1" %}
 
 #### How to interact with it?
 - Click and drag to explore the virtual sculpture
@@ -58,5 +58,5 @@ This work is GPU intensive. Although it may work on mobile, for best viewing exp
 
 
 <div class="frame">
-	<iframe src="https://assets.objkt.media/file/assets-003/QmPmScFFyveESsSedxj9Na13dfebpRSUjDPWsdD7TcKfUo/artifact/index.html" frameborder="0" allowfullscreen></iframe>
+	<iframe title="Contained – interactive generative 3D sculpture (objkt)" src="https://assets.objkt.media/file/assets-003/QmPmScFFyveESsSedxj9Na13dfebpRSUjDPWsdD7TcKfUo/artifact/index.html" frameborder="0" allowfullscreen></iframe>
 </div>
