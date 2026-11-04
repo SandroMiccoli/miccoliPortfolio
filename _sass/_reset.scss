@@ -17,6 +17,7 @@ html { font-size: 100%; -webkit-overflow-scrolling: touch; -webkit-tap-highlight
 body { margin: 0; text-rendering: optimizeLegibility; }
 
 img { border: 0; -ms-interpolation-mode: bicubic; display: block;}
+picture { display: block; }
 
 img, object, embed { max-width: 100%; height: auto; }
 

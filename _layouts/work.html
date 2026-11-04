@@ -15,7 +15,9 @@ layout: default
 
 				<div class="listing-item__image">
 
-					<img src="{{ project.thumb_image }}" alt="{{ project.title }}">
+					{% assign thumb_eager = false %}
+					{% if forloop.index <= 4 %}{% assign thumb_eager = true %}{% endif %}
+					{% include img.html src=project.thumb_image alt=project.title sizes="(min-width: 1540px) 25vw, (min-width: 1024px) 34vw, 50vw" priority=forloop.first eager=thumb_eager %}
 				</div>
 
 				{% assign color = page.colors | sample:2 %}

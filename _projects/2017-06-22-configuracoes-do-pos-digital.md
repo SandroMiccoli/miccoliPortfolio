@@ -43,22 +43,22 @@ Assim, cada capítulo gera um grafismo diferente do outro, com formas emergentes
 
 A capa é gerada a partir da sobreposição de todos os capítulos do livro, gerando um emaranhado de linhas e formas. Construindo, assim, uma complexa sinopse visual do conteúdo a ser encontrado no miolo do livro.
 
-  <img src="/images/configuracoes-do-pos-digital/mockup.jpg" title="Configurações do pós-digital - Arte e cultura tecnológicas">
+  {% include img.html priority=true src="/images/configuracoes-do-pos-digital/mockup.jpg" title="Configurações do pós-digital - Arte e cultura tecnológicas" %}
 
 <div class="gallery" data-columns="2">
-  <img src="/images/configuracoes-do-pos-digital/Livro0.png" title="Configurações do pós-digital - Arte e cultura tecnológicas">
-  <img src="/images/configuracoes-do-pos-digital/Livro2.png" title="Sobre a arte generativa do livro">
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro0.png" title="Configurações do pós-digital - Arte e cultura tecnológicas" cols=2 %}
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro2.png" title="Sobre a arte generativa do livro" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="2">
-  <img src="/images/configuracoes-do-pos-digital/Livro3.png" title="Um panorama caleidoscópico da arte em suas feições digitais - Lucia Santaella">
-  <img src="/images/configuracoes-do-pos-digital/Livro4.png" title="Ideia, plataforma, processo, domínioo - Casey Reas">
-  <img src="/images/configuracoes-do-pos-digital/Livro5.png" title="Para um conceito de crítica de arte híbrida - Miriam Rasch">
-  <img src="/images/configuracoes-do-pos-digital/Livro6.png" title="Ostensividade das interfaces computacionais - Ítalo Travenzoli">
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro3.png" title="Um panorama caleidoscópico da arte em suas feições digitais - Lucia Santaella" cols=2 %}
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro4.png" title="Ideia, plataforma, processo, domínioo - Casey Reas" cols=2 %}
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro5.png" title="Para um conceito de crítica de arte híbrida - Miriam Rasch" cols=2 %}
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro6.png" title="Ostensividade das interfaces computacionais - Ítalo Travenzoli" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="3">
-  <img src="/images/configuracoes-do-pos-digital/Livro7.png" title="MindFluctuations: cenários interativos em BCI (brain computer interface) - Tania Fraga">
-  <img src="/images/configuracoes-do-pos-digital/Livro8.png" title="Festival de Arte Digital: um acervo artístico intermitente - Pablo Gobira, Tadeus Mucelli">
-  <img src="/images/configuracoes-do-pos-digital/Livro9.png" title="Tecnologias móveis e autoria: A produção de um documentário no bairro do Abaeté por alunos de uma escola municipal de Salvador - Tatiana Paz, Lynn Alves">
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro7.png" title="MindFluctuations: cenários interativos em BCI (brain computer interface) - Tania Fraga" cols=3 %}
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro8.png" title="Festival de Arte Digital: um acervo artístico intermitente - Pablo Gobira, Tadeus Mucelli" cols=3 %}
+  {% include img.html src="/images/configuracoes-do-pos-digital/Livro9.png" title="Tecnologias móveis e autoria: A produção de um documentário no bairro do Abaeté por alunos de uma escola municipal de Salvador - Tatiana Paz, Lynn Alves" cols=3 %}
 </div>

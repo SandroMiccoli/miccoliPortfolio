@@ -17,6 +17,7 @@
 	var navTarget = $('body').attr('data-page-url');
 	var docTitle = document.title;
 	var History = window.History;
+	var videoObserver = null;
 
 	// State change event
 	History.Adapter.bind(window,'statechange',function(){
@@ -122,23 +123,48 @@
 
 		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Show content
 
-		// Wait until first image has loaded
-		$('.page__content').find('img:first').imagesLoaded( function() {
-	
-			// Portfolio grid layout
-			$('.listing-wrap').imagesLoaded( function() {
-				$('.listing-wrap').masonry({
-					itemSelector: '.listing-item',
-					transitionDuration: 0
-				});
-			});
+		// Show the page as soon as the first image is ready, or after a short
+		// timeout. Images reserve their space through width/height, so late
+		// images no longer shift the layout.
+		var contentShown = false;
+
+		function showContent() {
+			if ( contentShown ) {
+				return;
+			}
+			contentShown = true;
 
 			// Show the content
 			$('body').removeClass('loading');
 
 			// Hide the menu
 			$('body').removeClass('menu--open');
-		});
+		}
+
+		// Portfolio grid layout
+		var $listing = $('.listing-wrap');
+
+		if ( $listing.length ) {
+			var listingFrame = null;
+
+			$listing.masonry({
+				itemSelector: '.listing-item',
+				transitionDuration: 0
+			});
+
+			// Re-layout while lazy images arrive (no-op when sizes are already known)
+			$listing.imagesLoaded().progress( function() {
+				if ( listingFrame === null ) {
+					listingFrame = window.requestAnimationFrame( function() {
+						listingFrame = null;
+						$listing.masonry('layout');
+					});
+				}
+			});
+		}
+
+		$('.page__content').find('img:first').imagesLoaded( showContent );
+		window.setTimeout( showContent, 700 );
 
 
 
@@ -177,18 +203,19 @@
 			$this.append('<div class="gallery__wrap"></div>');
 
 			// Add images to container
-			$this.children('img').each( function() {
+			$this.children('img, picture').each( function() {
 				$(this).appendTo('#' + thisId + ' .gallery__wrap');
 			});
 
-			// Wrap images
-			$this.find('.gallery__wrap img').each( function() {
-				var imageSrc = $(this).attr('src');
+			// Wrap images. Zoom target: large derivative (data-zoom) when available, else the image itself
+			$this.find('.gallery__wrap > img, .gallery__wrap > picture').each( function() {
+				var $img = $(this).is('img') ? $(this) : $(this).find('img').first();
+				var imageSrc = $img.attr('data-zoom') || $img.attr('src');
 				$(this).wrapAll('<div class="gallery__item"><a href="' + imageSrc + '" class="gallery__item__link"></div></div>').appendTo();
 			});
 
-			// Wait for images to load
-			$this.imagesLoaded( function() {
+			// Set up the gallery (carousel or masonry grid)
+			var initGallery = function() {
 
 				// If it's a single column gallery
 				if ( galleryCols === '1' ) {
@@ -292,7 +319,21 @@
 
 				// Show gallery once initialized
 				$this.addClass('gallery--on');
+			};
+
+			// Images with width/height reserve their space, so there is no need
+			// to wait for downloads (lazy images below the fold would block it)
+			var allSized = $this.find('img').toArray().every( function(img) {
+				return img.getAttribute('width') && img.getAttribute('height');
 			});
+
+			if ( allSized ) {
+				initGallery();
+			}
+
+			else {
+				$this.imagesLoaded( initGallery );
+			}
 
 		});
 
@@ -300,7 +341,12 @@
 
 		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Images
 
-		$('.single p > img').each( function() {
+		// kramdown leaves a lone <picture> (img.html include) outside a <p>
+		$('.single > picture').each( function() {
+			$(this).wrapAll('<div class="image-wrap"></div>');
+		});
+
+		$('.single p > img, .single p > picture').each( function() {
 			var thisP = $(this).parent('p');
 			$(this).insertAfter(thisP);
 			$(this).wrapAll('<div class="image-wrap"></div>');
@@ -310,6 +356,35 @@
 
 
 		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Videos
+
+		// Autoplaying videos only load and play while visible
+		if ( videoObserver ) {
+			videoObserver.disconnect();
+			videoObserver = null;
+		}
+
+		var $visibleVideos = $('video[data-autoplay-visible]');
+
+		if ( $visibleVideos.length && 'IntersectionObserver' in window ) {
+			videoObserver = new IntersectionObserver( function(entries) {
+				entries.forEach( function(entry) {
+					if ( entry.isIntersecting ) {
+						var playing = entry.target.play();
+						if ( playing && playing.catch ) {
+							playing.catch( function() {} );
+						}
+					}
+					else {
+						entry.target.pause();
+					}
+				});
+			}, { rootMargin: '200px' });
+
+			$visibleVideos.each( function() {
+				videoObserver.observe(this);
+			});
+		}
+
 
 		// For each iframe
 		$('.single iframe').each( function() {

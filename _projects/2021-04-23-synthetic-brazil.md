@@ -24,35 +24,35 @@ ficha-tecnica:
 
 ---
 
-![]({{ page.featured_image }})
+{% include img.html src=page.featured_image alt=page.title priority=true %}
 
 
 ---
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Covid-19.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Covid-19.jpg" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Brazil.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Brazil.jpg" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Criminal Fire.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Criminal Fire.jpg" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Police Militias.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Police Militias.jpg" cols=1 %}
 </div>
 
 <div class="gallery" data-columns="1">
-	<img src="/images/synthetic-brazil/Synthetic Brazil - Smiles and Happiness.jpg">
+	{% include img.html src="/images/synthetic-brazil/Synthetic Brazil - Smiles and Happiness.jpg" cols=1 %}
 </div>

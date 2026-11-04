@@ -23,7 +23,7 @@ currency_symbol: ꜩ
 currency_code: XTZ
 ---
 
-![]({{ page.featured_image }})
+{% include img.html src=page.featured_image alt=page.title priority=true %}
 
 ## {{ page.title }}
 
@@ -38,17 +38,17 @@ The collection is an ode to the unpredictability of the paths we traverse in lif
 ---
 
 <div class="gallery" data-columns="3">
-	<img src="/images/uncertain-path/19-ooDweR8NFV7HVS9ARqVjH46cTV2u3DNSm1NdnrDK3yGYwDHkUpW_1_1.png" title="Uncertain Path #19">
-	<img src="/images/uncertain-path/06-ooDSiCSqmZhkbdcvm3AH9xc21r5YAwEA1HuHKmTsHkWLutmJmgW_1_1.png" title="Uncertain Path #06">
-	<img src="/images/uncertain-path/14-oohwAmWF6zzthfyjd19tTwvPcxybwKkRUFkYrSBVpPMhHi6ScLE_1_1.png" title="Uncertain Path #14">
-	<img src="/images/uncertain-path/20-ookYcYDtJorDxtbofL1ZGQ6Y6LQqa6R9sx7fsL4gTN7UchDb7EM_1_1.png" title="Uncertain Path #20">
-	<img src="/images/uncertain-path/27-oneHNAyV3T41Q9M6QCN9UVhJM1aZqAwM9wYawchqfPUvszTi194_1_1.png" title="Uncertain Path #27">
-	<img src="/images/uncertain-path/16-oo9Sbtwej9quH8Q3wx6WE2myXetHc6Yk113NenABdjyQ1VWJLEh_1_1.png" title="Uncertain Path #16">
+	{% include img.html src="/images/uncertain-path/19-ooDweR8NFV7HVS9ARqVjH46cTV2u3DNSm1NdnrDK3yGYwDHkUpW_1_1.png" title="Uncertain Path #19" cols=3 %}
+	{% include img.html src="/images/uncertain-path/06-ooDSiCSqmZhkbdcvm3AH9xc21r5YAwEA1HuHKmTsHkWLutmJmgW_1_1.png" title="Uncertain Path #06" cols=3 %}
+	{% include img.html src="/images/uncertain-path/14-oohwAmWF6zzthfyjd19tTwvPcxybwKkRUFkYrSBVpPMhHi6ScLE_1_1.png" title="Uncertain Path #14" cols=3 %}
+	{% include img.html src="/images/uncertain-path/20-ookYcYDtJorDxtbofL1ZGQ6Y6LQqa6R9sx7fsL4gTN7UchDb7EM_1_1.png" title="Uncertain Path #20" cols=3 %}
+	{% include img.html src="/images/uncertain-path/27-oneHNAyV3T41Q9M6QCN9UVhJM1aZqAwM9wYawchqfPUvszTi194_1_1.png" title="Uncertain Path #27" cols=3 %}
+	{% include img.html src="/images/uncertain-path/16-oo9Sbtwej9quH8Q3wx6WE2myXetHc6Yk113NenABdjyQ1VWJLEh_1_1.png" title="Uncertain Path #16" cols=3 %}
 </div>
 
 ---
 
 ### Full Collection on fx(hash)
 
-<img src="/images/uncertain-path/fxhash-c2p-uncertain-path.png">
+{% include img.html src="/images/uncertain-path/fxhash-c2p-uncertain-path.png" %}
 

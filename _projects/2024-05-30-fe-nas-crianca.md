@@ -26,7 +26,7 @@ ficha-tecnica:
       - Erro99
 ---
 
-![]({{ page.featured_image }})
+{% include img.html src=page.featured_image alt=page.title priority=true %}
 
 
 <p>Projeto selecionado por chamada pública do Erro99 com tema “BH 2099”</p>
@@ -41,31 +41,31 @@ Impressão colorida em papel couché<br>
 
 ---
 <div class="gallery" data-columns="1">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg" cols=1 %}
 </div>
 
 
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="3">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png" cols=3 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png" cols=2 %}
 </div>
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png" cols=2 %}
 </div>
