@@ -1,0 +1,2224 @@
+{
+ "/images/about/code2pixels_tumblr.jpg": {
+  "w": 400,
+  "h": 400,
+  "base": "/images/optimized/about/code2pixels-tumblr",
+  "widths": [
+   400
+  ],
+  "fallback": 400,
+  "formats": [
+   "webp"
+  ],
+  "hash": "85319a956eb5"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(1).jpg": {
+  "w": 919,
+  "h": 919,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-1",
+  "widths": [
+   400,
+   800,
+   919
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "acf725ba81a2"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(2).jpg": {
+  "w": 3056,
+  "h": 3056,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-2",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "da0b3df5a50a"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(3).jpg": {
+  "w": 3056,
+  "h": 3056,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-3",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "779bc84ac935"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(4).jpg": {
+  "w": 3056,
+  "h": 3056,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-4",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "f3152bec52a1"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(5).jpg": {
+  "w": 917,
+  "h": 917,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-5",
+  "widths": [
+   400,
+   800,
+   917
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "286be46ca7fc"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(6).jpg": {
+  "w": 917,
+  "h": 917,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-6",
+  "widths": [
+   400,
+   800,
+   917
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "35a0c7b3a40a"
+ },
+ "/images/bordado-generativo/BordadoGenerativo(7).jpg": {
+  "w": 919,
+  "h": 919,
+  "base": "/images/optimized/bordado-generativo/bordadogenerativo-7",
+  "widths": [
+   400,
+   800,
+   919
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "62a8e80fe4cd"
+ },
+ "/images/bordado-generativo/CatalogoSandroMiccoli-code2pixels-2024-002.png": {
+  "w": 1080,
+  "h": 1920,
+  "base": "/images/optimized/bordado-generativo/catalogosandromiccoli-code2pixels-2024-002",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8a934885ba80"
+ },
+ "/images/bordado-generativo/CatalogoSandroMiccoli-code2pixels-2024-003.png": {
+  "w": 1080,
+  "h": 1920,
+  "base": "/images/optimized/bordado-generativo/catalogosandromiccoli-code2pixels-2024-003",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "4e1ba05c35d8"
+ },
+ "/images/configuracoes-do-pos-digital/Livro0.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro0",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "f0b63b308f23"
+ },
+ "/images/configuracoes-do-pos-digital/Livro2.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro2",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "81d6bafa797c"
+ },
+ "/images/configuracoes-do-pos-digital/Livro3.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro3",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "fa65ca2f525d"
+ },
+ "/images/configuracoes-do-pos-digital/Livro4.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro4",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "a82990ad350e"
+ },
+ "/images/configuracoes-do-pos-digital/Livro5.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro5",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "3d3f68fafa65"
+ },
+ "/images/configuracoes-do-pos-digital/Livro6.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro6",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "4ba42fb98758"
+ },
+ "/images/configuracoes-do-pos-digital/Livro7.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro7",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d01e6a37befc"
+ },
+ "/images/configuracoes-do-pos-digital/Livro8.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro8",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "731c1b900855"
+ },
+ "/images/configuracoes-do-pos-digital/Livro9.png": {
+  "w": 1000,
+  "h": 1000,
+  "base": "/images/optimized/configuracoes-do-pos-digital/livro9",
+  "widths": [
+   400,
+   800,
+   1000
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "7fdfb7a2801e"
+ },
+ "/images/configuracoes-do-pos-digital/mockup.jpg": {
+  "w": 1100,
+  "h": 779,
+  "base": "/images/optimized/configuracoes-do-pos-digital/mockup",
+  "widths": [
+   400,
+   800,
+   1100
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "bb88520e083f"
+ },
+ "/images/contained/Contained_Cover_2.jpg": {
+  "w": 1080,
+  "h": 1080,
+  "base": "/images/optimized/contained/contained-cover-2",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "53d48d270bfc"
+ },
+ "/images/contained/Contained_Cover.jpg": {
+  "w": 1080,
+  "h": 1080,
+  "base": "/images/optimized/contained/contained-cover",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "3613b2c88bb7"
+ },
+ "/images/contained/contained-pre-release-poster.jpg": {
+  "w": 630,
+  "h": 636,
+  "base": "/images/optimized/contained/contained-pre-release-poster",
+  "widths": [
+   400,
+   630
+  ],
+  "fallback": 630,
+  "formats": [
+   "webp"
+  ],
+  "hash": "9401a8c0476e"
+ },
+ "/images/crossing-paths/01-opAShxDqus5dL2UzFtMdriKAUUDtTKLnbAtaaQbA6JmXYkKq7Kw_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/crossing-paths/01-opashxdqus5dl2uzftmdrikauudttklnbataaqba6jmxykkq7kw-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8102dc727f22"
+ },
+ "/images/crossing-paths/04-oozmaEKBkyrbY4K5KBNj3Lfb8K7mtxunLqn4woAyL4smWvDF2eY_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/crossing-paths/04-oozmaekbkyrby4k5kbnj3lfb8k7mtxunlqn4woayl4smwvdf2ey-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "290f591fcf51"
+ },
+ "/images/crossing-paths/07-oohn84GTBeE2M7hUJMU1ooUY3ShWunB7y3dUtz4BS5XLdstXDZE_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/crossing-paths/07-oohn84gtbee2m7hujmu1oouy3shwunb7y3dutz4bs5xldstxdze-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "9c5c34f55985"
+ },
+ "/images/crossing-paths/31-oo3oCwmQXp8fYzweP7zBxfvfxKjaZjPsz1SfG3dDPC1FyTvZpba_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/crossing-paths/31-oo3ocwmqxp8fyzwep7zbxfvfxkjazjpsz1sfg3ddpc1fytvzpba-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "ad49751c0333"
+ },
+ "/images/crossing-paths/crossing-paths-11.png": {
+  "w": 800,
+  "h": 800,
+  "base": "/images/optimized/crossing-paths/crossing-paths-11",
+  "widths": [
+   400,
+   800
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "a0ea199948af"
+ },
+ "/images/crossing-paths/crossing-paths-18.png": {
+  "w": 800,
+  "h": 800,
+  "base": "/images/optimized/crossing-paths/crossing-paths-18",
+  "widths": [
+   400,
+   800
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "57e01cf36e07"
+ },
+ "/images/crossing-paths/crossing-paths-24.png": {
+  "w": 800,
+  "h": 800,
+  "base": "/images/optimized/crossing-paths/crossing-paths-24",
+  "widths": [
+   400,
+   800
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "568015ca83c2"
+ },
+ "/images/crossing-paths/crossing-paths-29.png": {
+  "w": 800,
+  "h": 800,
+  "base": "/images/optimized/crossing-paths/crossing-paths-29",
+  "widths": [
+   400,
+   800
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "10e6bae479d7"
+ },
+ "/images/crossing-paths/CrossingPaths-FullCollection.png": {
+  "w": 1909,
+  "h": 1072,
+  "base": "/images/optimized/crossing-paths/crossingpaths-fullcollection",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "6975950a9f48"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-Final-EightRes.jpg": {
+  "w": 2111,
+  "h": 3395,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-final-eightres",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "00b9431fe132"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg": {
+  "w": 1284,
+  "h": 963,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-fotosandromiccoli",
+  "widths": [
+   400,
+   800,
+   1284
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "df46bb036311"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-1",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "2d58f3008feb"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-10",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "e16c5def07ad"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-11",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "defd882817fa"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-2",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d6533012f262"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-3",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "6ceb237579e1"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-4",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "b534c5b3ae5e"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-5",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "613c2d7510e3"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-6",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "a479cc7d361f"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-7",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "0b69440380e1"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png": {
+  "w": 864,
+  "h": 1280,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-8",
+  "widths": [
+   400,
+   800,
+   864
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "5f1691300216"
+ },
+ "/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/fe-nas-crianca/fenascrianca-sandromiccoli-9",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "86724ce58887"
+ },
+ "/images/flux-gan/FluxGAN01.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux-gan/fluxgan01",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d96cd1bc74c9"
+ },
+ "/images/flux-gan/FluxGAN02.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux-gan/fluxgan02",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8ca6aad9cca2"
+ },
+ "/images/flux-gan/FluxGAN03.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux-gan/fluxgan03",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "704cb8c7efe4"
+ },
+ "/images/flux-gan/FluxGAN04.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux-gan/fluxgan04",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "4bf1a1def643"
+ },
+ "/images/flux-gan/FluxGAN05.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux-gan/fluxgan05",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "ffc0592848d0"
+ },
+ "/images/flux/Flux04.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux04",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "5f5fe03faa74"
+ },
+ "/images/flux/Flux08.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux08",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "b1df1baaf869"
+ },
+ "/images/flux/Flux10.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux10",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "f3d36a6f9970"
+ },
+ "/images/flux/Flux17.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux17",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "1298c033282b"
+ },
+ "/images/flux/Flux23.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux23",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "86848a8d6abc"
+ },
+ "/images/flux/Flux25.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux25",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "4aab9f4907b7"
+ },
+ "/images/flux/Flux35.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux35",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "396cb7e1e656"
+ },
+ "/images/flux/Flux40.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux40",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "205b05ac5a5c"
+ },
+ "/images/flux/Flux42.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/flux/flux42",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "e436f970a560"
+ },
+ "/images/fluxo/DanielaPaoliello(10).jpg": {
+  "w": 1920,
+  "h": 1281,
+  "base": "/images/optimized/fluxo/danielapaoliello-10",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "ce5de5974024"
+ },
+ "/images/fluxo/DanielaPaoliello(13).jpg": {
+  "w": 1281,
+  "h": 1920,
+  "base": "/images/optimized/fluxo/danielapaoliello-13",
+  "widths": [
+   400,
+   800,
+   1281
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "012fa48f27a3"
+ },
+ "/images/fluxo/DanielaPaoliello(14).jpg": {
+  "w": 1920,
+  "h": 1281,
+  "base": "/images/optimized/fluxo/danielapaoliello-14",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "3f8451ca4a1d"
+ },
+ "/images/fluxo/FARACOFOTOGRAFIA(16).jpg": {
+  "w": 1387,
+  "h": 2080,
+  "base": "/images/optimized/fluxo/faracofotografia-16",
+  "widths": [
+   400,
+   800,
+   1387
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "fae71af1d014"
+ },
+ "/images/fluxo/FLUXO_FDL2023-2066.jpg": {
+  "w": 3221,
+  "h": 4885,
+  "base": "/images/optimized/fluxo/fluxo-fdl2023-2066",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "7cd5033ea4d6"
+ },
+ "/images/fluxo/FLUXO_FDL2023-2098.jpg": {
+  "w": 3156,
+  "h": 4765,
+  "base": "/images/optimized/fluxo/fluxo-fdl2023-2098",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "babdf8915592"
+ },
+ "/images/grito-de-gaia/GritoDeGaia-012.jpg": {
+  "w": 640,
+  "h": 640,
+  "base": "/images/optimized/grito-de-gaia/gritodegaia-012",
+  "widths": [
+   400,
+   640
+  ],
+  "fallback": 640,
+  "formats": [
+   "webp"
+  ],
+  "hash": "029ad46fd0e0"
+ },
+ "/images/grito-de-gaia/GritoDeGaia-03.jpg": {
+  "w": 640,
+  "h": 640,
+  "base": "/images/optimized/grito-de-gaia/gritodegaia-03",
+  "widths": [
+   400,
+   640
+  ],
+  "fallback": 640,
+  "formats": [
+   "webp"
+  ],
+  "hash": "25291a0a82b3"
+ },
+ "/images/grito-de-gaia/GritoDeGaia-OG_FeN4liM.jpg": {
+  "w": 1280,
+  "h": 672,
+  "base": "/images/optimized/grito-de-gaia/gritodegaia-og-fen4lim",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "226ccda50c79"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3151_XvcrzQQ.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3151-xvcrzqq",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "135057871f2d"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3254_ghCUeB7.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3254-ghcueb7",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "49d64972f989"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3348_0U7nl1b.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3348-0u7nl1b",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "45a483eeb1ad"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3713_d0eUMYO.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3713-d0eumyo",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d68bfc75cddc"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3771_Kk33noW.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3771-kk33now",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "30133cab8df5"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3777_cpleVHC.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3777-cplevhc",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "7b6b67458bf4"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3779-3_73dN3To.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3779-3-73dn3to",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "94e5567ff253"
+ },
+ "/images/grito-de-gaia/lorenazschaber_-3780-2_V8tSIQf.jpg": {
+  "w": 1080,
+  "h": 720,
+  "base": "/images/optimized/grito-de-gaia/lorenazschaber-3780-2-v8tsiqf",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "04a48a5f6758"
+ },
+ "/images/home/configuracoes-do-pos-digital-thumb.jpg": {
+  "w": 1080,
+  "h": 1440,
+  "base": "/images/optimized/home/configuracoes-do-pos-digital-thumb",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "62bffc617dca"
+ },
+ "/images/home/contained-thumb.jpg": {
+  "w": 1080,
+  "h": 1080,
+  "base": "/images/optimized/home/contained-thumb",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "3613b2c88bb7"
+ },
+ "/images/home/crossing-paths-thumb.jpg": {
+  "w": 512,
+  "h": 512,
+  "base": "/images/optimized/home/crossing-paths-thumb",
+  "widths": [
+   400,
+   512
+  ],
+  "fallback": 512,
+  "formats": [
+   "webp"
+  ],
+  "hash": "46a26939e219"
+ },
+ "/images/home/flux-gan-thumb.jpg": {
+  "w": 512,
+  "h": 512,
+  "base": "/images/optimized/home/flux-gan-thumb",
+  "widths": [
+   400,
+   512
+  ],
+  "fallback": 512,
+  "formats": [
+   "webp"
+  ],
+  "hash": "61abb30d1788"
+ },
+ "/images/home/flux-thumb.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/home/flux-thumb",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "396cb7e1e656"
+ },
+ "/images/home/fluxo-thumb.jpg": {
+  "w": 1281,
+  "h": 1920,
+  "base": "/images/optimized/home/fluxo-thumb",
+  "widths": [
+   400,
+   800,
+   1281
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "012fa48f27a3"
+ },
+ "/images/home/grito-de-gaia-thumb.jpg": {
+  "w": 1280,
+  "h": 672,
+  "base": "/images/optimized/home/grito-de-gaia-thumb",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "226ccda50c79"
+ },
+ "/images/home/Maos2024-Ensaio Completo.jpg": {
+  "w": 5184,
+  "h": 5120,
+  "base": "/images/optimized/home/maos2024-ensaio-completo",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "946e07ab2580"
+ },
+ "/images/home/o-somos-thumb.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/home/o-somos-thumb",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "69aca7cbb888"
+ },
+ "/images/home/recursive-rects-thumb.jpg": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/home/recursive-rects-thumb",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "a36faeb47ce3"
+ },
+ "/images/home/tau-thumb.jpg": {
+  "w": 1280,
+  "h": 1920,
+  "base": "/images/optimized/home/tau-thumb",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "1958b06600cb"
+ },
+ "/images/home/uncertain-path-thumb.jpg": {
+  "w": 512,
+  "h": 512,
+  "base": "/images/optimized/home/uncertain-path-thumb",
+  "widths": [
+   400,
+   512
+  ],
+  "fallback": 512,
+  "formats": [
+   "webp"
+  ],
+  "hash": "087a4b7a2a13"
+ },
+ "/images/home/violencia-sexual-nao-thumb.jpg": {
+  "w": 1080,
+  "h": 1920,
+  "base": "/images/optimized/home/violencia-sexual-nao-thumb",
+  "widths": [
+   400,
+   800,
+   1080
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "e3ceac631616"
+ },
+ "/images/home/when-lives-mingle-thumb.jpg": {
+  "w": 512,
+  "h": 512,
+  "base": "/images/optimized/home/when-lives-mingle-thumb",
+  "widths": [
+   400,
+   512
+  ],
+  "fallback": 512,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8614292eea9e"
+ },
+ "/images/maos/Mao001.png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/maos/mao001",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "12057b3432c8"
+ },
+ "/images/maos/Mao002.png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/maos/mao002",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "75c31961897a"
+ },
+ "/images/maos/Mao003.png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/maos/mao003",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "95402dfab5eb"
+ },
+ "/images/maos/Mao004.png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/maos/mao004",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d78a32bdc866"
+ },
+ "/images/maos/Mao005.png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/maos/mao005",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "75373ee41844"
+ },
+ "/images/maos/Mao006.png": {
+  "w": 3456,
+  "h": 5120,
+  "base": "/images/optimized/maos/mao006",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "e5a3a18aa576"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-01.jpg": {
+  "w": 1920,
+  "h": 1280,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-01",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8c722313e7e2"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-02.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-02",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "2aa26cf0dfa9"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-03.jpg": {
+  "w": 1920,
+  "h": 1280,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-03",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "ee55167c86f4"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-04.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-04",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d3694c6e1356"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-05.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-05",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "69aca7cbb888"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-06.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-06",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "53e70bac0395"
+ },
+ "/images/o-somos/SnadroMiccoli-Loop-07.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/o-somos/snadromiccoli-loop-07",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "c132f2d49ac3"
+ },
+ "/images/recursive-rects/recursive-rects-09.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-09",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "bf606024e5d1"
+ },
+ "/images/recursive-rects/recursive-rects-14.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-14",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "0c60c000bbf2"
+ },
+ "/images/recursive-rects/recursive-rects-17.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-17",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "b3453c1eca48"
+ },
+ "/images/recursive-rects/recursive-rects-20.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-20",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "f0ecc5d93388"
+ },
+ "/images/recursive-rects/recursive-rects-29.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-29",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8b2784acfd05"
+ },
+ "/images/recursive-rects/recursive-rects-36.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-36",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "5856d4ee5900"
+ },
+ "/images/recursive-rects/recursive-rects-42.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-42",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "f6c9191c3ed1"
+ },
+ "/images/recursive-rects/recursive-rects-47.png": {
+  "w": 1024,
+  "h": 1024,
+  "base": "/images/optimized/recursive-rects/recursive-rects-47",
+  "widths": [
+   400,
+   800,
+   1024
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "cfe0451ff92b"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Covid-19.jpg": {
+  "w": 7680,
+  "h": 4320,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-bolsonaro-and-covid-19",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "db2984e805e3"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Criminal Fire.jpg": {
+  "w": 4096,
+  "h": 2160,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-bolsonaro-and-criminal-fire",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "e5ebe73c640e"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Bolsonaro and Police Militias.jpg": {
+  "w": 4096,
+  "h": 2160,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-bolsonaro-and-police-militias",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "5bfcfa09a1a5"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Bolsonaro.jpg": {
+  "w": 7680,
+  "h": 4320,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-bolsonaro",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "6e41796417f7"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Brazil.jpg": {
+  "w": 4096,
+  "h": 2160,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-brazil",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "c8f629ac6959"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Mountains, Beaches and Nature.jpg": {
+  "w": 4096,
+  "h": 2160,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-mountains-beaches-and-nature",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "2d4e999cc4e2"
+ },
+ "/images/synthetic-brazil/Synthetic Brazil - Smiles and Happiness.jpg": {
+  "w": 4096,
+  "h": 2160,
+  "base": "/images/optimized/synthetic-brazil/synthetic-brazil-smiles-and-happiness",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "2c4cd251a98c"
+ },
+ "/images/tau/tau-01.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/tau/tau-01",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "716f548a50d6"
+ },
+ "/images/tau/tau-19.jpg": {
+  "w": 1280,
+  "h": 1920,
+  "base": "/images/optimized/tau/tau-19",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "1958b06600cb"
+ },
+ "/images/tau/tau-20.jpg": {
+  "w": 1280,
+  "h": 1920,
+  "base": "/images/optimized/tau/tau-20",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "5b416a8f8f31"
+ },
+ "/images/tau/tau-22.jpg": {
+  "w": 1280,
+  "h": 853,
+  "base": "/images/optimized/tau/tau-22",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "8f5c724f394e"
+ },
+ "/images/tau/tau-23.jpg": {
+  "w": 1280,
+  "h": 1920,
+  "base": "/images/optimized/tau/tau-23",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "1d8e5f7bfeb8"
+ },
+ "/images/uncertain-path/06-ooDSiCSqmZhkbdcvm3AH9xc21r5YAwEA1HuHKmTsHkWLutmJmgW_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/uncertain-path/06-oodsicsqmzhkbdcvm3ah9xc21r5yawea1huhkmtshkwlutmjmgw-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d642e23f008e"
+ },
+ "/images/uncertain-path/14-oohwAmWF6zzthfyjd19tTwvPcxybwKkRUFkYrSBVpPMhHi6ScLE_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/uncertain-path/14-oohwamwf6zzthfyjd19ttwvpcxybwkkrufkyrsbvppmhhi6scle-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "def9956f973d"
+ },
+ "/images/uncertain-path/16-oo9Sbtwej9quH8Q3wx6WE2myXetHc6Yk113NenABdjyQ1VWJLEh_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/uncertain-path/16-oo9sbtwej9quh8q3wx6we2myxethc6yk113nenabdjyq1vwjleh-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "10a007958ed3"
+ },
+ "/images/uncertain-path/19-ooDweR8NFV7HVS9ARqVjH46cTV2u3DNSm1NdnrDK3yGYwDHkUpW_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/uncertain-path/19-oodwer8nfv7hvs9arqvjh46ctv2u3dnsm1ndnrdk3ygywdhkupw-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d2f62bd1eed4"
+ },
+ "/images/uncertain-path/20-ookYcYDtJorDxtbofL1ZGQ6Y6LQqa6R9sx7fsL4gTN7UchDb7EM_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/uncertain-path/20-ookycydtjordxtbofl1zgq6y6lqqa6r9sx7fsl4gtn7uchdb7em-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "3f2d985a5283"
+ },
+ "/images/uncertain-path/27-oneHNAyV3T41Q9M6QCN9UVhJM1aZqAwM9wYawchqfPUvszTi194_1_1.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/uncertain-path/27-onehnayv3t41q9m6qcn9uvhjm1azqawm9wyawchqfpuvszti194-1-1",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "d72f041993b7"
+ },
+ "/images/uncertain-path/fxhash-c2p-uncertain-path.png": {
+  "w": 1910,
+  "h": 1004,
+  "base": "/images/optimized/uncertain-path/fxhash-c2p-uncertain-path",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "78276736ec17"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (1).jpg": {
+  "w": 962,
+  "h": 1281,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-1",
+  "widths": [
+   400,
+   800,
+   962
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "da134e86c747"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (2).jpg": {
+  "w": 4000,
+  "h": 3000,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-2",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "98fa60081c5c"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (3).jpg": {
+  "w": 1045,
+  "h": 1281,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-3",
+  "widths": [
+   400,
+   800,
+   1045
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "b322cd649ecd"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (4).jpg": {
+  "w": 962,
+  "h": 1280,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-4",
+  "widths": [
+   400,
+   800,
+   962
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "5db7db31d10e"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (5).jpg": {
+  "w": 4000,
+  "h": 3000,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-5",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "f29e5b51d8ca"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (6).jpg": {
+  "w": 1282,
+  "h": 960,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-6",
+  "widths": [
+   400,
+   800,
+   1282
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "068eb2738e1b"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (7).jpg": {
+  "w": 3000,
+  "h": 4000,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-7",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "077a5e54845e"
+ },
+ "/images/violencia-sexual-nao/violencia-sexual-nao (8).jpg": {
+  "w": 4000,
+  "h": 3000,
+  "base": "/images/optimized/violencia-sexual-nao/violencia-sexual-nao-8",
+  "widths": [
+   400,
+   800,
+   1600
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "da758ae7ffe1"
+ },
+ "/images/when-lives-mingle/10_WhenLivesMingle_by_code2pixels_0xcbde9339a1b5e6d88481cb3baee7e03577be3b140e00cc32dfca297d7e70ddce.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/10-whenlivesmingle-by-code2pixels-0xcbde9339a1b5-077d92",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "67100a3b0fec"
+ },
+ "/images/when-lives-mingle/11_WhenLivesMingle_by_code2pixels_0xf1920add764e5a318c398064b70804772244b20243dde41a1af4f6383fde5d58.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/11-whenlivesmingle-by-code2pixels-0xf1920add764e-d7ac9a",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "b5031a1c3aee"
+ },
+ "/images/when-lives-mingle/13_WhenLivesMingle_by_code2pixels_0x865382e349dadae37a3fcef20c2857af59b867394aaca3a9bb09e704585f48ad.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/13-whenlivesmingle-by-code2pixels-0x865382e349da-ccfc2b",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "29a7ca8dd35e"
+ },
+ "/images/when-lives-mingle/18_WhenLivesMingle_by_code2pixels_0x69c170f4cafb2e98d04baccd331d698a84f817568421a32a5a2eef21169f4c25.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/18-whenlivesmingle-by-code2pixels-0x69c170f4cafb-e88af4",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "13b84c47dc0e"
+ },
+ "/images/when-lives-mingle/4_WhenLivesMingle_by_code2pixels_0x9e9712586bbe9e1b74d2f8c8ab84df1bdc90a3f9d0627b38a5fa74f37af0c5c4.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/4-whenlivesmingle-by-code2pixels-0x9e9712586bbe9-f350ad",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "9b6860a122ea"
+ },
+ "/images/when-lives-mingle/8_WhenLivesMingle_by_code2pixels_0x15be08c438e9024d6cf3a3dd9a41d26190bf92c2f0bdb78ea14427cd317cf2c3.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/8-whenlivesmingle-by-code2pixels-0x15be08c438e90-2a0d2c",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "635e7f82149d"
+ },
+ "/images/when-lives-mingle/when-lives-mingle-05.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/when-lives-mingle-05",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "ce49c705da57"
+ },
+ "/images/when-lives-mingle/when-lives-mingle-15.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/when-lives-mingle-15",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "fa6031acd650"
+ },
+ "/images/when-lives-mingle/when-lives-mingle-26.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/when-lives-mingle-26",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "0c89b02d71f1"
+ },
+ "/images/when-lives-mingle/when-lives-mingle-32.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/when-lives-mingle-32",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "11d68fcdfca6"
+ },
+ "/images/when-lives-mingle/when-lives-mingle-33.png": {
+  "w": 1280,
+  "h": 1280,
+  "base": "/images/optimized/when-lives-mingle/when-lives-mingle-33",
+  "widths": [
+   400,
+   800,
+   1280
+  ],
+  "fallback": 800,
+  "formats": [
+   "webp"
+  ],
+  "hash": "0a47187d17f5"
+ }
+}

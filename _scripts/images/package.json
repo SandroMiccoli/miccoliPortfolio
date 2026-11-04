@@ -1,0 +1,16 @@
+{
+  "name": "miccoli-portfolio-images",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Gera derivados otimizados (WebP/JPG) das imagens do portfólio",
+  "type": "module",
+  "scripts": {
+    "images": "node build.mjs"
+  },
+  "dependencies": {
+    "sharp": "^0.34.0"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}
