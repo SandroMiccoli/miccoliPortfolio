@@ -26,7 +26,7 @@ ficha-tecnica:
       - Erro99
 ---
 
-![{{ page.title }}]({{ page.featured_image }})
+{% include img.html src=page.featured_image alt=page.title priority=true %}
 
 
 <p>Projeto selecionado por chamada pública do Erro99 com tema “BH 2099”</p>
@@ -41,31 +41,31 @@ Impressão colorida em papel couché<br>
 
 ---
 <div class="gallery" data-columns="1">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg" alt="Fé nas Criança – image 1">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-FotoSandroMiccoli.jpg" alt="Fé nas Criança – image 1" cols=1 %}
 </div>
 
 
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png" alt="Fé nas Criança – image 2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png" alt="Fé nas Criança – image 3">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(8).png" alt="Fé nas Criança – image 2" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(9).png" alt="Fé nas Criança – image 3" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png" alt="Fé nas Criança – image 4">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png" alt="Fé nas Criança – image 5">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(5).png" alt="Fé nas Criança – image 4" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(6).png" alt="Fé nas Criança – image 5" cols=2 %}
 </div>
 
 <div class="gallery" data-columns="3">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png" alt="Fé nas Criança – image 6">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png" alt="Fé nas Criança – image 7">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png" alt="Fé nas Criança – image 8">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(1).png" alt="Fé nas Criança – image 6" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(7).png" alt="Fé nas Criança – image 7" cols=3 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(2).png" alt="Fé nas Criança – image 8" cols=3 %}
 </div>
 
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png" alt="Fé nas Criança – image 9">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png" alt="Fé nas Criança – image 10">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(10).png" alt="Fé nas Criança – image 9" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(11).png" alt="Fé nas Criança – image 10" cols=2 %}
 </div>
 <div class="gallery" data-columns="2">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png" alt="Fé nas Criança – image 11">
-	<img src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png" alt="Fé nas Criança – image 12">
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(3).png" alt="Fé nas Criança – image 11" cols=2 %}
+	{% include img.html src="/images/fe-nas-crianca/FeNasCrianca-SandroMiccoli(4).png" alt="Fé nas Criança – image 12" cols=2 %}
 </div>

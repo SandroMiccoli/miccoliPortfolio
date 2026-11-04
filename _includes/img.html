@@ -1,0 +1,48 @@
+{%- comment -%}
+  Imagem responsiva: <picture> com WebP em srcset, JPG de fallback, width/height (sem layout shift),
+  loading=lazy e fetchpriority opcional. Lê os derivados de _data/images.json (gerado por _scripts/images/build.mjs).
+  Se a imagem ainda não estiver no manifesto, cai para um <img> simples com loading=lazy.
+  A saída fica numa linha só para não quebrar o markdown (kramdown).
+
+  Parâmetros:
+    src       (obrigatório) caminho do original, ex.: /images/maos/Mao001.png
+    alt       texto alternativo (padrão: o title, ou vazio)
+    title     atributo title (a legenda do zoom da galeria usa este valor)
+    cols      1-4: imagem dentro de .gallery com essa data-columns; ajusta `sizes` e emite data-zoom
+              (omitido = imagem solta/hero, largura total da coluna de conteúdo)
+    sizes     sobrescreve o `sizes` calculado (ex.: o grid da home)
+    priority  true = fetchpriority="high" e carregamento imediato (primeira imagem visível)
+    eager     true = carregamento imediato sem fetchpriority
+    class     classe CSS opcional
+{%- endcomment -%}
+{%- assign _src = include.src -%}
+{%- assign _m = site.data.images[_src] -%}
+{%- assign _title = include.title | escape -%}
+{%- if include.alt -%}
+  {%- assign _alt = include.alt | escape -%}
+{%- else -%}
+  {%- assign _alt = _title -%}
+{%- endif -%}
+{%- capture _attrs -%}
+  alt="{{ _alt }}"{% if include.title %} title="{{ _title }}"{% endif %}{% if include.class %} class="{{ include.class }}"{% endif %}{% if include.priority %} fetchpriority="high"{% elsif include.eager %}{% else %} loading="lazy"{% endif %} decoding="async"
+{%- endcapture -%}
+{%- if _m -%}
+  {%- if include.sizes -%}
+    {%- assign _sizes = include.sizes -%}
+  {%- else -%}
+    {%- assign _cols = include.cols | default: 0 | plus: 0 -%}
+    {%- case _cols -%}
+      {%- when 2 -%}{%- assign _sizes = "(min-width: 1220px) 38vw, (min-width: 768px) 42vw, 45vw" -%}
+      {%- when 3 -%}{%- assign _sizes = "(min-width: 1220px) 25vw, (min-width: 768px) 28vw, 30vw" -%}
+      {%- when 4 -%}{%- assign _sizes = "(min-width: 1220px) 19vw, (min-width: 768px) 21vw, 30vw" -%}
+      {%- else -%}{%- assign _sizes = "(min-width: 1220px) 75vw, (min-width: 768px) 83vw, 90vw" -%}
+    {%- endcase -%}
+  {%- endif -%}
+  {%- assign _base = _m.base | relative_url -%}
+  {%- capture _srcset_webp -%}{%- for w in _m.widths -%}{{ _base }}-{{ w }}.webp {{ w }}w{% unless forloop.last %}, {% endunless %}{%- endfor -%}{%- endcapture -%}
+  {%- capture _srcset_avif -%}{%- for w in _m.widths -%}{{ _base }}-{{ w }}.avif {{ w }}w{% unless forloop.last %}, {% endunless %}{%- endfor -%}{%- endcapture -%}
+  {%- assign _zoom_w = _m.widths | last -%}
+<picture>{% if _m.formats contains "avif" %}<source type="image/avif" srcset="{{ _srcset_avif }}" sizes="{{ _sizes }}">{% endif %}<source type="image/webp" srcset="{{ _srcset_webp }}" sizes="{{ _sizes }}"><img src="{{ _base }}-{{ _m.fallback }}.jpg" width="{{ _m.w }}" height="{{ _m.h }}" {{ _attrs | strip }}{% if include.cols %} data-zoom="{{ _base }}-{{ _zoom_w }}.webp"{% endif %}></picture>
+{%- else -%}
+<img src="{{ _src | relative_url }}" {{ _attrs | strip }}>
+{%- endif -%}
