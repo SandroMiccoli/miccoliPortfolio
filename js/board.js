@@ -95,7 +95,7 @@
 			else if ( thisTarget.indexOf('http') >= 0 ) {
 
 				// Go to the external link
-				window.open(thisTarget, '_blank');
+				window.open(thisTarget, '_blank', 'noopener,noreferrer');
 
 			}
 
@@ -137,7 +137,7 @@
 			$('body').removeClass('loading');
 
 			// Hide the menu
-			$('body').removeClass('menu--open');
+			setMenuOpen(false);
 		});
 
 
@@ -344,16 +344,19 @@
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Menu
 
+	function setMenuOpen(isOpen) {
+		$('body').toggleClass('menu--open', isOpen);
+		$('.js-menu-toggle').attr('aria-expanded', isOpen ? 'true' : 'false');
+	}
+
 	$(document).on('click', '.js-menu-toggle', function (){
+		setMenuOpen( !$('body').hasClass('menu--open') );
+	});
 
-		// If already open
-		if ( $('body').hasClass('menu--open') ) {
-			$('body').removeClass('menu--open');
-		}
-
-		// If not open
-		else {
-			$('body').addClass('menu--open');
+	$(document).on('keydown', function (e) {
+		if ( e.key === 'Escape' && $('body').hasClass('menu--open') ) {
+			setMenuOpen(false);
+			$('.js-menu-toggle:visible').trigger('focus');
 		}
 	});
 

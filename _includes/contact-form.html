@@ -3,28 +3,28 @@
 	<form method="post" action="{{ site.data.settings.contact_settings.form_action }}" id="contact-form">
 
 		<div class="contact-form__item">
-			<label class="contact-form__label">Name *</label>
-			<input type="text" name="name" placeholder="You name..." class="contact-form__input">
+			<label class="contact-form__label" for="contact-name">Name *</label>
+			<input type="text" id="contact-name" name="name" placeholder="Your name..." class="contact-form__input" required autocomplete="name">
 		</div>
 
 		<div class="contact-form__item">
-			<label class="contact-form__label">Email Address *</label>
-			<input type="text" name="email" placeholder="you@mail.com" class="contact-form__input">
+			<label class="contact-form__label" for="contact-email">Email Address *</label>
+			<input type="email" id="contact-email" name="email" placeholder="you@mail.com" class="contact-form__input" required autocomplete="email">
 		</div>
 
 		<div class="contact-form__item">
-			<label class="contact-form__label">Subject *</label>
-			<input type="text" name="subject" placeholder="Your subject..." class="contact-form__input">
+			<label class="contact-form__label" for="contact-subject">Subject *</label>
+			<input type="text" id="contact-subject" name="subject" placeholder="Your subject..." class="contact-form__input" required autocomplete="off">
 		</div>
 
 		<div class="contact-form__item">
-			<label class="contact-form__label">Message *</label>
-			<textarea name="message" placeholder="Your message..." class="contact-form__textarea"></textarea>
+			<label class="contact-form__label" for="contact-message">Message *</label>
+			<textarea id="contact-message" name="message" placeholder="Your message..." class="contact-form__textarea" required></textarea>
 		</div>
 
 		<input type="hidden" name="_next" value="{{ site.data.settings.contact_settings.confirmation_url }}" />
 		<input type="hidden" name="_subject" value="{{ site.data.settings.contact_settings.email_subject }}" />
-		<input type="text" name="_gotcha" style="display: none;" class="contact-form__gotcha" val="">
+		<input type="text" name="_gotcha" style="display: none;" class="contact-form__gotcha" value="" tabindex="-1" autocomplete="off" aria-hidden="true">
 
 		<div class="contact-form__item">
 			<input type="submit" value="{{ site.data.settings.contact_settings.send_button_text }}" class="button button--large">
