@@ -24,37 +24,37 @@ currency_symbol: Ξ
 currency_code: ETH
 ---
 
-![]({{ page.featured_image }})
+![{{ page.title }}]({{ page.featured_image }})
 
 <div class="gallery" data-columns="2">
-	<img src="/images/when-lives-mingle/when-lives-mingle-32.png" title="When Lives Mingle #32">
-	<img src="/images/when-lives-mingle/when-lives-mingle-05.png" title="When Lives Mingle #05">
+	<img src="/images/when-lives-mingle/when-lives-mingle-32.png" title="When Lives Mingle #32" alt="When Lives Mingle #32">
+	<img src="/images/when-lives-mingle/when-lives-mingle-05.png" title="When Lives Mingle #05" alt="When Lives Mingle #05">
 </div>
 
 Sets of curves symbolize individual stories, and when they intersect, Moiré patterns emerge, unveiling the enchantment of human relationships.
 
 From up close, each curve reveals distinct individuality, but from afar, they blend into a collective narrative.
 
-<img src="/images/when-lives-mingle/13_WhenLivesMingle_by_code2pixels_0x865382e349dadae37a3fcef20c2857af59b867394aaca3a9bb09e704585f48ad.png" title="When Lives Mingle #13">
+<img src="/images/when-lives-mingle/13_WhenLivesMingle_by_code2pixels_0x865382e349dadae37a3fcef20c2857af59b867394aaca3a9bb09e704585f48ad.png" title="When Lives Mingle #13" alt="When Lives Mingle #13">
 
 The collection also explores the moments when subtle disruptions create fissures in these encounters, yet faint connections may persist, highlighting the resilience of human bonds.
 
 <div class="gallery" data-columns="3">
-	<img src="/images/when-lives-mingle/10_WhenLivesMingle_by_code2pixels_0xcbde9339a1b5e6d88481cb3baee7e03577be3b140e00cc32dfca297d7e70ddce.png" title="When Lives Mingle #18">
-	<img src="/images/when-lives-mingle/11_WhenLivesMingle_by_code2pixels_0xf1920add764e5a318c398064b70804772244b20243dde41a1af4f6383fde5d58.png" title="When Lives Mingle #11">
-	<img src="/images/when-lives-mingle/when-lives-mingle-26.png" title="When Lives Mingle #26">
+	<img src="/images/when-lives-mingle/10_WhenLivesMingle_by_code2pixels_0xcbde9339a1b5e6d88481cb3baee7e03577be3b140e00cc32dfca297d7e70ddce.png" title="When Lives Mingle #18" alt="When Lives Mingle #18">
+	<img src="/images/when-lives-mingle/11_WhenLivesMingle_by_code2pixels_0xf1920add764e5a318c398064b70804772244b20243dde41a1af4f6383fde5d58.png" title="When Lives Mingle #11" alt="When Lives Mingle #11">
+	<img src="/images/when-lives-mingle/when-lives-mingle-26.png" title="When Lives Mingle #26" alt="When Lives Mingle #26">
 </div>
 
 Each piece extends an invitation to contemplate the intricate fabric of human connections and the profound resonance that arises when personal narratives intersect.
 
 
 <div class="gallery" data-columns="2">
-	<img src="/images/when-lives-mingle/when-lives-mingle-33.png" title="When Lives Mingle #33">
-	<img src="/images/when-lives-mingle/when-lives-mingle-15.png" title="When Lives Mingle #15">
+	<img src="/images/when-lives-mingle/when-lives-mingle-33.png" title="When Lives Mingle #33" alt="When Lives Mingle #33">
+	<img src="/images/when-lives-mingle/when-lives-mingle-15.png" title="When Lives Mingle #15" alt="When Lives Mingle #15">
 </div>
 
 
 <div class="gallery" data-columns="2">
-	<img src="/images/when-lives-mingle/4_WhenLivesMingle_by_code2pixels_0x9e9712586bbe9e1b74d2f8c8ab84df1bdc90a3f9d0627b38a5fa74f37af0c5c4.png" title="When Lives Mingle #4">
-	<img src="/images/when-lives-mingle/18_WhenLivesMingle_by_code2pixels_0x69c170f4cafb2e98d04baccd331d698a84f817568421a32a5a2eef21169f4c25.png" title="When Lives Mingle #10">
+	<img src="/images/when-lives-mingle/4_WhenLivesMingle_by_code2pixels_0x9e9712586bbe9e1b74d2f8c8ab84df1bdc90a3f9d0627b38a5fa74f37af0c5c4.png" title="When Lives Mingle #4" alt="When Lives Mingle #4">
+	<img src="/images/when-lives-mingle/18_WhenLivesMingle_by_code2pixels_0x69c170f4cafb2e98d04baccd331d698a84f817568421a32a5a2eef21169f4c25.png" title="When Lives Mingle #10" alt="When Lives Mingle #10">
 </div>

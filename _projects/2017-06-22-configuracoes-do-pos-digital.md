@@ -43,22 +43,22 @@ Assim, cada capítulo gera um grafismo diferente do outro, com formas emergentes
 
 A capa é gerada a partir da sobreposição de todos os capítulos do livro, gerando um emaranhado de linhas e formas. Construindo, assim, uma complexa sinopse visual do conteúdo a ser encontrado no miolo do livro.
 
-  <img src="/images/configuracoes-do-pos-digital/mockup.jpg" title="Configurações do pós-digital - Arte e cultura tecnológicas">
+  <img src="/images/configuracoes-do-pos-digital/mockup.jpg" title="Configurações do pós-digital - Arte e cultura tecnológicas" alt="Configurações do pós-digital - Arte e cultura tecnológicas">
 
 <div class="gallery" data-columns="2">
-  <img src="/images/configuracoes-do-pos-digital/Livro0.png" title="Configurações do pós-digital - Arte e cultura tecnológicas">
-  <img src="/images/configuracoes-do-pos-digital/Livro2.png" title="Sobre a arte generativa do livro">
+  <img src="/images/configuracoes-do-pos-digital/Livro0.png" title="Configurações do pós-digital - Arte e cultura tecnológicas" alt="Configurações do pós-digital - Arte e cultura tecnológicas">
+  <img src="/images/configuracoes-do-pos-digital/Livro2.png" title="Sobre a arte generativa do livro" alt="Sobre a arte generativa do livro">
 </div>
 
 <div class="gallery" data-columns="2">
-  <img src="/images/configuracoes-do-pos-digital/Livro3.png" title="Um panorama caleidoscópico da arte em suas feições digitais - Lucia Santaella">
-  <img src="/images/configuracoes-do-pos-digital/Livro4.png" title="Ideia, plataforma, processo, domínioo - Casey Reas">
-  <img src="/images/configuracoes-do-pos-digital/Livro5.png" title="Para um conceito de crítica de arte híbrida - Miriam Rasch">
-  <img src="/images/configuracoes-do-pos-digital/Livro6.png" title="Ostensividade das interfaces computacionais - Ítalo Travenzoli">
+  <img src="/images/configuracoes-do-pos-digital/Livro3.png" title="Um panorama caleidoscópico da arte em suas feições digitais - Lucia Santaella" alt="Um panorama caleidoscópico da arte em suas feições digitais - Lucia Santaella">
+  <img src="/images/configuracoes-do-pos-digital/Livro4.png" title="Ideia, plataforma, processo, domínioo - Casey Reas" alt="Ideia, plataforma, processo, domínioo - Casey Reas">
+  <img src="/images/configuracoes-do-pos-digital/Livro5.png" title="Para um conceito de crítica de arte híbrida - Miriam Rasch" alt="Para um conceito de crítica de arte híbrida - Miriam Rasch">
+  <img src="/images/configuracoes-do-pos-digital/Livro6.png" title="Ostensividade das interfaces computacionais - Ítalo Travenzoli" alt="Ostensividade das interfaces computacionais - Ítalo Travenzoli">
 </div>
 
 <div class="gallery" data-columns="3">
-  <img src="/images/configuracoes-do-pos-digital/Livro7.png" title="MindFluctuations: cenários interativos em BCI (brain computer interface) - Tania Fraga">
-  <img src="/images/configuracoes-do-pos-digital/Livro8.png" title="Festival de Arte Digital: um acervo artístico intermitente - Pablo Gobira, Tadeus Mucelli">
-  <img src="/images/configuracoes-do-pos-digital/Livro9.png" title="Tecnologias móveis e autoria: A produção de um documentário no bairro do Abaeté por alunos de uma escola municipal de Salvador - Tatiana Paz, Lynn Alves">
+  <img src="/images/configuracoes-do-pos-digital/Livro7.png" title="MindFluctuations: cenários interativos em BCI (brain computer interface) - Tania Fraga" alt="MindFluctuations: cenários interativos em BCI (brain computer interface) - Tania Fraga">
+  <img src="/images/configuracoes-do-pos-digital/Livro8.png" title="Festival de Arte Digital: um acervo artístico intermitente - Pablo Gobira, Tadeus Mucelli" alt="Festival de Arte Digital: um acervo artístico intermitente - Pablo Gobira, Tadeus Mucelli">
+  <img src="/images/configuracoes-do-pos-digital/Livro9.png" title="Tecnologias móveis e autoria: A produção de um documentário no bairro do Abaeté por alunos de uma escola municipal de Salvador - Tatiana Paz, Lynn Alves" alt="Tecnologias móveis e autoria: A produção de um documentário no bairro do Abaeté por alunos de uma escola municipal de Salvador - Tatiana Paz, Lynn Alves">
 </div>

@@ -99,8 +99,12 @@
 	}
 
 	&:focus {
-		outline: none;
 		border-color: $accent-color;
+	}
+
+	&:focus-visible {
+		outline: 3px solid $accent-color;
+		outline-offset: 2px;
 	}
 }
 

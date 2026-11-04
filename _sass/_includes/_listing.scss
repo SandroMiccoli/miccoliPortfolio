@@ -34,7 +34,8 @@
 
 	@include mq(tabletl) {
 
-		&:hover {
+		&:hover,
+		&:focus-visible {
 
 			.listing-item__content {
 				opacity: 1;
@@ -54,18 +55,21 @@
 }
 
 .listing-item__content {
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
 	display: flex;
-	padding: 17px 20px;
+	padding: 10px 12px;
 	background: rgba($overlay-background-color, $overlay-opacity);
 
-	opacity: 0;
-	visibility: hidden;
-	@include transition(all 0.3s ease-in-out);
+	@include mq(tabletl) {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		padding: 17px 20px;
+		opacity: 0;
+		visibility: hidden;
+		@include transition(all 0.3s ease-in-out);
+	}
 }
 
 .listing-item__content--top {
@@ -86,14 +90,16 @@
 }
 
 .listing-item__info {
-	opacity: 0;
-	@include translate(0,10px);
-	@include transition(all 0.3s ease-in-out);
+	@include mq(tabletl) {
+		opacity: 0;
+		@include translate(0,10px);
+		@include transition(all 0.3s ease-in-out);
+	}
 }
 
 .listing-item__title {
 	color: $overlay-text-color;
-	font-size: $grid-item-title-small;
+	font-size: 16px;
 	font-weight: $grid-item-title-weight;
 	letter-spacing: $grid-item-title-spacing;
 
@@ -107,11 +113,16 @@
 }
 
 .listing-item__subtitle {
+	display: none;
 	margin-top: 5px;
 	color: rgba($overlay-text-color, 0.7);
 	font-size: $grid-item-subtitle-small;
 	font-weight: $grid-item-subtitle-weight;
 	letter-spacing: $grid-item-subtitle-spacing;
+
+	@include mq(tabletl) {
+		display: block;
+	}
 
 	@include mq(tabletp) {
 		font-size: $grid-item-subtitle-medium;

@@ -26,20 +26,53 @@
 	</script>
 
 	<!-- Page Info -->
+	{% capture page_full_title %}{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}{% endcapture %}
+	{% assign page_canonical_path = page.canonical_url | default: page.url | replace: 'index.html', '' %}
+	{% assign page_canonical = page_canonical_path | absolute_url %}
+	{% assign page_image_path = page.featured_image | default: site.data.settings.basic_settings.default_social_image %}
+	{% assign page_image = page_image_path | absolute_url %}
+	{% assign page_description = page.description | default: site.data.settings.basic_settings.default_description | strip_html | strip_newlines | xml_escape %}
 	<link rel="shortcut icon" href="{{ site.data.settings.basic_settings.favicon_image | relative_url }}">
-	<title>{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}</title>
-	<meta name="description" content="{{ page.description | strip_html | xml_escape }}">
+	<title>{{ page_full_title | xml_escape }}</title>
+	<meta name="description" content="{{ page_description }}">
+	<link rel="canonical" href="{{ page_canonical }}">
+	{% if page.noindex %}<meta name="robots" content="noindex, follow">{% endif %}
 
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary_large_image">
-	<meta name="twitter:title" content="{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}">
-	<meta name="twitter:description" content="{{ page.description | strip_html | xml_escape }}">
-	<meta name="twitter:image:src" content="{{ page.featured_image | absolute_url }}">
+	<meta name="twitter:title" content="{{ page_full_title | xml_escape }}">
+	<meta name="twitter:description" content="{{ page_description }}">
+	<meta name="twitter:image" content="{{ page_image }}">
+	<meta name="twitter:image:alt" content="{{ page.featured_image_alt | default: page.title | xml_escape }}">
 
 	<!-- Facebook OpenGraph -->
-	<meta property="og:title" content="{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}" />
-	<meta property="og:description" content="{{ page.description | strip_html | xml_escape }}" />
-	<meta property="og:image" content="{{ page.featured_image | absolute_url }}" />
+	<meta property="og:type" content="{% if page.collection == 'posts' %}article{% else %}website{% endif %}" />
+	<meta property="og:site_name" content="{{ site.data.settings.basic_settings.site_title | xml_escape }}" />
+	<meta property="og:url" content="{{ page_canonical }}" />
+	<meta property="og:title" content="{{ page_full_title | xml_escape }}" />
+	<meta property="og:description" content="{{ page_description }}" />
+	<meta property="og:image" content="{{ page_image }}" />
+	<meta property="og:image:alt" content="{{ page.featured_image_alt | default: page.title | xml_escape }}" />
+
+	{% if page.url == "/" %}
+	<!-- Structured data -->
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Person",
+		"name": {{ site.data.settings.basic_settings.site_title | jsonify }},
+		"alternateName": "code2pixels",
+		"url": {{ site.url | append: "/" | jsonify }},
+		"image": {{ page_image | jsonify }},
+		"jobTitle": "Creative Technologist",
+		"description": {{ page.description | jsonify }},
+		"sameAs": [
+			"https://www.instagram.com/sandromiccoli",
+			"https://code2pixels.xyz"
+		]
+	}
+	</script>
+	{% endif %}
 
 	{% if site.data.settings.font_settings.font_embed %}
 	<!-- Font Embed Code -->
@@ -89,15 +122,15 @@
 	<div class="page-loader"></div>
 
 	
-	<div class="page">
+	<main class="page" id="main">
 
-		<div class="page__content" data-page-title="{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}">
+		<div class="page__content" data-page-title="{{ page_full_title | xml_escape }}">
 
 			{{ content }}
 
 		</div>
 
-	</div>
+	</main>
 
 	<div id="caption" class="caption">
 		Caption
