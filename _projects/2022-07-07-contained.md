@@ -26,7 +26,7 @@ currency_symbol: ꜩ
 currency_code: XTZ
 ---
 
-![]({{ page.featured_image }})
+{% include img.html src=page.featured_image alt=page.title priority=true %}
 
 ## {{ page.title }}
 
@@ -36,15 +36,14 @@ Since the work is generative, each viewer will see a different piece. You need t
 
 
 ---
-  <video muted autoplay loop preload width="800" height="800" style="max-width: 100%; height: auto; margin: 0 auto; display: block;">
-    <source src="/images/contained/contained-pre-release.m4v" type="video/m4v">
-    <source src="/images/contained/contained-pre-release.mp4" type="video/mp4">
+  <video muted loop playsinline preload="none" data-autoplay-visible poster="/images/contained/contained-pre-release-poster.jpg" width="800" height="800" style="max-width: 100%; height: auto; margin: 0 auto; display: block;">
+    <source src="/images/contained/contained-pre-release-web.mp4" type="video/mp4">
     Your browser does not support the video tag.
   </video>
 
 ---
 
-<img src= "/images/contained/Contained_Cover_2.jpg">
+{% include img.html src="/images/contained/Contained_Cover_2.jpg" %}
 
 #### How to interact with it?
 - Click and drag to explore the virtual sculpture
