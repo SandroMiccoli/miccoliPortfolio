@@ -122,7 +122,7 @@ bool tryMoverMagnetLimits(
 	out float nearSnap,
 	out float farSnap
 ) {
-	float mergeGap = max(uMergeK * 0.55, 0.025);
+	float mergeGap = max(uMergeK * 0.18, 0.02);
 	float hardOwn = uDotRadius + uMoveRadius;
 	float softOwn = hardOwn + mergeGap;
 	float hardSep = uMoveRadius + uDotRadius;
@@ -148,8 +148,11 @@ bool tryMoverMagnetLimits(
 	}
 	farSnap = min(farSnap, firstHard - 0.02);
 
+	// A large uMergeK eats the gap in front of a neighbor. Hold the mover on
+	// the merge instead of dropping it, so raising the uniform still joins them.
 	if (farSnap < nearSnap + minSpan) {
-		return false;
+		if (firstSoft > 1e5 && uMoveDist <= 0.0) return false;
+		farSnap = nearSnap;
 	}
 	return true;
 }
@@ -262,8 +265,7 @@ void main() {
 		}
 	}
 
-	float edgeSoft = 2.0 / max(uResolution.y, 1.0) * uGridScale;
-	float alpha = 1.0 - smoothstep(0.0, edgeSoft, field);
+	float alpha = clamp(0.5 - field / max(fwidth(field), 1e-4), 0.0, 1.0);
 
 	vec2 screenUv = vUV;
 	float marginDistance = min(

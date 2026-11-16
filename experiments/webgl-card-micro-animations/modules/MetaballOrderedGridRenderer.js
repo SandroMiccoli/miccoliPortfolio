@@ -9,7 +9,7 @@ const SHARED = {
 	uSeed: 1.23,
 	uDensity: 1.0,
 	uDotRadius: 0.14,
-	uMergeK: 0.23,
+	uMergeK: 0.15,
 	uMoveChance: 0.2,
 	uMoveRadius: 0.14,
 	uMoveDist: 0,
