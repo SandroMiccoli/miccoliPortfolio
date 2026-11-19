@@ -1,5 +1,4 @@
 import { mountCircuitBoard } from './circuit-board.js';
-import { mountLookPanel } from './look-panel.js';
 
 const stage = document.querySelector('#stage');
 if (!(stage instanceof HTMLElement)) {
@@ -7,14 +6,7 @@ if (!(stage instanceof HTMLElement)) {
 }
 
 const study = mountCircuitBoard(stage, { zoom: true });
-const panel = mountLookPanel(stage, {
-	getLook: () => study.getLook(),
-	setLook(next) {
-		const look = study.setLook(next);
-		document.body.style.background = look.system.background;
-		return look;
-	},
-});
+document.body.style.background = study.getLook().system.background;
 
 window.addEventListener('keydown', (event) => {
 	if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -23,6 +15,5 @@ window.addEventListener('keydown', (event) => {
 
 window.boardStudy = study;
 window.addEventListener('pagehide', () => {
-	panel.destroy();
 	study.destroy();
 });

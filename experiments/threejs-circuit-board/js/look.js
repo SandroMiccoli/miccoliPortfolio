@@ -1,7 +1,6 @@
 /**
  * Colors and bloom for the study.
- * The lab panel writes this object to circuit-board-look.json.
- * Replace DEFAULT_LOOK with that file to change the shipped default.
+ * DEFAULT_LOOK is the shipped palette for embeds and the lab demo.
  * Keys here are the only ones the scene paints. A material opts in with userData.look.
  */
 
@@ -14,37 +13,37 @@ export const BLOOM_LIMITS = {
 export const DEFAULT_LOOK = {
 	bloom: {
 		strength: 0.2,
-		radius: 0,
-		threshold: 0.06,
+		radius: 0.02,
+		threshold: 0.4,
 	},
 	system: {
-		background: '#06090c',
-		grid: '#49a9ed',
-		route: '#1fc283',
-		packet: '#74e6b4',
+		background: '#020b16',
+		grid: '#87ff5c',
+		route: '#fa0000',
+		packet: '#00d5ff',
 	},
 	pcb: {
-		face: '#091f38',
-		wall: '#102844',
-		copper: '#1f7863',
-		body: '#080f18',
-		rim: '#1fc283',
-		blue: '#49a9ed',
-		chip: '#a99dfc',
-		violet: '#b79ae6',
-		green: '#1fc283',
-		cyan: '#62c9ff',
+		face: '#011432',
+		wall: '#001329',
+		copper: '#00a36d',
+		body: '#04101b',
+		rim: '#0d97ba',
+		blue: '#1d789f',
+		chip: '#31815c',
+		violet: '#523187',
+		green: '#988252',
+		cyan: '#1d789f',
 	},
 	models: {
-		wire: '#62c9ff',
-		blue: '#49a9ed',
+		wire: '#00d5ff',
+		blue: '#ededed',
 		violet: '#b79ae6',
-		green: '#1fc283',
-		gold: '#e4cc74',
+		green: '#06c0ef',
+		gold: '#c573e2',
 		glass: '#237ca5',
 		hull: '#071522',
-		facet: '#081421',
-		node: '#122636',
+		facet: '#071522',
+		node: '#062541',
 	},
 };
 
